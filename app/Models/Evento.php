@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use API_EPS\Models\Empleado;
+use API_EPS\Models\Permiso;
+use API_EPS\Models\Persona;
+
+
 use API_EPS\Models\Permiso;
 
 class Evento extends Model
@@ -662,22 +667,22 @@ class Evento extends Model
         if ($idEvento==0 || $idUn==0) {
             return -1;
         }
-
-        DB::connection('crm')->select('ec.capacidad');
-        DB::connection('crm')->from(TBL_EVENTOUNCAPACIDAD.' ec');
-        DB::connection('crm')->join(TBL_EVENTOUN.' eu', 'eu.idEventoUn=ec.idEventoUn AND eu.fechaEliminacion=\'0000-00-00 00:00:00\'', 'INNER');
-        DB::connection('crm')->where('eu.idEvento', $idEvento);
-        DB::connection('crm')->where('eu.idUn', $idUn);
-        DB::connection('crm')->where('ec.idTipoEventoCapacidad', $tipo);
-        DB::connection('crm')->where('eu.activo', 1);
-        DB::connection('crm')->where('ec.autorizado', 1);
-        DB::connection('crm')->where('ec.activo', 1);
-        DB::connection('crm')->where('ec.fechaEliminacion', '0000-00-00 00:00:00');
-        DB::connection('crm')->order_by('ec.idEventoUnCapacidad', 'desc');
-        $query = DB::connection('crm')->get();
-
-        if ($query->num_rows>0) {
-            $fila = $query->row_array();
+        
+        $query = DB::connection('crm')->table(TBL_EVENTOUNCAPACIDAD.' ec')
+        ->select('ec.capacidad')
+        ->join(TBL_EVENTOUN.' eu', 'eu.idEventoUn=ec.idEventoUn AND eu.fechaEliminacion=\'0000-00-00 00:00:00\'', 'INNER')
+        ->where('eu.idEvento', $idEvento)
+        ->where('eu.idUn', $idUn)
+        ->where('ec.idTipoEventoCapacidad', $tipo)
+        ->where('eu.activo', 1)
+        ->where('ec.autorizado', 1)
+        ->where('ec.activo', 1)
+        ->where('ec.fechaEliminacion', '0000-00-00 00:00:00')
+        ->orderBy('ec.idEventoUnCapacidad', 'desc')
+        
+        if ($query->count() > 0) {
+            $query = array_map(function($x){return (array)$x;},$query);
+            $fila = $query[0];
             $capacidad = $fila['capacidad'];
             return $capacidad;
         } else {
@@ -775,32 +780,33 @@ class Evento extends Model
      *
      * @return [type]           [description]
      */
-    public function ctaContable($idEvento, $idUn)
+    public static function ctaContable($idEvento, $idUn)
     {
         settype($idEvento, 'integer');
         settype($idUn, 'integer');
 
         $ctaContable = '';
 
-        $sql = "SELECT cc.numCuenta
-            FROM evento e
-            INNER JOIN producto p ON p.idProducto=e.idProducto
-            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-                and pu.idUn=$idUn and pu.activo=1
-                and pu.fechaEliminacion='0000-00-00 00:00:00'
-            INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
-                AND pp.activo=1 AND pp.fechaEliminacion='0000-00-00 00:00:00'
-                AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
-            INNER JOIN cuentacontable cc ON cc.idCuentaContable=pp.idCuentaContable
-            WHERE e.idEvento=$idEvento
-            ORDER BY pp.idProductoPrecio DESC
-            LIMIT 1";
-        $query = DB::connection('crm')->query($sql);
-        if ($query->num_rows > 0) {
-            $fila = $query->row_array();
+        $sql = "
+SELECT cc.numCuenta
+FROM evento e
+INNER JOIN producto p ON p.idProducto=e.idProducto
+INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+    and pu.idUn={$idUn} and pu.activo=1
+    and pu.fechaEliminacion='0000-00-00 00:00:00'
+INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
+    AND pp.activo=1 AND pp.fechaEliminacion='0000-00-00 00:00:00'
+    AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
+INNER JOIN cuentacontable cc ON cc.idCuentaContable=pp.idCuentaContable
+WHERE e.idEvento={$idEvento}
+ORDER BY pp.idProductoPrecio DESC
+LIMIT 1";
+        $query = DB::connection('crm')->select($sql);
+        if (count($query) > 0) {
+            $query = array_map(function($x){return (array)$x;},$query);
+            $fila = $query[0];
             $ctaContable = $fila['numCuenta'];
         }
-
         return $ctaContable;
     }
 
@@ -812,32 +818,33 @@ class Evento extends Model
      *
      * @return [type]           [description]
      */
-    public function ctaProducto($idEvento, $idun)
+    public static function ctaProducto($idEvento, $idun)
     {
         settype($idEvento, 'integer');
         settype($idUn, 'integer');
 
         $ctaProducto = '';
 
-        $sql = "SELECT cc.cuentaProducto
-            FROM evento e
-            INNER JOIN producto p ON p.idProducto=e.idProducto
-            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-                and pu.idUn=$idUn and pu.activo=1
-                and pu.fechaEliminacion='0000-00-00 00:00:00'
-            INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
-                AND pp.activo=1 AND pp.fechaEliminacion='0000-00-00 00:00:00'
-                AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
-            INNER JOIN cuentaproducto cc ON cc.idCuentaProducto=pp.idCuentaProducto
-            WHERE e.idEvento=$idEvento
-            ORDER BY pp.idProductoPrecio DESC
-            LIMIT 1";
-        $query = DB::connection('crm')->query($sql);
-        if ($query->num_rows > 0) {
-            $fila = $query->row_array();
+        $sql = "
+SELECT cc.cuentaProducto
+FROM evento e
+INNER JOIN producto p ON p.idProducto=e.idProducto
+INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+    and pu.idUn={$idUn} and pu.activo=1
+    and pu.fechaEliminacion='0000-00-00 00:00:00'
+INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
+    AND pp.activo=1 AND pp.fechaEliminacion='0000-00-00 00:00:00'
+    AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
+INNER JOIN cuentaproducto cc ON cc.idCuentaProducto=pp.idCuentaProducto
+WHERE e.idEvento={$idEvento}
+ORDER BY pp.idProductoPrecio DESC
+LIMIT 1";
+        $query = DB::connection('crm')->select($sql);
+        if (count($query) > 0) {
+            $query = array_map(function($x){return (array)$x;},$query);
+            $fila = $query[0];
             $ctaProducto = $fila['cuentaProducto'];
         }
-
         return $ctaProducto;
     }
 
@@ -973,7 +980,7 @@ class Evento extends Model
      *
      * @return array
      */
-    public function datosGenerales($idEvento, $idUn)
+    public static function c($idEvento, $idUn)
     {
         settype($idEvento, 'integer');
         settype($idUn, 'integer');
@@ -993,22 +1000,21 @@ class Evento extends Model
 
         $cat = (intval($categoria["idCategoria"]) != 109) ? " and p.nombre LIKE '%2018%'" : "";
         */
-
+        
         $cat = '';
-
-        DB::connection('crm')->select('p.idProducto, p.nombre, eu.idEventoUn, e.idTipoEvento, eu.inicioRegistro, eu.finRegistro, eu.inicioEvento, '.
-            'eu.finEvento, eu.reservarInstalacion, eu.anticipo, eu.edadMinima, eu.edadMaxima');
-        DB::connection('crm')->from(TBL_EVENTO.' e');
-        DB::connection('crm')->join(TBL_PRODUCTO.' p', 'p.idProducto=e.idProducto'.$cat.' and p.fechaEliminacion=\'0000-00-00 00:00:00\'', 'INNER');
-        DB::connection('crm')->join(TBL_TIPOEVENTO.' te', 'te.idTipoEvento=e.idTipoEvento', 'INNER');
-        DB::connection('crm')->join(TBL_EVENTOUN.' eu', 'eu.idEvento=e.idEvento and eu.fechaEliminacion=\'0000-00-00 00:00:00\'', 'INNER');
-        DB::connection('crm')->where('e.idEvento', $idEvento);
-        DB::connection('crm')->where('e.fechaEliminacion', '0000-00-00 00:00:00');
-        DB::connection('crm')->where('eu.idUn', $idUn);
-        $query = DB::connection('crm')->get();
-
-        if ($query->num_rows > 0) {
-            $fila = $query->row_array();
+        
+        $query = DB::connection('crm')->table(TBL_EVENTO.' e')
+        ->select('p.idProducto, p.nombre, eu.idEventoUn, e.idTipoEvento, eu.inicioRegistro, eu.finRegistro, eu.inicioEvento, eu.finEvento, eu.reservarInstalacion, eu.anticipo, eu.edadMinima, eu.edadMaxima')
+        ->join(TBL_PRODUCTO.' p', 'p.idProducto=e.idProducto'.$cat.' and p.fechaEliminacion=\'0000-00-00 00:00:00\'', 'INNER')
+        ->join(TBL_TIPOEVENTO.' te', 'te.idTipoEvento=e.idTipoEvento', 'INNER')
+        ->join(TBL_EVENTOUN.' eu', 'eu.idEvento=e.idEvento and eu.fechaEliminacion=\'0000-00-00 00:00:00\'', 'INNER')
+        ->where('e.idEvento', $idEvento)
+        ->where('e.fechaEliminacion', '0000-00-00 00:00:00')
+        ->where('eu.idUn', $idUn);
+        
+        if ($query->count() > 0) {
+            $query = $query->get()->toArray();
+            $fila = $query[0];
             $datos['idProducto'] = $fila['idProducto'];
             $datos['nombre'] = $fila['nombre'];
             $datos['idEventoUn'] = $fila['idEventoUn'];
@@ -1144,17 +1150,16 @@ class Evento extends Model
     }
 
 
-    public function descuentoAnualidad($idProducto, $idUn)
+    public static function descuentoAnualidad($idProducto, $idUn)
     {
         settype($idProducto, 'integer');
         settype($idUn, 'integer');
-
         $res = 0;
-
+        
         if ($idProducto<=0 || $idUn<=1) {
             return $res;
         }
-
+        
         $sql = "SELECT euc.capacidad
             FROM producto p
             INNER JOIN evento e ON e.idProducto=p.idProducto
@@ -1167,11 +1172,10 @@ class Evento extends Model
             WHERE p.idProducto=$idProducto AND p.activo=1 AND p.fechaEliminacion='0000-00-00 00:00:00'
             ORDER BY euc.idEventoUnCapacidad DESC
             LIMIT 1";
-        $query = DB::connection('crm')->query($sql);
-        if ($query->num_rows > 0) {
-            $res = $query->row()->capacidad;
+        $query = DB::connection('crm')->select($sql);
+        if (countr($query) > 0) {
+            $res = $query[0]->capacidad;
         }
-
         return $res;
     }
 
@@ -1579,17 +1583,16 @@ class Evento extends Model
      *
      * @return boolean
      */
-    public function generarComisionVenta($idEvento, $idUn)
+    public static function generarComisionVenta($idEvento, $idUn)
     {
         settype($idEvento, 'integer');
         settype($idUn, 'integer');
-
         $res = false;
-
+        
         if ($idEvento==0 || $idUn==0) {
             return $res;
         }
-
+        
         $qry = "SELECT eu.idEventoUn
             FROM eventoun eu
             INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
@@ -1597,12 +1600,12 @@ class Evento extends Model
                 AND euc.activo=1 AND euc.autorizado=1
             WHERE eu.eliminado=0 AND eu.activo=1
                 AND eu.idEvento=$idEvento AND eu.idUn=$idUn";
-        $query = DB::connection('crm')->query($qry);
+        $query = DB::connection('crm')->select($qry);
 
-        if ($query->num_rows>0) {
+        if (count($query) > 0) {
             $res = true;
         }
-
+        
         return $res;
     }
 
@@ -1643,20 +1646,22 @@ class Evento extends Model
      *
      * @return Object  Activo y Autorizado de EventoUnCapacidad
      */
-    public function movientoDevengado($idMovimiento){
-            DB::connection('crm')->distinct();
-            $query = DB::connection('crm')->select('eucap.activo AS activo, eucap.autorizado AS autorizado')
-                    ->from(TBL_MOVIMIENTO.' `mov`')
-                    ->join('crm.movimientoctacontable mcc','mov.idMovimiento = mcc.idMovimiento')
-                    ->join('crm.eventomovimiento emov','mov.idMovimiento = emov.idMovimiento')
-                    ->join('crm.eventoinscripcion eins','emov.idEventoInscripcion = eins.idEventoInscripcion')
-                    ->join('crm.eventoun eun','eun.idEventoUn = eins.idEventoUn')
-                    ->join('crm.eventouncapacidad eucap','eun.idEventoUn = eucap.idEventoUn')
-                    ->join('crm.tipoeventocapacidad tec','tec.idTipoEventoCapacidad = eucap.idTipoEventoCapacidad')
-                    ->where('eucap.idTipoEventoCapacidad', 30)
-                    ->where('mov.idMovimiento', $idMovimiento)
-                    ->get();
-            $rs = $query->row();
+    public static function movientoDevengado($idMovimiento){
+        $query = DB::connection('crm')->table(TBL_MOVIMIENTO.' `mov`')
+        ->select('eucap.activo AS activo, eucap.autorizado AS autorizado')
+        ->from(TBL_MOVIMIENTO.' `mov`')
+        ->join('crm.movimientoctacontable mcc','mov.idMovimiento = mcc.idMovimiento')
+        ->join('crm.eventomovimiento emov','mov.idMovimiento = emov.idMovimiento')
+        ->join('crm.eventoinscripcion eins','emov.idEventoInscripcion = eins.idEventoInscripcion')
+        ->join('crm.eventoun eun','eun.idEventoUn = eins.idEventoUn')
+        ->join('crm.eventouncapacidad eucap','eun.idEventoUn = eucap.idEventoUn')
+        ->join('crm.tipoeventocapacidad tec','tec.idTipoEventoCapacidad = eucap.idTipoEventoCapacidad')
+        ->where('eucap.idTipoEventoCapacidad', 30)
+        ->where('mov.idMovimiento', $idMovimiento)
+        ->distinct()
+        ->get();
+        $rs = $query[0];
+        
         return $rs;
     }
 
@@ -1669,14 +1674,14 @@ class Evento extends Model
      *
      * @return  Object con Id´s de Movimientos contables Insertados y Fechas de Aplicacion
      */
-    public function devengarMovimientoContable($idMovimiento){
-        DB::connection('crm')->select('*');
-        DB::connection('crm')->from(TBL_MOVIMIENTOCTACONTABLE);
-        DB::connection('crm')->where('idMovimiento', $idMovimiento);
+    public static function devengarMovimientoContable($idMovimiento){
+        $queryMovimiento = DB::connection('crm')->table(TBL_MOVIMIENTOCTACONTABLE)
+        ->where('idMovimiento', $idMovimiento);
+        
         //Obtenemos datos de Movimiento
-        $queryMovimiento = DB::connection('crm')->get();
-            if ($queryMovimiento->num_rows > 0) {
-                $movimientoctacontable = $queryMovimiento->row();
+            if ($queryMovimiento->count() > 0) {
+                $queryMovimiento = $queryMovimiento->get()->toArray();
+                $movimientoctacontable = $queryMovimiento[0];
             }
 
         //Actualizamos Registro Contable del 60
@@ -1687,15 +1692,18 @@ class Evento extends Model
             'importe' => ($movimientoctacontable->importe * 0.60)
         );
 
-        $result = DB::connection('crm')->update(TBL_MOVIMIENTOCTACONTABLE, $set, $whereCtaContable);
-        if($result == TRUE){
+        $result = DB::connection('crm')->table(TBL_MOVIMIENTOCTACONTABLE)
+        ->where($whereCtaContable)
+        ->update($set);
+        
+        if($result){
             $insertTblDevengado = [
                'idMovimientoCtaContable' => $movimientoctacontable->idMovimientoCtaContable,
                'idTipoDevengadoProducto' => '668',
                'idTipoDevengado'         => '4',
                'numeroAplicaciones'      => '1'
             ];
-            //Insert a Tabla Movimientos Devengados
+           //Insert a Tabla Movimientos Devengados
            // DB::connection('crm')->insert(TBL_MOVIMIENTODEVENGADO, $insertTblDevengado); No es Necesario
            $datos['60'] = "Movimientyo Actualizado Correctamente al 60 $" .($movimientoctacontable->importe * 0.60);
         }
@@ -1714,33 +1722,36 @@ class Evento extends Model
             'cveUnidad'             => $movimientoctacontable->cveUnidad ,
             'cantidad'              => $movimientoctacontable->cantidad
         );
-        $devengadoPrimerMes = DB::connection('crm')->insert(TBL_MOVIMIENTOCTACONTABLE, $datosDevengado);
+        
+        $idMovimientoCuentaCont = DB::connection('crm')->table(TBL_MOVIMIENTOCTACONTABLE)
+        ->insertGetId($datosDevengado);
         $idMovimientoCuentaCont = DB::connection('crm')->insert_id();
-
-        if(DB::connection('crm')->affected_rows() > 0 ){
+        
+        if($idMovimientoCuentaCont > 0 ){
             $sql = "UPDATE `movimientoctacontable` SET fechaAplica = adddate(last_day('".$movimientoctacontable->fechaAplica."'), 1) WHERE `idMovimientoCtaContable` =". $idMovimientoCuentaCont;
-             DB::connection('crm')->query($sql);
+             DB::connection('crm')->select($sql);
 
             $insertTblDevengado['idMovimientoCtaContable'] =  $idMovimientoCuentaCont ;
             //Insert a Tabla Movimientos Devengados
-            DB::connection('crm')->insert(TBL_MOVIMIENTODEVENGADO, $insertTblDevengado);
+            DB::connection('crm')->table(TBL_MOVIMIENTODEVENGADO)
+            ->insert($insertTblDevengado);
             $datos['80'] = "Movimientyo Creado Correctamente al 20 2o Mes $" .($movimientoctacontable->importe * 0.20);
         }
         //Inicializamos Arreglo para segundo Insert
         $nuevafecha = strtotime ( '+1 month' , strtotime ( $movimientoctacontable->fechaAplica) ) ;
         $nuevafecha = date ( 'Y-m-j' , $nuevafecha );
-        $devengadoSegundoMes = DB::connection('crm')->insert(TBL_MOVIMIENTOCTACONTABLE, $datosDevengado);
-        if(DB::connection('crm')->affected_rows() > 0 ){
-            $idMovimientoCuentaCont = DB::connection('crm')->insert_id();
+        $idMovimientoCuentaCont = DB::connection('crm')->table(TBL_MOVIMIENTOCTACONTABLE)->insertGetId($datosDevengado);
+        $devengadoSegundoMes = $idMovimientoCuentaCont;
+        if($devengadoSegundoMes > 0){
             $sql = "UPDATE `movimientoctacontable` SET fechaAplica = adddate(last_day('".$nuevafecha."'), 1) WHERE `idMovimientoCtaContable` =". $idMovimientoCuentaCont;
-             DB::connection('crm')->query($sql);
-            $insertTblDevengado['idMovimientoCtaContable'] =$idMovimientoCuentaCont;
+            DB::connection('crm')->select($sql);
+            $insertTblDevengado['idMovimientoCtaContable'] = $idMovimientoCuentaCont;
             //Insert a Tabla Movimientos Devengados
-            DB::connection('crm')->insert(TBL_MOVIMIENTODEVENGADO, $insertTblDevengado);
+            DB::connection('crm')->table(TBL_MOVIMIENTODEVENGADO)->insert($insertTblDevengado);
             $datos['100'] = "Movimientyo Ceado Correctamente al  20 3er Mes $" .($movimientoctacontable->importe * 0.20);
         }
         //Actualizamos Log
-        $this->permisos_model->log(utf8_decode("Actualiza importe del Movimiento Contable 60 20 20 (".$idMovimiento.")"), LOG_SISTEMAS);
+        Permiso::log(utf8_decode("Actualiza importe del Movimiento Contable 60 20 20 (".$idMovimiento.")"), LOG_SISTEMAS);
         return $datos ;
     }
 
@@ -2059,14 +2070,17 @@ class Evento extends Model
             $idCategoria = $this->obtenIdCategoria($idEvento);
         }
         if ($idCategoria==CATEGORIA_CARRERAS) {
-
-            $query = DB::connection('crm')->query("SELECT IF(MAX(ep.numfolio) IS NULL,0, MAX(ep.numfolio)) AS ultimoFolio
-                FROM crm.eventoparticipante ep
-                INNER JOIN crm.eventoinscripcion ei ON ei.idEventoInscripcion=ep.idEventoInscripcion AND ei.monto=ei.pagado
-                INNER JOIN crm.eventoun eu ON eu.idEventoUn=ei.idEventoUn
-                INNER JOIN crm.evento e ON e.idEvento=eu.idEvento AND e.idEvento IN (".$idEvento.")
-                WHERE ep.fechaEliminacion='0000-00-00 00:00:00'");
-            $row = $query->row();
+            $sql = "
+SELECT IF(MAX(ep.numfolio) IS NULL,0, MAX(ep.numfolio)) AS ultimoFolio
+FROM crm.eventoparticipante ep
+INNER JOIN crm.eventoinscripcion ei ON ei.idEventoInscripcion=ep.idEventoInscripcion AND ei.monto=ei.pagado
+INNER JOIN crm.eventoun eu ON eu.idEventoUn=ei.idEventoUn
+INNER JOIN crm.evento e ON e.idEvento=eu.idEvento AND e.idEvento IN (".$idEvento.")
+WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
+            ";
+            $query = DB::connection('crm')->select($sql);
+            $query = array_map(function($x){return (array)$x;},$query);
+            $row = $query[0];
             $ultimoFolio = $row->ultimoFolio;
             $ultimoFolio = 0;
 
@@ -2082,9 +2096,8 @@ class Evento extends Model
             );
         }
 
-        DB::connection('crm')->insert(TBL_EVENTOPARTICIPANTE, $set);
-        $id = DB::connection('crm')->insert_id();
-        $this->permisos_model->log('Se asigna persona al evento ('.$idPersona.')', LOG_EVENTO);
+        $id = DB::connection('crm')->table(TBL_EVENTOPARTICIPANTE)->insertGetId($set);
+        Permiso::log('Se asigna persona al evento ('.$idPersona.')', LOG_EVENTO);
 
         return $id;
     }
@@ -2378,7 +2391,7 @@ class Evento extends Model
      *
      * @return integer                    [description]
      */
-    public function inscripcion($idEvento, $idUn, $idPersona, $idPersonaRespVta = 0, $monto = 0,
+    public static function inscripcion($idEvento, $idUn, $idPersona, $idPersonaRespVta = 0, $monto = 0,
         $pagado = 0, $membresia = 0, $cantidad = 0, $totalSesion = 0, $idTipoCliente = TIPO_CLIENTEEXTERNO,
         $descQuincenas = 1, $informativo = 0, $participantes = 0, $idPersonaRespVta1 = 0)
     {
@@ -2397,35 +2410,31 @@ class Evento extends Model
         if ($idEvento == 0 || $idUn == 0 || $idPersona == 0 or $idPersonaRespVta == 0) {
             return 0;
         }
-
-        $CI =& get_instance();
-        $CI->load->model('persona_model');
-        $CI->load->model('empleados_model');
-
-        DB::connection('crm')->select('idEventoUn, edadMinima, edadMaxima');
-        DB::connection('crm')->from(TBL_EVENTOUN);
-        DB::connection('crm')->where('idUn', $idUn);
-        DB::connection('crm')->where('idEvento', $idEvento);
-        DB::connection('crm')->where('activo', 1);
-        DB::connection('crm')->where('fechaEliminacion', '0000-00-00 00:00:00');
-        $query = DB::connection('crm')->get();
-
-        if ($query->num_rows>0) {
-            $fila = $query->row_array();
+        
+        $query = DB::connection('crm')->table(TBL_EVENTOUN)
+        ->select('idEventoUn, edadMinima, edadMaxima')
+        ->where('idUn', $idUn)
+        ->where('idEvento', $idEvento)
+        ->where('activo', 1)
+        ->where('fechaEliminacion', '0000-00-00 00:00:00');
+        
+        if ($query->count() > 0) {
+            $fila = ($query->get()->toArray())[0];
             $idEventoUn = $fila['idEventoUn'];
             $edadMinima = $fila['edadMinima'];
             $edadMaxima = $fila['edadMaxima'];
         } else {
             return (-1);
         }
-
-        DB::connection('crm')->select('p.nombre');
-        DB::connection('crm')->from(TBL_EVENTO.' e');
-        DB::connection('crm')->join(TBL_PRODUCTO.' p', 'e.idProducto=p.idProducto', 'INNER');
-        DB::connection('crm')->where('e.idEvento', $idEvento);
-        $query = DB::connection('crm')->get();
-        if ($query->num_rows>0) {
-            $fila = $query->row_array();
+        
+        $query = DB::connection('crm')->table(TBL_EVENTO.' e')
+        ->select('p.nombre')
+        ->join(TBL_PRODUCTO.' p', 'e.idProducto=p.idProducto')
+        ->where('e.idEvento', $idEvento)
+        
+        
+        if ($query->count() > 0) {
+            $fila = ($query->get()->toArray())[0];
             $nombre = $fila['nombre'];
         } else {
             $nombre = '';
@@ -2436,14 +2445,15 @@ class Evento extends Model
             $participantes = $this->capacidadEvento($idEvento, $idUn, TIPO_NUMERO_PARTICIPANTES);
         }
 
-        $unSession = (int)$this->session->userdata('idUn');
+        $unSession = (int)$_SESSION['idUn'];
         if ($unSession==0) {
             $unSession = $idUn;
         }
 
-        $empleadoSession = (int)$this->session->userdata('idEmpleado');
+        $empleadoSession = (int)$_SESSION['idEmpleado'];
         if ($empleadoSession==0) {
-            $empleadoSession = $CI->empleados_model->obtenIdEmpleado($idPersonaRespVta);
+            $empleadoSession = Empleado::obtenIdEmpleado($idPersonaRespVta);
+            
         }
 
         $reg = array (
@@ -2462,17 +2472,16 @@ class Evento extends Model
             'participantes'           => $participantes
         );
 
-        DB::connection('crm')->insert(TBL_EVENTOINSCRIPCION, $reg);
-        $inscripcion = DB::connection('crm')->insert_id();
-
-        $this->permisos_model->log(
+        $inscripcion = DB::connection('crm')->table(TBL_EVENTOINSCRIPCION)->insertGetId($reg);
+        
+        Permiso::log(
             'Se realiza incripcion al evento '.$nombre.' (Num. Inscripcion '.$inscripcion.')',
             LOG_EVENTO,
             $membresia,
             $idPersona
         );
 
-        $edad = $CI->persona_model->edad($idPersona);
+        $edad = Persona::edad($idPersona);
 
         if ( ( ($edadMinima == 0 && $edadMaxima == 0) || ($edad >= $edadMinima && $edad <= $edadMaxima)) && $inscripcion > 0 ) {
             if ($idCategoria==CATEGORIA_CARRERAS) {
@@ -2486,10 +2495,10 @@ class Evento extends Model
 
         $set = array(
             'idEventoInscripcion' => $inscripcion,
-            'idPersona'           => $this->session->userdata('idPersona'),
+            'idPersona'           => $_SESSION['idPersona'],
             'tipo'                => 1
         );
-        $res = DB::connection('crm')->insert(TBL_EVENTOINVOLUCRADO, $set);
+        $res = DB::connection('crm')->table(TBL_EVENTOINVOLUCRADO)->insert($set);
 
         if ($res) {
             $set = array(
@@ -2497,7 +2506,7 @@ class Evento extends Model
                 'idPersona'           => $idPersonaRespVta,
                 'tipo'                => 2
             );
-            $res = DB::connection('crm')->insert(TBL_EVENTOINVOLUCRADO, $set);
+            $res = DB::connection('crm')->table(TBL_EVENTOINVOLUCRADO)->insert($set);
 
             if ($idPersonaRespVta1>0) {
                 $set = array(
@@ -2505,7 +2514,7 @@ class Evento extends Model
                     'idPersona'           => $idPersonaRespVta1,
                     'tipo'                => 3
                 );
-                $res = DB::connection('crm')->insert(TBL_EVENTOINVOLUCRADO, $set);
+                $res = DB::connection('crm')->table(TBL_EVENTOINVOLUCRADO)->insert($set);
             }
         }
         return $inscripcion;
@@ -2521,24 +2530,23 @@ class Evento extends Model
      *
      * @return integer
      */
-    public function inscripcionMovimiento($idInscripcion, $idMovimiento)
+    public static function inscripcionMovimiento($idInscripcion, $idMovimiento)
     {
         settype($idInscripcion, 'integer');
         settype($idMovimiento, 'integer');
-
+        
         if ($idInscripcion == 0 || $idMovimiento == 0) {
             return 0;
         }
-
+        
         $reg = array (
             'idEventoInscripcion' => $idInscripcion,
             'idMovimiento'        => $idMovimiento
         );
-
-        DB::connection('crm')->insert(TBL_EVENTOMOVIMIENTO, $reg);
-        $id = DB::connection('crm')->insert_id();
-        $this->permisos_model->log('Se vincula evento al movimiento ('.$idMovimiento.')', LOG_EVENTO);
-
+        $id = DB::connection('crm')->table(TBL_EVENTOMOVIMIENTO)
+        ->insertGetId($reg);
+        Permiso::log('Se vincula evento al movimiento ('.$idMovimiento.')', LOG_EVENTO);
+        
         return $id;
     }
 
@@ -3155,22 +3163,24 @@ class Evento extends Model
      *
      * @return [type]                      [description]
      */
-    public function modificaMonto($idEventoInscripcion, $importe)
+    public static function modificaMonto($idEventoInscripcion, $importe)
     {
         settype($idEventoInscripcion, 'integer');
         settype($importe, 'float');
-
+        
         if ($idEventoInscripcion == 0) {
             return false;
         }
-
+        
         $set   = array('monto' => $importe);
         $where = array(
             'idEventoInscripcion' => $idEventoInscripcion,
             'eliminado'           => 0
         );
-        $res   = DB::connection('crm')->update(TBL_EVENTOINSCRIPCION, $set, $where);
-
+        $res   = DB::connection('crm')->table(TBL_EVENTOINSCRIPCION)
+        ->where($where)
+        ->update($set);
+        
         return true;
     }
 
@@ -3722,14 +3732,15 @@ class Evento extends Model
     public function obtenIdCategoria($idEvento)
     {
         settype($idEvento, 'integer');
-
-        $query = DB::connection('crm')->query(
-            "SELECT pr.idCategoria
-            FROM  evento e
-            INNER JOIN producto pr ON pr.idProducto=e.idProducto
-            WHERE e.idEvento IN (".$idEvento.")"
-        );
-        $row = $query->row();
+        
+        $sql = "
+SELECT pr.idCategoria
+FROM  evento e
+INNER JOIN producto pr ON pr.idProducto=e.idProducto
+WHERE e.idEvento IN (".$idEvento.")
+        ";
+        $query = DB::connection('crm')->select($sql);
+        $row = $query[0]
         return $row->idCategoria;
     }
 
@@ -4478,13 +4489,12 @@ class Evento extends Model
     {
         settype($idProducto, 'integer');
         settype($idUn, 'integer');
-
         $res = 0;
-
+        
         if ($idProducto<=0 || $idUn<=1) {
             return $res;
         }
-
+        
         $sql = "SELECT euc.capacidad
             FROM producto p
             INNER JOIN evento e ON e.idProducto=p.idProducto
@@ -4497,11 +4507,11 @@ class Evento extends Model
             WHERE p.idProducto=$idProducto AND p.activo=1 AND p.fechaEliminacion='0000-00-00 00:00:00'
             ORDER BY euc.idEventoUnCapacidad DESC
             LIMIT 1";
-        $query = DB::connection('crm')->query($sql);
-        if ($query->num_rows > 0) {
-            $res = $query->row()->capacidad;
+        $query = DB::connection('crm')->select($sql);
+        if (count($query) > 0) {
+            $res = $query[0]->capacidad;
         }
-
+        
         return $res;
     }
 

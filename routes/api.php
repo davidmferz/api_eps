@@ -23,6 +23,14 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['get', 'options'], 'getSesion', 'EPController@getSesion');
         Route::match(['post', 'options'], 'plantrabajo/{idPersona}', 'EPController@plantrabajo');
         Route::match(['get', 'options'], 'meta/{idPersona}', 'EPController@meta');
+        Route::match(['get', 'options'], 'clase/{idEntrenador}/{idUn}', 'EPController@clase');
+        Route::match(['get', 'options'], 'general/{idUn}', 'EPController@general');
+        Route::match(['post', 'options'], 'inscribir', 'EPController@inscribir');
+        Route::match(['get', 'options'], 'reAgendar/{idEventoFecha}/{delay}', 'EPController@reAgendar');
+        Route::match(['get', 'options'], 'buscar/{value}', 'EPController@buscar');
+        Route::match(['get', 'options'], 'persona/{idPersona}', 'EPController@persona');
+        Route::match(['get', 'options'], 'sexo', 'EPController@sexo');
+        
         
         
     });
