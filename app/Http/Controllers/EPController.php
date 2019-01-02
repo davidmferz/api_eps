@@ -295,7 +295,40 @@ class EPController extends Controller
         }
     }
     
-    
+    /**
+     * [clase description]
+     *
+     * @param  [type] $idEntrenador [description]
+     * @param  [type] $idUn         [description]
+     *
+     * @return [type]               [description]
+     */
+    public function clase($idEntrenador, $idUn)
+    {
+        session_write_close();
+        $idEmpleado = Empleado::obtenIdEmpleado($idEntrenador);
+
+        $datos = EP::clase($idEmpleado,$idUn);
+
+        $retval = array();
+        if (is_array($datos)) {
+            $retval = array(
+                'status' => 'OK',
+                'data' => $datos,
+                'code' => 200,
+                'message' => 'OK'
+            );
+            return response()->json($retval, $retval['code']);
+        } else {
+            $retval = array(
+                'status' => 'Error',
+                'data' => 'No se encontraron datos',
+                'code' => 400,
+                'message' => 'Error'
+            );
+            return response()->json($retval, $retval['code']);
+        }
+    }
     
     
     
