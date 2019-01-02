@@ -14,9 +14,6 @@ use API_EPS\Models\Empleado;
 use API_EPS\Models\Permiso;
 use API_EPS\Models\Persona;
 
-
-use API_EPS\Models\Permiso;
-
 class Evento extends Model
 {
     // use SoftDeletes;
@@ -678,7 +675,7 @@ class Evento extends Model
         ->where('ec.autorizado', 1)
         ->where('ec.activo', 1)
         ->where('ec.fechaEliminacion', '0000-00-00 00:00:00')
-        ->orderBy('ec.idEventoUnCapacidad', 'desc')
+        ->orderBy('ec.idEventoUnCapacidad', 'desc');
         
         if ($query->count() > 0) {
             $query = array_map(function($x){return (array)$x;},$query);
@@ -980,7 +977,7 @@ LIMIT 1";
      *
      * @return array
      */
-    public static function c($idEvento, $idUn)
+    public static function datosGenerales($idEvento, $idUn)
     {
         settype($idEvento, 'integer');
         settype($idUn, 'integer');
@@ -2430,8 +2427,7 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         $query = DB::connection('crm')->table(TBL_EVENTO.' e')
         ->select('p.nombre')
         ->join(TBL_PRODUCTO.' p', 'e.idProducto=p.idProducto')
-        ->where('e.idEvento', $idEvento)
-        
+        ->where('e.idEvento', $idEvento);
         
         if ($query->count() > 0) {
             $fila = ($query->get()->toArray())[0];
@@ -3740,7 +3736,7 @@ INNER JOIN producto pr ON pr.idProducto=e.idProducto
 WHERE e.idEvento IN (".$idEvento.")
         ";
         $query = DB::connection('crm')->select($sql);
-        $row = $query[0]
+        $row = $query[0];
         return $row->idCategoria;
     }
 
