@@ -741,17 +741,17 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
             LIMIT 1";
             // AND e2.idoperador in (2,7)
         $query = DB::connection('crm')->select($sql);
-        if (count($query)>0) {
+        if (count($query) > 0) {
             $fila = (array_map(function($x){return (array)$x;},$query))[0];
             $tmp2 = [];
             if (strlen($fila['entrenadores']) > 0) {
                 foreach (explode('|', $fila['entrenadores']) as $value) {
                     $tmp = explode(',', $value);
                     $tmp2[] = array(
-                        'idPersona' => utf8_encode($tmp[0]),
-                        'nombre'    => utf8_encode($tmp[1]),
-                        'idPuesto'  => utf8_encode($tmp[2]),
-                        'puesto'    => utf8_encode($tmp[3]),
+                        'idPersona' => utf8_encode(isset($tmp[0])?$tmp[0]:''),
+                        'nombre'    => utf8_encode(isset($tmp[1])?$tmp[1]:''),
+                        'idPuesto'  => utf8_encode(isset($tmp[2])?$tmp[2]:''),
+                        'puesto'    => utf8_encode(isset($tmp[3])?$tmp[3]:''),
                     );
                 }
             }
