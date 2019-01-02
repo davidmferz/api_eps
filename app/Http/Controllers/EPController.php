@@ -11,11 +11,13 @@ use API_EPS\Models\Empleado;
 use API_EPS\Models\EP;
 use API_EPS\Models\Evento;
 use API_EPS\Models\Movimiento;
+use API_EPS\Models\Membresia;
 use API_EPS\Models\Objeto;
 use API_EPS\Models\Persona;
 use API_EPS\Models\Producto;
 use API_EPS\Models\Socio;
 use API_EPS\Models\UN;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,38 +27,7 @@ use Illuminate\Support\Facades\Log;
 class EPController extends Controller
 {
     
-    public function login(Request $request)
-    {
-        // session_destroy();
-        $email = $request->input('email');
-        $password = $request->input('password');
-        
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            $res = EP::login($email, $password);
-            $res_array = array_map(function($x){return (array)$x;},$res);
-            
-            if (isset($res['response'])) {
-                foreach($res['response'] as $k => $v) {
-                    $_SESSION[$k] = $v;
-                }
-            }
-            
-            session_write_close(); //En el modelo guardamos unos datos de sesion...
-            if ($res['status']==200) {
-                return response()->json($res['response'], 200);
-            } else {
-                return response()->json($res, 400);
-            }
-        } else {
-            $error['status'] = 400;
-            $error['message'] = 'Correo invalido';
-            $error['code'] = '1001';
-            $error['more_info'] = 'http://localhost/docs/error/1001';
-            // $this->output->set_status_header('400');
-            // $this->output->set_output(json_encode($error));
-            return response()->json($error, 400);
-        }
-    }
+    
     
     /**
      * [agenda description]
@@ -184,7 +155,6 @@ class EPController extends Controller
      */
     public function plantrabajo($idPersona = 0)
     {
-        // dd($idPersona);
         $idPersona = $idPersona === 0 ? $_SESSION['idPersona'] : $idPersona;
         session_write_close();
         try {
@@ -307,9 +277,9 @@ class EPController extends Controller
     {
         session_write_close();
         $idEmpleado = Empleado::obtenIdEmpleado($idEntrenador);
-
+        
         $datos = EP::clase($idEmpleado,$idUn);
-
+        
         $retval = array();
         if (is_array($datos)) {
             $retval = array(
@@ -330,7 +300,483 @@ class EPController extends Controller
         }
     }
     
-    
-    
+    /**
+     * [incribir description]
+     *
+     * @return [type] [description]
+     */
+    public function inscribir()
+    {
+        session_write_close();
+        $jsonData = json_decode(trim(file_get_contents('php://input')), true);
 
+        $fail = 0;
+        $error = array();
+
+        if (!isset($jsonData['idCategoria'])) {
+            $fail = 1;
+        }
+        if (!isset($jsonData['idUn'])) {
+            $fail = 1;
+        }
+        if (!isset($jsonData['idVendedor'])) {
+            $fail = 1;
+        }
+        if (!isset($jsonData['idEntrenador'])) {
+            $fail = 1;
+        }
+        if (!isset($jsonData['idCliente'])) {
+            $fail = 1;
+        }
+        if (!isset($jsonData['participantes'])) {
+            $fail = 1;
+        }
+        if (!isset($jsonData['clases'])) {
+            $fail = 1;
+        }
+        if (!isset($jsonData['formaPago'])) {
+            $fail = 1;
+        }
+        if (!isset($jsonData['importe'])) {
+            $fail = 1;
+        }
+        if (!isset($jsonData['idUnicoMembresia'])) {
+            $fail = 1;
+        }
+        if (!isset($jsonData['tipo'])) {
+            $fail = 1;
+        }
+        $demo = 0;
+        if (isset($jsonData['demo'])) {
+            $demo = $jsonData['demo'];
+        }
+        $cantidad = 1;
+        if (isset($jsonData['cantidad'])) {
+            $cantidad = $jsonData['cantidad'];
+            if ($cantidad<=0) {
+                $cantidad = 1;
+            }
+        }
+        if ($demo==1) {
+            if (!isset($jsonData['fecha'])) {
+                $fail = 1;
+            }
+        }
+
+        if ($fail==0) {
+            if ($demo==1) {
+                $totalDemos = EP::totalDemos($jsonData['idCategoria'], $jsonData['idCliente']);
+                if ($totalDemos>=2) {
+                    $error['status'] = 400;
+                    $error['message'] = 'Excedio el limite de clases demo para este producto';
+                    $error['code'] = '1010';
+                    $error['more_info'] = 'http://localhost/docs/error/1010';
+                    return response()->json($error, $error['status']);
+                    // $this->output->set_status_header('400');
+                    // $this->output->set_output(json_encode($error));
+                    return;
+                }
+            }
+
+            $idEvento = EP::obtenerEvento(
+                $jsonData['idCategoria'],
+                $jsonData['idUn'],
+                $jsonData['participantes'],
+                $jsonData['clases'],
+                $demo
+            );
+            if ($idEvento > 0) {
+                $totalSesiones = $jsonData['clases']*$cantidad;
+                $importe = $jsonData['importe'];
+                if ($demo==1) {
+                    $totalSesiones = 1;
+                    $importe = 0.00;
+                    $cantidad = 1;
+                    $jsonData['participantes'] = 1;
+                }
+                $idIncripcion['idIncripcion'] = Evento::inscripcion(
+                    $idEvento, $jsonData['idUn'], $jsonData['idCliente'], $jsonData['idVendedor'],
+                    $importe, 0, $jsonData['idUnicoMembresia'], $cantidad,
+                    $totalSesiones, TIPO_CLIENTEEXTERNO,
+                    1, 0, $jsonData['participantes'], $jsonData['idEntrenador']
+                );
+
+                $generales = Evento::datosGenerales($idEvento, $jsonData['idUn']);
+                $cuenta = Evento::ctaContable($idEvento, $jsonData['idUn']);
+                $cuentaProducto = Evento::ctaProducto($idEvento, $jsonData['idUn']);
+
+                $tipoCliente = ROL_CLIENTE_NINGUNO;
+
+                $idUnicoMembresia = 0;
+                $idSocio = Socio::obtenIdSocio($jsonData['idCliente']);
+
+
+                if ($idSocio>0) {
+                    $idUnicoMembresia = Socio::obtenUnicoMembresia($idSocio);
+                    $tipoCliente = ROL_CLIENTE_SOCIO;
+                }
+
+                $esquemaPago = TIPO_ESQUEMA_PAGO_EVENTO_PAQUETE;
+                if ($generales['tipoEvento']== TIPO_EVENTO_PROGRAMA) {
+                    $esquemaPago = ESQUEMA_PAGO_CONTADO;
+                }
+
+                $p = Producto::precio(
+                    $generales['idProducto'],
+                    $jsonData['idUn'],
+                    $tipoCliente,
+                    $esquemaPago
+                );
+
+                if ($p['numCuentaProducto'] != '') {
+                    $cuentaProducto = $p['numCuentaProducto'];
+                }
+
+                if ($p['monto'] == 0.00) {
+                    $error['status'] = 400;
+                    $error['message'] = 'Error no se enconntro el precio del producto';
+                    $error['code'] = '1010';
+                    $error['more_info'] = 'http://localhost/docs/error/1010';
+                    return response()->json($error, $error['status']);
+                    return;
+                }
+
+                $desc_extra = '';
+                if ($jsonData['tipo']=='Socio') {
+                    if ($jsonData['importe']==$p['monto']) {
+                        if ($idUnicoMembresia>0) {
+                            $dias = Membresia::diasRegistro($idUnicoMembresia);
+                            $anualidad = Anualidad::anualidadPagada($idUnicoMembresia, '2018');
+                            $notUn = [85,88,76];
+                            if ($dias>=0 && $dias<=7 && !in_array($jsonData['idUn'], $notUn)) {
+                                $especial = Evento::precioPrimerSemana($generales['idProducto'], $jsonData['idUn']);
+                                if ($especial>0) {
+                                    $p['monto'] = $especial;
+                                    $desc_extra = '-1ER_SEMANA';
+                                } else {
+                                    $descuento = Evento::descuentoAnualidad($generales['idProducto'], $jsonData['idUn']);
+                                    if ($descuento>0 && $anualidad==true) {
+                                        $p['monto']  = (int)($p['monto']*((100-$descuento)/100));
+                                        $desc_extra = '-DESC_ANUAL';
+                                    }
+                                }
+                            } else {
+                                $descuento = Evento::descuentoAnualidad($generales['idProducto'], $jsonData['idUn']);
+                                if ($descuento>0 && $anualidad==true) {
+                                    $p['monto'] = (int)($p['monto']*((100-$descuento)/100));
+                                    $desc_extra = '-DESC_ANUAL';
+                                }
+                            }
+                        }
+                    } else if ($jsonData['importe']<$p['monto']) {
+                        $p['monto'] = $jsonData['importe'];
+                    }
+                } else {
+                    $p['monto'] = $jsonData['importe'];
+                }
+
+
+                if ($cantidad>1) {
+                    $p['monto'] = $p['monto']*$cantidad;
+                }
+                $datos['importe'] = $p['monto'];
+                $datos['fecha']     = date('Y-m-d');
+                $datos['tipo']      = MOVIMIENTO_TIPO_EVENTO;
+                $datos['iva']       = 16;
+                $datos['idUn']      = $jsonData['idUn'];
+                $datos['membresia'] = $idUnicoMembresia;
+
+                $datos['producto']       = $generales['idProducto'];
+                $datos['persona']        = $jsonData['idCliente'];
+                $datos['origen']         = 'WS_EVT_INS-'.str_replace(' ','_',strtoupper($jsonData['tipo']).$desc_extra);
+                $datos['numeroCuenta']   = $cuenta;
+                $datos['cuentaProducto'] = $cuentaProducto;
+                $datos['msi']            = $jsonData['formaPago'];
+                $datos['cantidad']                = $cantidad;
+                $datos['cveProductoServicio']     = Producto::cveProducto($generales['idProducto']);
+                $datos['cveUnidad']               = Producto::cveUnidad($generales['idProducto']);
+                $datos['cuentaProducto']          = Producto::ctaProducto($generales['idProducto'], $jsonData['idUn']);
+                $datos['idTipoEstatusMovimiento'] = MOVIMIENTO_PENDIENTE;
+
+                if ($demo==1) {
+                    $datos['importe'] = 0;
+                    $datos['idTipoEstatusMovimiento'] = MOVIMIENTO_EXCEPCION_PAGO;
+                }
+                $descripcionMov = Categoria::campo($jsonData['idCategoria'], 'nombre');
+                
+
+                $nombreClub = Un::nombre($jsonData['idUn']);
+                $datos['descripcion'] = '';
+                if ($generales['tipoEvento']== TIPO_EVENTO_PROGRAMA) {
+                    $datos['descripcion'] = $descripcionMov.' - '.$nombreClub.' (Num. Inscripcion '.$idIncripcion['idIncripcion'].')';
+                } else {
+                    $datos['descripcion'] = $descripcionMov.' '.$jsonData['clases'].' Clase(s) '.
+                        $jsonData['participantes'].' Participante(s) - '.$nombreClub.' (Num. Inscripcion '.$idIncripcion['idIncripcion'].')';
+                }
+
+                if ($demo==1) {
+                    $datos['descripcion'] = 'Demo '.$descripcionMov.' - '.$nombreClub.' (Num. Inscripcion '.$idIncripcion['idIncripcion'].')';
+                }
+                
+                $idMovimiento = Movimiento::inserta($datos);
+                
+                if ($idMovimiento>0) {
+                    Evento::inscripcionMovimiento($idIncripcion['idIncripcion'], $idMovimiento);
+                    Evento::modificaMonto($idIncripcion['idIncripcion'], $datos['importe']);
+                    //Se valida si el movimiento se va a devengar en 60 20 20
+                    $movDevengado = Evento::movientoDevengado($idMovimiento);
+                    //aplicar Devengado 60 20 20 a Movimiento contable
+                    if (0 != $movDevengado->activo &&  0 != $movDevengado->autorizado) {
+                        $registroContable = Evento::devengarMovimientoContable($idMovimiento);
+                    }
+                    if ($idIncripcion['idIncripcion']>0) {
+                        if ($demo==1) {
+                            $idEmpleado = Empleado::obtenIdEmpleado($jsonData['idEntrenador'], 1);
+                            $fechaClase = explode(' ', $jsonData['fecha']);
+                            Evento::insertaClase(
+                                $idIncripcion['idIncripcion'],
+                                $idEmpleado,
+                                $jsonData['idCliente'],
+                                $fechaClase[0],
+                                $fechaClase[1],
+                                $demo
+                            );
+                        } else {
+                            $comisionar = Evento::generarComisionVenta($idEvento, $jsonData['idUn']);
+
+                            if ($comisionar == true) {
+                                $descripcionTipoEvento = 'VENTA';
+                                $montoComision = 0;
+                                $porcentaje = 0;
+
+                                $idTipoComision = 13;
+                                if ($generales['tipoEvento'] == TIPO_EVENTO_CLASE) {
+                                    $descripcionTipoEvento = 'VENTA DE CLASE PERSONALIZADA DE';
+                                    $idTipoComision = TIPO_COMISION_CLASEPERSONALIZADA;
+                                    $porcentaje = Comision::obtenCapacidad($jsonData['idUn']);
+                                    $porcentaje = ($porcentaje == '') ? 0 : $porcentaje;
+                                    if ($tipoPersona == 8) {#Empleado
+                                        $porcentaje = 0;
+                                    }
+                                } elseif ($generales['tipoEvento'] == TIPO_EVENTO_PROGRAMA) {
+                                    $descripcionTipoEvento = 'VENTA DE PROGRAMA DEPORTIVO DE';
+                                    $idTipoComision = TIPO_COMISION_PROGRAMADEPORTIVO;
+                                    if ($tipoPersona == 9) {#Externo
+                                        $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONEXTERNA);
+                                    } elseif ($tipoPersona == 0) {#Socio
+                                        $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONINTERNA);
+                                    }
+                                } elseif ($generales['tipoEvento'] == TIPO_EVENTO_CURSOVERANO) {
+                                    $idTipoComision = TIPO_COMISION_CURSODEVERANO;
+                                }
+                                $opciones['idTipoEstatusComision']  = TIPO_ESTATUSCOMISION_SINFACTURAR;
+                                $opciones['idUn']                   = $jsonData['idUn'];
+                                $opciones['idTipoComision']         = $idTipoComision;
+                                $opciones['idPersona']              = $jsonData['idEntrenador'];
+                                $opciones['importe']                = $datos['importe'];
+                                $opciones['descripcion']            = $descripcionTipoEvento.' '.strtoupper($datos['descripcion']);
+                                $opciones['montoComision']          = $montoComision;
+                                $opciones['porcentaje']             = $porcentaje;
+                                $opciones['manual']                 = 0;
+                                $opciones['movimiento']             = $idMovimiento;
+                                $idcomision = Comision::guardaComision($opciones);
+                            }
+                        }
+                        return response()->json($idIncripcion, 200);
+                    } else {
+                        $error['status'] = 400;
+                        $error['message'] = 'Error al generar inscripcion al evento';
+                        $error['code'] = '1009';
+                        $error['more_info'] = 'http://localhost/docs/error/1009';
+                        return response()->json($error, $error['status']);
+                    }
+                } else {
+                    $error['status'] = 400;
+                    $error['message'] = 'Error no se genero correctamente el cargo al cliente';
+                    $error['code'] = '1009';
+                    $error['more_info'] = 'http://localhost/docs/error/1009';
+                    return response()->json($error, $error['status']);
+                }
+            } else {
+                $error['status'] = 400;
+                $error['message'] = 'Error al identificar evento';
+                $error['code'] = '1009';
+                $error['more_info'] = 'http://localhost/docs/error/1009';
+                return response()->json($error, $error['status']);
+            }
+        } else {
+            $error['status'] = 400;
+            $error['message'] = 'Datos incompletos para generar inscripcion';
+            $error['code'] = '1009';
+            $error['more_info'] = 'http://localhost/docs/error/1009';
+            $this->output->set_output(json_encode($error));
+        }
+    }
+    
+    public function login(Request $request) {
+        // session_destroy();
+        $email = $request->input('email');
+        $password = $request->input('password');
+        
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $res = EP::login($email, $password);
+            $res_array = array_map(function($x){return (array)$x;},$res);
+            
+            if (isset($res['response'])) {
+                foreach($res['response'] as $k => $v) {
+                    $_SESSION[$k] = $v;
+                }
+            }
+            
+            session_write_close(); //En el modelo guardamos unos datos de sesion...
+            if ($res['status']==200) {
+                return response()->json($res['response'], 200);
+            } else {
+                return response()->json($res, 400);
+            }
+        } else {
+            $error['status'] = 400;
+            $error['message'] = 'Correo invalido';
+            $error['code'] = '1001';
+            $error['more_info'] = 'http://localhost/docs/error/1001';
+            // $this->output->set_status_header('400');
+            // $this->output->set_output(json_encode($error));
+            return response()->json($error, 400);
+        }
+    }
+    
+    /**
+     * [reAgendar description]
+     *
+     * @param  [type] $idEventoFecha [description]
+     * @param  [type] $delay         [description]
+     *
+     * @return [type]                [description]
+     */
+    public function reAgendar($idEventoFecha, $delay)
+    {
+        session_write_close();
+        $delay = $delay * 1000;
+        try {
+            $fechaNueva = EP::getNewEventoFecha($idEventoFecha, $delay);
+            $retval = array(
+                'status' => 'OK',
+                'data' => $fechaNueva,
+                'code' => 200,
+                'message' => 'OK'
+            );
+        } catch (RuntimeException $ex) {
+            $retval = array(
+                'status' => 'Error',
+                'data' => $ex->getMessage(),
+                'code' => 400,
+                'message' => 'Error'
+            );
+        }
+        echo json_encode($retval);
+    }
+    
+    /**
+     * [buscar description]
+     *
+     * @return [type] [description]
+     */
+    public function buscar($value = null)
+    {
+        session_write_close();
+        // $criterio = $this->input->get('value');
+        $criterio = $value;
+        $arr = Persona::listaPersonas($criterio, 10);
+
+        if (count($arr) > 10) {
+            $retval = array(
+                'status' => 'error',
+                'data' => [],
+                'code' => 413,
+                'message' => 'Request Entity Too Large'
+            );
+            return response()->json($retval, $retval['code']);
+            // header(413, true, 413);
+        } else {
+            $a = [];
+            $r = [];
+            foreach ($arr as $row) {
+                $r['idPersona'] = $row['idPersona'];
+                $r['nombre'] = utf8_encode($row['nombre']);
+                $r['paterno'] = utf8_encode($row['paterno']);
+                $r['materno'] = utf8_encode($row['materno']);
+                $r['idMembresia'] = $row['idMembresia'];
+                if ($row['idMembresia'] > 0) {
+                    $r['materno'] = utf8_encode($row['materno']).' ['.$row['clave'].' - '.$row['idMembresia'].']';
+                }
+                $r['clave'] = $row['clave'];
+                $a[] = $r;
+            }
+
+            $retval = array(
+                'status' => 'success',
+                'data' => $a,
+                'code' => 200,
+                'message' => 'OK'
+            );
+            return response()->json($retval, $retval['code']);
+        }
+    }
+    
+    /**
+     * [persona description]
+     * @return [type] [description]
+     */
+    public function persona($idPersona)
+    {
+        session_write_close();
+        
+        $retval = Persona::datosGenerales($idPersona);
+        $retval['nombre'] = mb_strtoupper(utf8_encode($retval['nombre']));
+        $retval['paterno'] = mb_strtoupper(utf8_encode($retval['paterno']));
+        $retval['materno'] = mb_strtoupper(utf8_encode($retval['materno']));
+        $retval['idTipoSexo'] = $retval['sexo'];
+        $retval['tipo'] = $retval['tipoCliente'];
+        $retval['sexo'] = Persona::sexo($idPersona);
+        $retval['fechaNacimiento'] = $retval['fecha'];
+        unset($retval['fecha']);
+        $retval['estadoCivil'] = utf8_encode(Persona::obtenerEstadoCivil($idPersona));
+        $retval['idTipoEstadoCivil'] = $retval['civil'];
+        unset($retval['civil']);
+        $retval['idEstado'] = $retval['estado'];
+        unset($retval['estado']);
+
+        $retval = array(
+            'status' => 'success',
+            'data' => $retval,
+            'code' => 200,
+            'message' => 'OK'
+        );
+        return response()->json($retval, $retval['code']);
+    }
+    
+    /**
+     * [sexo description]
+     * @return [type] [description]
+     */
+    public function sexo()
+    {
+        session_write_close();
+        $query = DB::connection('crm')->table(TBL_TIPOSEXO)
+        ->select('idTipoSexo','descripcion')
+        ->where('activo', '1');
+        
+        $out = [];
+        if ($query->count() > 0) {
+            $out = $query->get()->toArray();
+        }
+        
+        $retval = array(
+            'status' => 'success',
+            'data' => $out,
+            'code' => 200,
+            'message' => 'OK'
+        );
+        return response()->json($retval, $retval['code']);
+    }
 }

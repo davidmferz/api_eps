@@ -106,8 +106,7 @@ class EP extends Model
         }
         return $res;
     }
-
-
+    
     /**
      * [arrayClases description]
      *
@@ -117,52 +116,51 @@ class EP extends Model
      *
      * @return [type]                [description]
      */
-    private function arrayClases($idCategoria, $idUn, $participantes)
+    function arrayClases($idCategoria, $idUn, $participantes)
     {
         $res = array();
-
-        $sql = "SELECT IF(pp.idEsquemaPago=7, 1,  euc4.capacidad) as clases
-            FROM producto p
-            INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-                AND c.idCategoria=$idCategoria
-            INNER JOIN evento e ON e.idProducto=p.idProducto
-               AND e.idEventoClasificacion>0
-               AND e.fechaEliminacion=0
-            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-               AND pu.activo=1 AND pu.fechaEliminacion=0
-               AND pu.idUn=$idUn
-            INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
-                AND pp.activo=1 AND pp.fechaEliminacion=0
-                AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
-            INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-                AND eu.idUn=$idUn AND eu.activo=1 AND eu.fechaEliminacion=0
-                AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
-                AND DATE(NOW()) <= eu.finEvento
-            INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
-                AND euc.idTipoEventoCapacidad=1 AND euc.activo=1 AND euc.autorizado=1
-                AND euc.fechaEliminacion=0 AND euc.capacidad>0
-            INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
-                AND euc2.idTipoEventoCapacidad=7 AND euc2.activo=1 AND euc2.autorizado=1
-                AND euc2.eliminado=0 AND euc2.capacidad=$participantes
-            INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn=eu.idEventoUn
-                AND euc3.idTipoEventoCapacidad=26 AND euc3.activo=1 AND euc3.autorizado=1
-                AND euc3.eliminado=0 AND euc3.capacidad>0
-            INNER JOIN eventouncapacidad euc4 ON euc4.idEventoUn=eu.idEventoUn
-                AND euc4.idTipoEventoCapacidad=6 AND euc4.activo=1 AND euc4.autorizado=1
-                AND euc4.eliminado=0 AND euc4.capacidad>0
-              WHERE p.activo=1 AND p.eliminado=0
-            GROUP BY 1
-            ORDER BY 1";
-        $query = DB::connection('crm')->query($sql);
-
-        if ($query->num_rows>0) {
-            foreach ($query->result() as $fila) {
+        $sql = "
+SELECT IF(pp.idEsquemaPago=7, 1,  euc4.capacidad) as clases
+FROM producto p
+INNER JOIN categoria c ON c.idCategoria=p.idCategoria
+    AND c.idCategoria={$idCategoria}
+INNER JOIN evento e ON e.idProducto=p.idProducto
+   AND e.idEventoClasificacion>0
+   AND e.fechaEliminacion=0
+INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+   AND pu.activo=1 AND pu.fechaEliminacion=0
+   AND pu.idUn={$idUn}
+INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
+    AND pp.activo=1 AND pp.fechaEliminacion=0
+    AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
+INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
+    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.fechaEliminacion=0
+    AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
+    AND DATE(NOW()) <= eu.finEvento
+INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
+    AND euc.idTipoEventoCapacidad=1 AND euc.activo=1 AND euc.autorizado=1
+    AND euc.fechaEliminacion=0 AND euc.capacidad>0
+INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
+    AND euc2.idTipoEventoCapacidad=7 AND euc2.activo=1 AND euc2.autorizado=1
+    AND euc2.eliminado=0 AND euc2.capacidad={$participantes}
+INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn=eu.idEventoUn
+    AND euc3.idTipoEventoCapacidad=26 AND euc3.activo=1 AND euc3.autorizado=1
+    AND euc3.eliminado=0 AND euc3.capacidad>0
+INNER JOIN eventouncapacidad euc4 ON euc4.idEventoUn=eu.idEventoUn
+    AND euc4.idTipoEventoCapacidad=6 AND euc4.activo=1 AND euc4.autorizado=1
+    AND euc4.eliminado=0 AND euc4.capacidad>0
+WHERE p.activo=1 AND p.eliminado=0
+GROUP BY 1
+ORDER BY 1";
+        $query = DB::connection('crm')->select($sql);
+        
+        if (count($query) > 0) {
+            foreach ($query as $fila) {
                 $r['numClases'] = (int) $fila->clases;
                 $r['precios'] = $this->arrayPrecios($idCategoria, $idUn, $participantes, $fila->clases);
                 $res[] = $r;
             }
         }
-
         return $res;
     }
 
@@ -174,69 +172,69 @@ class EP extends Model
      *
      * @return [type]              [description]
      */
-    private function arrayEntrenadores($idCategoria, $idUn)
+    function arrayEntrenadores($idCategoria, $idUn)
     {
         $res = array();
 
-        $sql = "SELECT * FROM (
-                    (SELECT emp.idPersona, CONCAT_WS(' ', per.nombre, per.paterno, per.materno) AS nombre
-            FROM producto p
-            INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-                AND c.idCategoria=$idCategoria
-            INNER JOIN evento e ON e.idProducto=p.idProducto
-                AND e.idEventoClasificacion>0
-                AND e.eliminado=0
-            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-                AND pu.activo=1 AND pu.eliminado=0
-                AND pu.idUn=$idUn
-            INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-                AND eu.idUn=$idUn AND eu.activo=1 AND eu.eliminado=0
-                AND DATE(NOW()) BETWEEN eu.inicioRegistro and eu.finRegistro
-                AND DATE(NOW()) <= eu.finEvento
-            INNER JOIN eventopuestocomision epc ON epc.idEvento=e.idEvento
-                AND epc.activo=1 AND epc.fechaEliminacion='0000-00-00 00:00:00'
-            INNER JOIN empleadopuesto ep ON ep.idPuesto=epc.idPuesto
-                AND ep.idUn=$idUn AND ep.fechaEliminacion='0000-00-00 00:00:00'
-            INNER JOIN empleado emp ON emp.idEmpleado=ep.idEmpleado
-                AND emp.idTipoEstatusEmpleado=196 AND emp.fechaEliminacion='0000-00-00 00:00:00'
-            INNER JOIN persona per ON per.idPersona=emp.idPersona
-            WHERE p.activo=1 AND p.eliminado=0
-            GROUP BY emp.idPersona)
-            UNION
-            (SELECT emp.idPersona, CONCAT_WS(' ', per.nombre, per.paterno, per.materno) AS nombre
-            FROM producto p
-            INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-                AND c.idCategoria=$idCategoria
-            INNER JOIN evento e ON e.idProducto=p.idProducto
-                AND e.idEventoClasificacion>0
-                AND e.eliminado=0
-            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-                AND pu.activo=1 AND pu.eliminado=0
-                AND pu.idUn=$idUn
-            INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-                AND eu.idUn=$idUn AND eu.activo=1 AND eu.eliminado=0
-                AND DATE(NOW()) BETWEEN eu.inicioRegistro and eu.finRegistro
-                AND DATE(NOW()) <= eu.finEvento
-            INNER JOIN eventounpuestoexcepcion eupe ON eupe.idEventoUn=eu.idEventoUn
-                AND eupe.idEmpleado>0 AND eupe.activo=1
-                AND eupe.fechaEliminacion='0000-00-00 00:00:00'
-            INNER JOIN empleado emp ON emp.idEmpleado=eupe.idEmpleado
-                AND emp.idTipoEstatusEmpleado=196
-                AND emp.fechaEliminacion = '0000-00-00 00:00:00'
-            INNER JOIN persona per ON per.idPersona=emp.idPersona
-            GROUP BY emp.idPersona)
-            ) a GROUP BY a.idPersona
-            ORDER  BY nombre";
-        $query = DB::connection('crm')->query($sql);
+        $sql = "
+SELECT * FROM (
+        (SELECT emp.idPersona, CONCAT_WS(' ', per.nombre, per.paterno, per.materno) AS nombre
+FROM producto p
+INNER JOIN categoria c ON c.idCategoria=p.idCategoria
+    AND c.idCategoria={$idCategoria}
+INNER JOIN evento e ON e.idProducto=p.idProducto
+    AND e.idEventoClasificacion>0
+    AND e.eliminado=0
+INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+    AND pu.activo=1 AND pu.eliminado=0
+    AND pu.idUn={$idUn}
+INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
+    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.eliminado=0
+    AND DATE(NOW()) BETWEEN eu.inicioRegistro and eu.finRegistro
+    AND DATE(NOW()) <= eu.finEvento
+INNER JOIN eventopuestocomision epc ON epc.idEvento=e.idEvento
+    AND epc.activo=1 AND epc.fechaEliminacion='0000-00-00 00:00:00'
+INNER JOIN empleadopuesto ep ON ep.idPuesto=epc.idPuesto
+    AND ep.idUn={$idUn} AND ep.fechaEliminacion='0000-00-00 00:00:00'
+INNER JOIN empleado emp ON emp.idEmpleado=ep.idEmpleado
+    AND emp.idTipoEstatusEmpleado=196 AND emp.fechaEliminacion='0000-00-00 00:00:00'
+INNER JOIN persona per ON per.idPersona=emp.idPersona
+WHERE p.activo=1 AND p.eliminado=0
+GROUP BY emp.idPersona)
+UNION
+(SELECT emp.idPersona, CONCAT_WS(' ', per.nombre, per.paterno, per.materno) AS nombre
+FROM producto p
+INNER JOIN categoria c ON c.idCategoria=p.idCategoria
+    AND c.idCategoria={$idCategoria}
+INNER JOIN evento e ON e.idProducto=p.idProducto
+    AND e.idEventoClasificacion>0
+    AND e.eliminado=0
+INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+    AND pu.activo=1 AND pu.eliminado=0
+    AND pu.idUn={$idUn}
+INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
+    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.eliminado=0
+    AND DATE(NOW()) BETWEEN eu.inicioRegistro and eu.finRegistro
+    AND DATE(NOW()) <= eu.finEvento
+INNER JOIN eventounpuestoexcepcion eupe ON eupe.idEventoUn=eu.idEventoUn
+    AND eupe.idEmpleado>0 AND eupe.activo=1
+    AND eupe.fechaEliminacion='0000-00-00 00:00:00'
+INNER JOIN empleado emp ON emp.idEmpleado=eupe.idEmpleado
+    AND emp.idTipoEstatusEmpleado=196
+    AND emp.fechaEliminacion = '0000-00-00 00:00:00'
+INNER JOIN persona per ON per.idPersona=emp.idPersona
+GROUP BY emp.idPersona)
+) a GROUP BY a.idPersona
+ORDER  BY nombre";
+        $query = DB::connection('crm')->select($sql);
 
-        if ($query->num_rows>0) {
-            foreach ($query->result() as $fila) {
+        if (count($query) > 0) {
+            foreach ($query as $fila) {
                 $r['idEntrenador']     = utf8_encode($fila->idPersona);
                 $r['nombreEntrenador'] = utf8_encode($fila->nombre);
                 $res[] = $r;
             }
         }
-
         return $res;
     }
 
@@ -248,52 +246,52 @@ class EP extends Model
      *
      * @return [type]              [description]
      */
-    private function arrayFormaPago($idCategoria, $idUn)
+    function arrayFormaPago($idCategoria, $idUn)
     {
         $res = array();
-
+        
         $sql = "DROP TABLE IF EXISTS  tmp_WSEp_formaPago";
-        DB::connection('crm')->query($sql);
+        $query = DB::connection('crm')->select($sql);
 
-        $sql = "CREATE TEMPORARY TABLE tmp_WSEp_formaPago
-            SELECT pmsi.numeroMeses, CONCAT(pmsi.numeroMeses, ' ', pmsi.descripcion) AS descripcion
-            FROM producto p
-            INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-                AND c.idCategoria=$idCategoria
-            INNER JOIN evento e ON e.idProducto=p.idProducto
-                AND e.idEventoClasificacion>0
-                AND e.fechaEliminacion=0
-            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-                AND pu.activo=1 AND pu.fechaEliminacion=0
-                AND pu.idUn=$idUn
-            INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-                AND eu.idUn=$idUn AND eu.activo=1 AND eu.fechaEliminacion=0
-                AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
-                AND DATE(NOW()) <= eu.finEvento
-            INNER JOIN productomsi pm ON pm.idProducto=p.idProducto
-                AND pu.idUn=pm.idUn AND pm.activo=1
-            INNER JOIN periodomsi pmsi on pmsi.idPeriodoMsi=pm.idPeriodoMsi
-            WHERE p.activo=1
-            AND p.fechaEliminacion=0
-            GROUP BY pmsi.idPeriodoMsi
-            ORDER BY pmsi.orden";
-        DB::connection('crm')->query($sql);
-
+        $sql = "
+CREATE TEMPORARY TABLE tmp_WSEp_formaPago
+SELECT pmsi.numeroMeses, CONCAT(pmsi.numeroMeses, ' ', pmsi.descripcion) AS descripcion
+FROM producto p
+INNER JOIN categoria c ON c.idCategoria=p.idCategoria
+    AND c.idCategoria={$idCategoria}
+INNER JOIN evento e ON e.idProducto=p.idProducto
+    AND e.idEventoClasificacion>0
+    AND e.fechaEliminacion=0
+INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+    AND pu.activo=1 AND pu.fechaEliminacion=0
+    AND pu.idUn={$idUn}
+INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
+    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.fechaEliminacion=0
+    AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
+    AND DATE(NOW()) <= eu.finEvento
+INNER JOIN productomsi pm ON pm.idProducto=p.idProducto
+    AND pu.idUn=pm.idUn AND pm.activo=1
+INNER JOIN periodomsi pmsi on pmsi.idPeriodoMsi=pm.idPeriodoMsi
+WHERE p.activo=1
+AND p.fechaEliminacion=0
+GROUP BY pmsi.idPeriodoMsi
+ORDER BY pmsi.orden";
+        $query = DB::connection('crm')->select($sql);
+        
         $sql = "SELECT numeroMeses, descripcion FROM (
             (SELECT  1 AS numeroMeses, 'Contado' AS descripcion)
             UNION ALL
             (SELECT * FROM tmp_WSEp_formaPago p)
         ) a GROUP BY numeroMeses";
-        $query = DB::connection('crm')->query($sql);
-
-        if ($query->num_rows>0) {
-            foreach ($query->result() as $fila) {
+        $query = DB::connection('crm')->select($sql);
+        
+        if (count($query) > 0) {
+            foreach ($query as $fila) {
                 $r['meses']       = utf8_encode($fila->numeroMeses);
                 $r['descripcion'] = utf8_encode($fila->descripcion);
                 $res[] = $r;
             }
         }
-
         return $res;
     }
 
@@ -305,33 +303,34 @@ class EP extends Model
      *
      * @return [type]              [description]
      */
-    private function arrayParticipantes($idCategoria, $idUn)
+    function arrayParticipantes($idCategoria, $idUn)
     {
         $res = array();
-
-        $sql = "SELECT euc2.capacidad AS participantes
-            FROM producto p
-            INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-                AND c.idCategoria=$idCategoria
-            INNER JOIN evento e ON e.idProducto=p.idProducto
-                AND e.idEventoClasificacion>0
-                AND e.fechaEliminacion=0
-            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-                AND pu.activo=1 AND pu.fechaEliminacion=0
-                AND pu.idUn=$idUn
-            INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-                AND eu.idUn=$idUn AND eu.activo=1 AND eu.fechaEliminacion=0
-                AND DATE(NOW()) BETWEEN eu.inicioRegistro and eu.finRegistro
-                AND DATE(NOW()) <= eu.finEvento
-            INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
-                AND euc2.idTipoEventoCapacidad=7 AND euc2.activo=1 AND euc2.fechaEliminacion=0
-                AND euc2.autorizado=1 AND euc2.capacidad>0
-            WHERE p.activo=1 AND p.fechaEliminacion=0
-            GROUP BY euc2.capacidad
-            ORDER BY euc2.capacidad";
-        $query = DB::connection('crm')->query($sql);
-        if ($query->num_rows>0) {
-            foreach ($query->result() as $fila) {
+        
+        $sql = "
+SELECT euc2.capacidad AS participantes
+FROM producto p
+INNER JOIN categoria c ON c.idCategoria=p.idCategoria
+    AND c.idCategoria={$idCategoria}
+INNER JOIN evento e ON e.idProducto=p.idProducto
+    AND e.idEventoClasificacion>0
+    AND e.fechaEliminacion=0
+INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+    AND pu.activo=1 AND pu.fechaEliminacion=0
+    AND pu.idUn={$idUn}
+INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
+    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.fechaEliminacion=0
+    AND DATE(NOW()) BETWEEN eu.inicioRegistro and eu.finRegistro
+    AND DATE(NOW()) <= eu.finEvento
+INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
+    AND euc2.idTipoEventoCapacidad=7 AND euc2.activo=1 AND euc2.fechaEliminacion=0
+    AND euc2.autorizado=1 AND euc2.capacidad>0
+WHERE p.activo=1 AND p.fechaEliminacion=0
+GROUP BY euc2.capacidad
+ORDER BY euc2.capacidad";
+        $query = DB::connection('crm')->select($sql);
+        if (count($query) > 0) {
+            foreach ($query as $fila) {
                 $r['numParticipantes'] = (int)$fila->participantes;
                 $r['clases'] = $this->arrayClases($idCategoria, $idUn, $fila->participantes);
                 $res[] = $r;
@@ -351,7 +350,7 @@ class EP extends Model
      *
      * @return [type]                [description]
      */
-    private function arrayPrecios($idCategoria, $idUn, $participantes, $clases)
+    function arrayPrecios($idCategoria, $idUn, $participantes, $clases)
     {
         settype($idCategoria, 'integer');
         settype($idUn, 'integer');
@@ -361,76 +360,80 @@ class EP extends Model
 
         $res = array();
 
-        $sql = "CREATE TEMPORARY TABLE tmp_pre_ep_precios
-            SELECT tc.descripcion  AS tipoCliente, IF(ep.idEsquemaPago=8, 'Contado', ep.descripcion) AS pago, pp.importe
-            FROM producto p
-            INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-                AND c.idCategoria=$idCategoria
-            INNER JOIN evento e ON e.idProducto=p.idProducto
-               AND e.idEventoClasificacion>0
-               AND e.fechaEliminacion=0
-            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-               AND pu.activo=1 AND pu.fechaEliminacion=0
-               AND pu.idUn=$idUn
-            INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
-                AND pp.activo=1 AND pp.fechaEliminacion=0 AND pp.idEsquemaPago NOT IN (7, 11)
-                AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
-            INNER JOIN tipocliente tc ON tc.idTipoCliente=pp.idTipoCliente
-            INNER JOIN esquemapago ep ON ep.idEsquemaPago=pp.idEsquemaPago
-            INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-                AND eu.idUn=$idUn AND eu.activo=1 AND eu.fechaEliminacion=0
-                AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
-                AND DATE(NOW()) <= eu.finEvento
-            INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
-                AND euc.idTipoEventoCapacidad=1 AND euc.activo=1 AND euc.autorizado=1
-                AND euc.fechaEliminacion=0 AND euc.capacidad>0
-            INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
-                AND euc2.idTipoEventoCapacidad=7 AND euc2.activo=1 AND euc2.autorizado=1
-                AND euc2.eliminado=0 AND euc2.capacidad=$participantes
-            INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn=eu.idEventoUn
-                AND euc3.idTipoEventoCapacidad=26 AND euc3.activo=1 AND euc3.autorizado=1
-                AND euc3.eliminado=0 AND euc3.capacidad>0
-            INNER JOIN eventouncapacidad euc4 ON euc4.idEventoUn=eu.idEventoUn
-                AND euc4.idTipoEventoCapacidad=6 AND euc4.activo=1 AND euc4.autorizado=1
-                AND euc4.eliminado=0
-                AND euc4.capacidad=$clases
-            WHERE p.activo=1 AND p.eliminado=0
-            ORDER BY pp.idTipoCliente, pp.idEsquemaPago, pp.idProductoPrecio DESC";
-        DB::connection('crm')->query($sql);
+        $sql = "
+CREATE TEMPORARY TABLE tmp_pre_ep_precios
+SELECT tc.descripcion  AS tipoCliente, IF(ep.idEsquemaPago=8, 'Contado', ep.descripcion) AS pago, pp.importe
+FROM producto p
+INNER JOIN categoria c ON c.idCategoria=p.idCategoria
+    AND c.idCategoria={$idCategoria}
+INNER JOIN evento e ON e.idProducto=p.idProducto
+   AND e.idEventoClasificacion>0
+   AND e.fechaEliminacion=0
+INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+   AND pu.activo=1 AND pu.fechaEliminacion=0
+   AND pu.idUn={$idUn}
+INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
+    AND pp.activo=1 AND pp.fechaEliminacion=0 AND pp.idEsquemaPago NOT IN (7, 11)
+    AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
+INNER JOIN tipocliente tc ON tc.idTipoCliente=pp.idTipoCliente
+INNER JOIN esquemapago ep ON ep.idEsquemaPago=pp.idEsquemaPago
+INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
+    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.fechaEliminacion=0
+    AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
+    AND DATE(NOW()) <= eu.finEvento
+INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
+    AND euc.idTipoEventoCapacidad=1 AND euc.activo=1 AND euc.autorizado=1
+    AND euc.fechaEliminacion=0 AND euc.capacidad>0
+INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
+    AND euc2.idTipoEventoCapacidad=7 AND euc2.activo=1 AND euc2.autorizado=1
+    AND euc2.eliminado=0 AND euc2.capacidad={$participantes}
+INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn=eu.idEventoUn
+    AND euc3.idTipoEventoCapacidad=26 AND euc3.activo=1 AND euc3.autorizado=1
+    AND euc3.eliminado=0 AND euc3.capacidad>0
+INNER JOIN eventouncapacidad euc4 ON euc4.idEventoUn=eu.idEventoUn
+    AND euc4.idTipoEventoCapacidad=6 AND euc4.activo=1 AND euc4.autorizado=1
+    AND euc4.eliminado=0
+    AND euc4.capacidad={$clases}
+WHERE p.activo=1 AND p.eliminado=0
+ORDER BY pp.idTipoCliente, pp.idEsquemaPago, pp.idProductoPrecio DESC";
+        $query = DB::connection('crm')->select($sql);
 
-        $sql = "CREATE TEMPORARY TABLE tmp_ep_precios
-            SELECT tipoCliente, pago, importe
-            FROM tmp_pre_ep_precios
-            GROUP BY tipoCliente, pago";
-        DB::connection('crm')->query($sql);
+        $sql = "
+CREATE TEMPORARY TABLE tmp_ep_precios
+SELECT tipoCliente, pago, importe
+FROM tmp_pre_ep_precios
+GROUP BY tipoCliente, pago";
+        $query = DB::connection('crm')->select($sql);
 
-        $sql = "SELECT tipoCliente
-            FROM tmp_ep_precios
-            GROUP BY tipoCliente";
-        $query = DB::connection('crm')->query($sql);
-        if ($query->num_rows>0) {
+        $sql = "
+SELECT tipoCliente
+FROM tmp_ep_precios
+GROUP BY tipoCliente";
+        $query = DB::connection('crm')->select($sql);
+        if (count($query) > 0) {
             $r = array();
-            foreach ($query->result() as $fila) {
-                $sql = "SELECT pago, importe
-                    FROM tmp_ep_precios
-                    WHERE tipoCliente = '".$fila->tipoCliente."'
-                    GROUP BY pago";
-                $query2 = DB::connection('crm')->query($sql);
-                if ($query2->num_rows>0) {
-                    foreach ($query2->result() as $fila2) {
+            foreach ($query as $fila) {
+                $sql = "
+SELECT pago, importe
+FROM tmp_ep_precios
+WHERE tipoCliente = '".$fila->tipoCliente."'
+GROUP BY pago";
+                $query2 = DB::connection('crm')->select($sql);
+                if (count($query2) > 0) {
+                    foreach ($query2 as $fila2) {
                         $r[$fila->tipoCliente][$fila2->pago] = $fila2->importe;
                     }
                 }
                 $res = $r;
             }
         }
-
+        
         $sql = "DROP TABLE tmp_pre_ep_precios";
-        DB::connection('crm')->query($sql);
-
+        DB::connection('crm')->select($sql);
+        
         $sql = "DROP TABLE tmp_ep_precios";
-        DB::connection('crm')->query($sql);
-
+        DB::connection('crm')->select($sql);
+        
         return $res;
     }
 
@@ -442,7 +445,7 @@ class EP extends Model
      *
      * @return [type]               [description]
      */
-    public function clase($idEmpleado, $idUn)
+    public static function clase($idEmpleado, $idUn)
     {
         settype($idEmpleado, 'integer');
         settype($idUn, 'integer');
@@ -480,7 +483,7 @@ class EP extends Model
                 AND e.eliminado=0
             INNER JOIN productoun pu ON pu.idProducto=p.idProducto
                 AND pu.activo=1 AND pu.eliminado=0
-            INNER JOIN eventoun eu ON eu.idEvento=e.idEvento $wUn AND eu.idUn=pu.idUn
+            INNER JOIN eventoun eu ON eu.idEvento=e.idEvento {$wUn} AND eu.idUn=pu.idUn
                 AND eu.activo=1 AND eu.eliminado=0
                 #AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
                 AND DATE(NOW()) <= eu.finEvento
@@ -489,7 +492,7 @@ class EP extends Model
             INNER JOIN persona p_c ON p_c.idPersona=ei.idPersona
             INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
                 AND ef.eliminado=0
-                AND ef.idTipoEstatusEventoFecha<>5 $wEmpleado
+                AND ef.idTipoEstatusEventoFecha<>5 {$wEmpleado}
                 AND ef.fechaEvento>=DATE_SUB(DATE(NOW()), INTERVAL 2 MONTH)
             LEFT JOIN eventofechacomision efc ON efc.idEventoFecha=ef.idEventoFecha
             LEFT JOIN comision co ON co.idComision=efc.idComision
@@ -509,10 +512,11 @@ class EP extends Model
                 AND euc3.capacidad>0
             WHERE p.activo=1 AND p.eliminado=0
             ORDER BY ef.fechaEvento, ef.horaEvento";
-        $query = DB::connection('crm')->query($sql);
+        $query = DB::connection('crm')->select($sql);
 
-        if ($query->num_rows>0) {
-            foreach ($query->result() as $fila) {
+        if (count($query) > 0) {
+            // $query = array_map(function($x){return (array)$x;},$query);
+            foreach ($query as $fila) {
                 $clase['id']               = utf8_encode($fila->id);
                 $clase['title']            = utf8_encode($fila->title);
                 $clase['start']            = utf8_encode($fila->start);
@@ -529,7 +533,7 @@ class EP extends Model
 
         return $res;
     }
-
+    
     /**
      * [general description]
      *
@@ -544,32 +548,33 @@ class EP extends Model
         $res = array();
 
         if ($idUn>1) {
-            $sql = "SELECT c.idCategoria AS idCategoria, c.nombre AS nombreCategoria,
-                    MIN(eu.edadMinima) AS edadMinima, MAX(eu.edadMaxima) AS edadMaxima,
-                    MAX(euc.capacidad) AS inscripciones
-                FROM producto p
-                INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-                INNER JOIN evento e ON e.idProducto=p.idProducto
-                   AND e.idEventoClasificacion>0
-                   AND e.fechaEliminacion=0
-                INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-                   AND pu.activo=1 AND pu.fechaEliminacion=0
-                   AND pu.idUn=$idUn
-                INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-                    AND eu.idUn=$idUn AND eu.activo=1 AND eu.fechaEliminacion=0
-                    AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
-                    AND DATE(NOW()) <= eu.finEvento
-                INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
-                    AND euc.idTipoEventoCapacidad=1 AND euc.activo=1 AND euc.eliminado=0
-                    AND euc.autorizado=1 AND euc.capacidad>0
-                INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn=eu.idEventoUn
-                    AND euc3.idTipoEventoCapacidad=26 AND euc3.activo=1 AND euc3.eliminado=0
-                    AND euc3.autorizado=1 AND euc3.capacidad>0
-                WHERE p.activo=1 AND p.fechaEliminacion=0
-                GROUP BY c.nombre";
-            $query = DB::connection('crm')->query($sql);
-            if ($query->num_rows>0) {
-                foreach ($query->result() as $fila) {
+            $sql = "
+SELECT c.idCategoria AS idCategoria, c.nombre AS nombreCategoria,
+    MIN(eu.edadMinima) AS edadMinima, MAX(eu.edadMaxima) AS edadMaxima,
+    MAX(euc.capacidad) AS inscripciones
+FROM producto p
+INNER JOIN categoria c ON c.idCategoria=p.idCategoria
+INNER JOIN evento e ON e.idProducto=p.idProducto
+   AND e.idEventoClasificacion>0
+   AND e.fechaEliminacion=0
+INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+   AND pu.activo=1 AND pu.fechaEliminacion=0
+   AND pu.idUn = {$idUn}
+INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
+    AND eu.idUn = {$idUn} AND eu.activo=1 AND eu.fechaEliminacion=0
+    AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
+    AND DATE(NOW()) <= eu.finEvento
+INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
+    AND euc.idTipoEventoCapacidad=1 AND euc.activo=1 AND euc.eliminado=0
+    AND euc.autorizado=1 AND euc.capacidad>0
+INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn=eu.idEventoUn
+    AND euc3.idTipoEventoCapacidad=26 AND euc3.activo=1 AND euc3.eliminado=0
+    AND euc3.autorizado=1 AND euc3.capacidad>0
+WHERE p.activo=1 AND p.fechaEliminacion=0
+GROUP BY c.nombre";
+            $query = DB::connection('crm')->select($sql);
+            if (count($query) > 0) {
+                foreach ($query as $fila) {
                     $idCategoria                  = utf8_encode($fila->idCategoria);
                     $categoria['idCategoria']     = utf8_encode($fila->idCategoria);
                     $categoria['nombreCategoria'] = utf8_encode($fila->nombreCategoria);
@@ -580,15 +585,15 @@ class EP extends Model
                     $categoria['entrenadores']    = $this->arrayEntrenadores($idCategoria, $idUn);
                     $categoria['formasPagos']     = $this->arrayFormaPago($idCategoria, $idUn);
                     $categoria['participantes']   = $this->arrayParticipantes($idCategoria, $idUn);
-
+                    
                     $res[] = $categoria;
                 }
             }
         }
-        // print_r($res);exit;
+        
         return $res;
     }
-
+    
     public function getRealIP()
     {
         if (isset($_SERVER["HTTP_CLIENT_IP"])) {
@@ -605,7 +610,7 @@ class EP extends Model
             return $_SERVER["REMOTE_ADDR"];
         }
     }
-
+    
     /**
      * [getNewEventoFecha description]
      *
@@ -614,25 +619,28 @@ class EP extends Model
      *
      * @return [type]                [description]
      */
-    public function getNewEventoFecha($idEventoFecha, $delay)
+    public static function getNewEventoFecha($idEventoFecha, $delay)
     {
-        $query = 'SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvento)) as nvaFecha '.
-            'FROM crm.eventoFecha ef '.
-            'WHERE ef.idEventoFecha = '.$idEventoFecha;
-        $query = 'SELECT o.nvaFecha, \'1\' as posible FROM ('.$query.') o';
-        $query = DB::connection('crm')->query($query);
-        $nvaFecha = $query->result_array()[0];
+        $query = '
+SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvento)) as nvaFecha '.
+'FROM crm.eventoFecha ef '.
+'WHERE ef.idEventoFecha = '.$idEventoFecha;
+        
+        $sql = 'SELECT o.nvaFecha, \'1\' as posible FROM ('.$query.') o';
+        $query = DB::connection('crm')->select($sql);
+        $query = array_map(function($x){return (array)$x;},$query);
+        $nvaFecha = $query[0];
         if($nvaFecha['posible'] == 0)
-            throw new RuntimeException('Imposible mover evento al pasado');
+            throw new \RuntimeException('Imposible mover evento al pasado');
         $query = 'UPDATE crm.eventoFecha '.
             'SET fechaEvento = date(\''.$nvaFecha['nvaFecha'].'\'), horaEvento = time(\''.$nvaFecha['nvaFecha'].'\') '.
             'WHERE idEventoFecha = '.$idEventoFecha;
-        $query = DB::connection('crm')->query($query);
+        $query = DB::connection('crm')->select($sql);
         if($query)
             return $nvaFecha;
-        throw new RuntimeException('Error al actualizar la base de datos.');
+        throw new \RuntimeException('Error al actualizar la base de datos.');
     }
-
+    
     /**
      * ingresaInBody - Insertar en la bd datos de inbody.
      *
@@ -641,25 +649,25 @@ class EP extends Model
     public function ingresaInBody($datosIB)
     {
         if ($datosIB['RCC'] > 1.15)
-            throw new RuntimeException('RCC invalido');
+            throw new \RuntimeException('RCC invalido');
         if ($datosIB['PGC'] > 58)
-            throw new RuntimeException('PGC invalido');
+            throw new \RuntimeException('PGC invalido');
         if ($datosIB['IMC'] > 42.5)
-            throw new RuntimeException('IMC invalido');
+            throw new \RuntimeException('IMC invalido');
         if ($datosIB['peso'] > 200)
-            throw new RuntimeException('peso invalido');
+            throw new \RuntimeException('peso invalido');
         if ($datosIB['MME'] > $datosIB['peso'])
-            throw new RuntimeException('MME invalido');
+            throw new \RuntimeException('MME invalido');
         if ($datosIB['MGC'] > $datosIB['peso'])
-            throw new RuntimeException('MGC invalida');
+            throw new \RuntimeException('MGC invalida');
         if ($datosIB['minerales'] > $datosIB['peso'])
-            throw new RuntimeException('minerales invalidos');
+            throw new \RuntimeException('minerales invalidos');
         if ($datosIB['proteina'] > $datosIB['peso'])
-            throw new RuntimeException('proteina invalida');
+            throw new \RuntimeException('proteina invalida');
         if ($datosIB['ACT'] > $datosIB['peso'])
-            throw new RuntimeException('ACT invalida');
+            throw new \RuntimeException('ACT invalida');
         if ($datosIB['estatura'] > 249.99)
-            throw new RuntimeException('Estatura invalida');
+            throw new \RuntimeException('Estatura invalida');
         $sql = 'INSERT INTO personainbody (idPersona,RCC,PGC,IMC,MME,MCG,minerales,proteina,ACT,fechaRegistro,fechaActualizacion) '.
             'VALUES ('.$datosIB['idPersona'].','.$datosIB['RCC'].','.
                 $datosIB['PGC'].','.$datosIB['IMC'].','.
@@ -669,11 +677,11 @@ class EP extends Model
             ')';
         $sql2 = 'INSERT INTO personaantropometricos (idPersona,estatura,peso) values ('.$datosIB['idPersona'].','.$datosIB['estatura'].','.$datosIB['peso'].')';
         foreach (array($sql,$sql2) as $value) {
-            if (!DB::connection('crm')->query($value))
-                throw new RuntimeException('No se pudo insertar datos en la BD. '.$value);
+            if (!$this->db->query($value))
+                throw new \RuntimeException('No se pudo insertar datos en la BD. '.$value);
         }
     }
-
+    
     /**
      * [login description]
      *
@@ -920,28 +928,28 @@ GROUP BY mes, renovacion
             $joinParticipantes = "INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
                 AND euc2.idTipoEventoCapacidad=7
                 AND euc2.activo=1 AND euc2.eliminado=0
-                AND euc2.autorizado=1 AND euc2.capacidad=$participantes";
+                AND euc2.autorizado=1 AND euc2.capacidad={$participantes}";
             $joinClases = "INNER JOIN eventouncapacidad euc4 ON euc4.idEventoUn=eu.idEventoUn
                 AND euc4.idTipoEventoCapacidad=6
                 AND euc4.activo=1 AND euc4.fechaEliminacion=0
-                AND euc4.autorizado=1 AND euc4.capacidad=$clases";
+                AND euc4.autorizado=1 AND euc4.capacidad={$clases}";
         }
         $cat = ($idCategoria != 109) ? "AND p.nombre LIKE '%2018%'" : "" ;
         $sql = "SELECT * FROM (
                 SELECT e.idEvento, p.nombre
                 FROM producto p
                 INNER JOIN categoria c on c.idCategoria=p.idCategoria
-                    AND c.idCategoria=$idCategoria
+                    AND c.idCategoria={$idCategoria}
                 INNER JOIN evento e on e.idProducto=p.idProducto
                     AND e.idEventoClasificacion>0
                     AND e.fechaEliminacion=0
-                    $cat
+                    {$cat}
                 INNER JOIN productoun pu ON pu.idProducto = p.idProducto
                     AND pu.activo=1
                     AND pu.fechaEliminacion=0
-                    AND pu.idUn=$idUn
+                    AND pu.idUn={$idUn}
                 INNER JOIN eventoun eu ON eu.idEvento = e.idEvento
-                    AND eu.idUn=$idUn AND eu.activo=1
+                    AND eu.idUn={$idUn} AND eu.activo=1
                     AND eu.fechaEliminacion=0
                     AND DATE(NOW()) BETWEEN eu.inicioRegistro
                     AND eu.finRegistro
@@ -952,26 +960,27 @@ GROUP BY mes, renovacion
                     AND euc.eliminado = 0
                     AND euc.autorizado = 1
                     AND euc.capacidad > 0
-                $joinParticipantes
+                    {$joinParticipantes}
                 INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn = eu.idEventoUn
                     AND euc3.idTipoEventoCapacidad = 26
                     AND euc3.activo = 1
                     AND euc3.eliminado = 0
                     AND euc3.autorizado = 1
                     AND euc3.capacidad > 0
-                $joinClases
+                    {$joinClases}
                 WHERE p.activo = 1
                 AND p.fechaEliminacion = 0
-                $cat
+                {$cat}
             ) a
             LIMIT 1";
-        $query = DB::connection('crm')->select($sql)->get();
-
+        $query = DB::connection('crm')->select($sql);
+        
         if (count($query) > 0) {
-            $fila = ($query->toArray())[0];
+            $query = array_map(function($x){return (array)$x;},$query);
+            $fila = $query[0];
             return $fila['idEvento'];
         }
-
+        
         return 0;
     }
 
@@ -1008,7 +1017,7 @@ GROUP BY mes, renovacion
      *
      * @return [type]              [description]
      */
-    public function totalDemos($idCategoria, $idPersona)
+    public static function totalDemos($idCategoria, $idPersona)
     {
         settype($idCategoria, 'integer');
         settype($idPersona, 'integer');
@@ -1016,19 +1025,21 @@ GROUP BY mes, renovacion
         $res = 0;
 
         if ($idCategoria>0 && $idPersona>0) {
-            $sql = "SELECT COUNT(*) AS demos
-                FROM producto p
-                INNER JOIN evento e ON e.idProducto=p.idProducto
-                INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-                INNER JOIN eventoinscripcion ei ON ei.idEventoUn=eu.idEventoUn
-                INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
-                    AND ei.idPersona=$idPersona
-                    AND ef.fechaEliminacion=0
-                    AND ef.idTipoEstatusEventoFecha=".ESTATUS_CLASE_DEMO."
-                WHERE p.idCategoria=$idCategoria";
-            $query = DB::connection('crm')->query($sql);
-            if ($query->num_rows>0) {
-                $fila = $query->row_array();
+            $sql = "
+SELECT COUNT(*) AS demos
+FROM producto p
+INNER JOIN evento e ON e.idProducto=p.idProducto
+INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
+INNER JOIN eventoinscripcion ei ON ei.idEventoUn=eu.idEventoUn
+INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
+    AND ei.idPersona={$idPersona}
+    AND ef.fechaEliminacion=0
+    AND ef.idTipoEstatusEventoFecha=".ESTATUS_CLASE_DEMO."
+WHERE p.idCategoria={$idCategoria}";
+            $query = DB::connection('crm')->select($sql);
+            if (count($query) > 0) {
+                $query = array_map(function($x){return (array)$x;},$query);
+                $fila = $query[0];
                 $res = $fila['demos'];
             }
         }
