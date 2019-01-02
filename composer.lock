@@ -3205,10 +3205,7 @@
             "autoload": {
                 "psr-4": {
                     "BeyondCode\\DumpServer\\": "src"
-                },
-                "files": [
-                    "helpers.php"
-                ]
+                }
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
