@@ -665,7 +665,7 @@ class EPController extends Controller
                 'code' => 200,
                 'message' => 'OK'
             );
-        } catch (RuntimeException $ex) {
+        } catch (\RuntimeException $ex) {
             $retval = array(
                 'status' => 'Error',
                 'data' => $ex->getMessage(),
@@ -778,5 +778,342 @@ class EPController extends Controller
             'message' => 'OK'
         );
         return response()->json($retval, $retval['code']);
+    }
+    
+    /**
+     * [estadocivil description]
+     * @return [type] [description]
+     */
+    public function estadocivil()
+    {
+        session_write_close();
+        $query = DB::connection('crm')->table(TBL_TIPOESTADOCIVIL)
+        ->select('idTipoEstadoCivil','descripcion')
+        ->where('activo', '1');
+        
+        if ($query->count() == 0) {
+            $retval = array(
+                'status' => 'failure',
+                'data' => [],
+                'code' => 200,
+                'message' => 'FAIL'
+            );
+            return response()->json($retval, $retval['code']);
+        }
+        
+        $query = $query->get()->toArray();
+        $retval = [];
+        foreach ($query as $k => $v) {
+            foreach ($v as $k2 => $v2) {
+                $retval[$k][$k2] = utf8_encode($v2);
+            }
+        }
+        $retval = array(
+            'status' => 'success',
+            'data' => $retval,
+            'code' => 200,
+            'message' => 'OK'
+        );
+        return response()->json($retval, $retval['code']);
+    }
+    
+    /**
+     * [estado description]
+     * @return [type] [description]
+     */
+    public function estado()
+    {
+        session_write_close();
+        $query = DB::connection('crm')->table(TBL_ESTADO)->get()->toArray();
+        $retval = [];
+        foreach ($query as $k => $v) {
+            foreach ($v as $k2 => $v2) {
+                $retval[$k][$k2] = utf8_encode($v2);
+            }
+        }
+        $retval = array(
+            'status' => 'success',
+            'data' => $retval,
+            'code' => 200,
+            'message' => 'OK'
+        );
+        return response()->json($retval, $retval['code']);
+    }
+    
+    /**
+     * inbody - Recibe en el GET el idPersona y en el POST los datos del inbody para almacenar.
+     *
+     * @return json
+     */
+    public function inbody($idPersona = null, $cantidad = null)
+    {
+        session_write_close();
+
+        try {
+            $retval = array();
+            if (!is_null($idPersona) && !is_null($cantidad)) {
+                settype($idPersona, 'int');
+                settype($cantidad, 'int');
+                $retval = EP::obtenInBody($idPersona, $cantidad);
+                $code = 200;
+                $message = 'OK';
+            } else {
+                $request = json_decode(trim(file_get_contents('php://input')), true);
+                foreach ($request as $k => $value) {
+                    if (!is_numeric($value))
+                        throw new \RuntimeException('El valor de '.$k.' no es numerico');
+                    if ($k != 'idPersona' && ($value > 999.99 || $value < 0))
+                        throw new \RuntimeException('Valor '.$k.' fuera de rango');
+                }
+                if (!isset($request['idPersona']))
+                    throw new \RuntimeException('El idPersona no definido');
+                settype($request['idPersona'], 'int');
+                if (!is_int($request['idPersona']))
+                    throw new \RuntimeException('El idPersona es invalido');
+                /*
+                 * La estatura va en centimetros
+                 */
+                #$request['estatura'] = $request['estatura']*100;
+                EP::ingresaInBody($request);
+                $code = 201;
+                $message = 'Created';
+            }
+            $retval = array(
+                'status' => 'success',
+                'data' => $retval,
+                'code' => $code,
+                'message' => $message
+            );
+            return response()->json($retval, $retval['code']);
+        } catch (\RuntimeException $ex) {
+            header('Bad Request', true, 400);
+            $retval = array(
+                'status' => 'error',
+                'data' => array(),
+                'code' => 400,
+                'message' => $ex->getMessage()
+            );
+            return response()->json($retval, $retval['code']);
+        }
+    }
+    
+    /**
+     * [datosCliente description]
+     * @return [type] [description]
+     */
+    public function datosCliente()
+    {
+        $ip = EP::getRealIP();
+        return response($ip, 200);
+    }
+    
+    /**
+     * [nuevosClientes description]
+     * @return [type] [description]
+     */
+    public function nuevosClientes()
+    {
+        session_write_close();
+
+        try {
+            $retval = array();
+            $datos = EP::getNuevosClientes($_SESSION['idUn'], mktime(0, 0, 0, date('n'), 1, date('Y')));
+            foreach ($datos as $k => $v)
+                $retval[] = array(
+                    'nombre' => $v['nombre'],
+                    'idMembresia' => $v['idMembresia'],
+                    'idPersona' => $v['idPersona'],
+                    'mail' => explode(',',$v['mail']),
+                    'telefono' => explode(',',$v['telefono'])
+                );
+            $retval = array(
+                'status' => 'success',
+                'data' => $retval,
+                'code' => 200,
+                'message' => 'OK'
+            );
+            return response()->json($retval, $retval['code']);
+        } catch (\RuntimeException $ex) {
+            header('Internal Server Error', true, 500);
+            $retval = array(
+                'status' => 'error',
+                'data' => array(),
+                'code' => 500,
+                'message' => $ex->getMessage()
+            );
+            return response()->json($retval, $retval['code']);
+        }
+    }
+    
+    /**
+     * [comisiones description]
+     * @param  integer $idPersona [description]
+     * @return [type]             [description]
+     */
+    public function comisiones($idPersona = 0)
+    {
+        session_write_close();
+
+        if ($idPersona == 0) $idPersona = $_SESSION['idPersona'];
+        try {
+            $retval = EP::getComisiones($idPersona);
+            
+            foreach ($retval as &$fila) {
+                foreach ($fila as &$value) {
+                    $value = utf8_encode($value);
+                }
+            }
+            
+            $retval = array(
+                'status' => 'success',
+                'data' => $retval,
+                'code' => 200,
+                'message' => 'OK'
+            );
+            return response()->json($retval, $retval['code']);
+        } catch (RuntimeException $ex) {
+            header('Internal Server Error', true, 500);
+            $retval = array(
+                'status' => 'error',
+                'data' => array(),
+                'code' => 500,
+                'message' => $ex->getMessage()
+            );
+            return response()->json($retval, $retval['code']);
+        }
+    }
+    
+    public function logout()
+    {
+        session_destroy();
+        
+        $retval = array(
+            'status' => 'success',
+            'data' => [],
+            'code' => 200,
+            'message' => 'Se destruyó la sesión'
+        );
+        return response()->json($retval, $retval['code']);
+    }
+    
+    public function perfil($idPersona)
+    {
+        /*
+         * El idPerson viene en el GET y (en el caso que venga) el perfil nuevo en el POST
+         * La columna perfil_ep de la tabla empleado...fyi
+         */
+        try {
+            if(is_null($idPersona))
+                throw new \RuntimeException('idPersona inválido');
+            $retval = json_decode(trim(file_get_contents('php://input')), true);
+            $code = 200;
+            $message = 'OK';
+            if (!is_null($retval)) {
+                if(!isset($retval['perfil']))
+                    throw new \RuntimeException('El perfil debe ser entre 1 y 512 caracteres');
+                settype($retval['perfil'], 'string');
+                if(strlen($retval['perfil']) > 512)
+                    throw new \RuntimeException('El perfil debe ser menor que 513 caracteres');
+                if(strlen($retval['perfil']) < 1)
+                    throw new \RuntimeException('El perfil debe ser mayor que 0 caracteres');
+                $code = 201;
+                $message = 'Created';
+            } else {
+                $retval = array(
+                    'perfil' => null
+                );
+            }
+            $retval = array(
+                'status' => 'success',
+                'data' => EP::perfil($idPersona,$retval['perfil']),
+                'code' => $code,
+                'message' => $message
+            );
+            return response()->json($retval, $retval['code']);
+        } catch (\RuntimeException $ex) {
+            header('Bad Request', true, 400);
+            $retval = array(
+                'status' => 'error',
+                'data' => array(),
+                'code' => 400,
+                'message' => $ex->getMessage()
+            );
+            return response()->json($retval, $retval['code']);
+        }
+    }
+    
+    /**
+     * calificacion - Obtener/poner la calificación de un EP
+     * @return HTTP status
+     *
+     */
+    public function calificacion($idEventoInscripcion = null)
+    {
+        try {
+            $retval = array();
+            if (!is_null($idEventoInscripcion)) {
+                settype($idEventoInscripcion, 'int');
+                $retval = is_null(EP::obtenCalificacion($idEventoInscripcion)) ? 0 : 1;
+                $code = 200;
+                $message = 'OK';
+            } else {
+                $request = json_decode(trim(file_get_contents('php://input')), true);
+                settype($request['token'], 'int');
+                settype($request['calificacion'], 'int');
+                if (!is_int($request['token'])) {
+                    throw new \RuntimeException('El idEventoInscripcion es invalido');
+                }
+                EP::ingresaCalificacion($request);
+                $code = 201;
+                $message = 'Created';
+            }
+            $retval = array(
+                'status' => 'success',
+                'data' => $retval,
+                'code' => $code,
+                'message' => $message
+            );
+            return response()->json($retval, $retval['code']);
+        } catch (\RuntimeException $ex) {
+            header('Bad Request', true, 400);
+            $retval = array(
+                'status' => 'error',
+                'data' => array(),
+                'code' => 400,
+                'message' => $ex->getMessage()
+            );
+            return response()->json($retval, $retval['code']);
+        }
+    }
+    
+    /**
+        * [obtiene idPersona, nombre completo, idPuesto y descripcion del puesto de los Entrenadores]
+        *
+        * @param  [int] $idUn         [id de club]
+        *
+        * @return [JSON] $retval      [arreglo con entrenadores pertenecientes al club]
+        */
+    public function getEntrenadores($idUn)
+    {
+        session_write_close();
+        $datos  = EP::obtenEntrenadores($idUn);
+        $retval = [];
+        if (is_array($datos)) {
+            $retval = array(
+                'status'  => 'OK',
+                'data'    => $datos,
+                'code'    => 200,
+                'message' => 'OK'
+            );
+            return response()->json($retval, $retval['code']);
+        } else {
+            $retval = array(
+                'status'  => 'Error',
+                'data'    => 'No se encontraron datos',
+                'code'    => 400,
+                'message' => 'Error'
+            );
+            return response()->json($retval, $retval['code']);
+        }
     }
 }

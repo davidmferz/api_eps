@@ -594,7 +594,7 @@ GROUP BY c.nombre";
         return $res;
     }
     
-    public function getRealIP()
+    public static function getRealIP()
     {
         if (isset($_SERVER["HTTP_CLIENT_IP"])) {
             return $_SERVER["HTTP_CLIENT_IP"];
@@ -646,7 +646,7 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
      *
      * @return void
      */
-    public function ingresaInBody($datosIB)
+    public static function ingresaInBody($datosIB)
     {
         if ($datosIB['RCC'] > 1.15)
             throw new \RuntimeException('RCC invalido');
@@ -668,6 +668,7 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
             throw new \RuntimeException('ACT invalida');
         if ($datosIB['estatura'] > 249.99)
             throw new \RuntimeException('Estatura invalida');
+        
         $sql = 'INSERT INTO personainbody (idPersona,RCC,PGC,IMC,MME,MCG,minerales,proteina,ACT,fechaRegistro,fechaActualizacion) '.
             'VALUES ('.$datosIB['idPersona'].','.$datosIB['RCC'].','.
                 $datosIB['PGC'].','.$datosIB['IMC'].','.
@@ -676,9 +677,12 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
                 $datosIB['ACT'].',now(),now()'.
             ')';
         $sql2 = 'INSERT INTO personaantropometricos (idPersona,estatura,peso) values ('.$datosIB['idPersona'].','.$datosIB['estatura'].','.$datosIB['peso'].')';
-        foreach (array($sql,$sql2) as $value) {
-            if (!$this->db->query($value))
-                throw new \RuntimeException('No se pudo insertar datos en la BD. '.$value);
+        foreach (array($sql,$sql2) as $value_sql) {
+            $conn = DB::connection('crm');
+            $conn->select($value_sql);
+            $lastInsertId = $conn->getPdo()->lastInsertId();
+            if (!$lastInsertId)
+                throw new \RuntimeException('No se pudo insertar datos en la BD. '.$value_sql);
         }
     }
     
@@ -988,25 +992,34 @@ GROUP BY mes, renovacion
      * obtenInBody - Obtener desde la bd datos de inbody.
      *
      * @return array
-     * @throws RuntimeException
+     * @throws \RuntimeException
      */
-    public function obtenInBody($idPersona, $cantidad)
+    public static function obtenInBody($idPersona, $cantidad)
     {
         if (!is_int($idPersona))
-            throw new RuntimeException('idPersona invalida');
+            throw new \RuntimeException('idPersona invalida');
         if (!is_int($cantidad))
-            throw new RuntimeException('Cantidad invalida');
-        $sql = DB::connection('crm')->select('pa.estatura, pa.peso, '.
-            'pi.RCC, pi.PGC, pi.IMC, pi.MME, pi.MCG, pi.ACT, pi.minerales, pi.proteina, date(pi.fechaRegistro) as fecha', false)
-            ->from('crm.personainbody pi')
-            ->join('crm.personaantropometricos pa', 'date(pi.fechaRegistro) = date(pa.fechaRegistro) and pi.idPersona=pa.idPersona')
+            throw new \RuntimeException('Cantidad invalida');
+        $query = DB::connection('crm')->table('crm.personainbody as pi')
+            ->select('pa.estatura','pa.peso',
+            'pi.RCC','pi.PGC','pi.IMC','pi.MME','pi.MCG','pi.ACT','pi.minerales','pi.proteina','pi.fechaRegistro as fecha')
+            ->join('crm.personaantropometricos as pa', function ($join) {
+                $join->on('pi.fechaRegistro','=','pa.fechaRegistro')
+                ->on('pi.idPersona', 'pa.idPersona');
+            })
             ->where('pa.idPersona', $idPersona)
             ->where('pi.fechaEliminacion', '0000-00-00 00:00:00')
             ->where('pa.fechaEliminacion', '0000-00-00 00:00:00')
-            ->order_by('fecha', 'desc')
-            ->limit($cantidad)
-            ->get()->result_array();
-        return $sql;
+            ->orderBy('fecha','desc')
+            ->limit($cantidad);
+            
+        if ($query->count() == 0) {
+            return [];
+        }
+        
+        $query = $query->get()->toArray();
+        $query = array_map(function($x){return (array)$x;},$query);
+        return $query;
     }
 
     /**
@@ -1119,55 +1132,84 @@ WHERE p.idCategoria={$idCategoria}";
         return $retval;
     }
 
-    public function getNuevosClientes($idUn, $fecha)
+    public static function getNuevosClientes($idUn, $fecha)
     {
         if (!is_int($idUn) && !is_numeric($idUn))
-            throw new RuntimeException('El valor de idUn no es valido. ('.$idUn.')');
+            throw new \RuntimeException('El valor de idUn no es valido. ('.$idUn.')');
         if (!is_int($fecha) && !is_numeric($fecha))
             $fecha = strtotime($fecha); // En caso que nos manden una fecha que NO venga en modo unix_timestamp
         if (!$fecha)
-            throw new RuntimeException('El valor de fecha es inválido');
-        $iq = DB::connection('crm')
-            ->select(implode(',',array(
-                'p.idPersona',
-                'concat_ws(\' \',p.nombre,p.paterno,p.materno) as nombre',
-                'm.idMembresia',
-                'group_concat(distinct em.mail) as mail',
-                'group_concat(distinct if(length(t.telefono) = 10,t.telefono,concat(t.lada,t.telefono))) as telefonos',
-                'min(s.fechaRegistro) as inscripcion'
-            )), false)
-            ->from(TBL_PERSONA.' p')
-            ->join(TBL_SOCIO.' s', 'p.idPersona = s.idPersona')
-            ->join(TBL_MEMBRESIA.' m', 's.idUnicoMembresia = m.idUnicoMembresia')
-            ->join(TBL_MAIL.' em', 'em.idPersona = p.idPersona and em.eliminado = false')
-            ->join(TBL_TELEFONO.' t', 't.idPersona = p.idPersona and t.fechaEliminacion = 0')
-            ->where('m.idUn', $idUn)
-            ->group_by('p.idPersona')
-            ->order_by('inscripcion asc')
-            ->_compile_select();
-        DB::connection('crm')->_reset_select();
+            throw new \RuntimeException('El valor de fecha es inválido');
+        
+        $fecha = date('Y-m-d', $fecha);
+        $retval = [];
+        
+        // $iq = DB::connection('crm')->table(TBL_PERSONA.' as p')
+            // ->select(
+// 'p.idPersona',
+// DB::connection('crm')->raw('concat_ws(\' \',p.nombre,p.paterno,p.materno) as nombre'),
+// 'm.idMembresia',
+// DB::connection('crm')->raw('group_concat(distinct em.mail) as mail'),
+// DB::connection('crm')->raw('group_concat(distinct if(length(t.telefono) = 10, t.telefono, concat(t.lada,t.telefono))) as telefonos'),
+// DB::connection('crm')->raw('min(s.fechaRegistro) as inscripcion')
+            // )
+            // ->join(TBL_SOCIO.' as s', 'p.idPersona','s.idPersona')
+            // ->join(TBL_MEMBRESIA.' as m', 's.idUnicoMembresia','m.idUnicoMembresia')
+            // ->join(TBL_MAIL.' as em', function($join) {
+                // $join->on('em.idPersona','p.idPersona')
+                // ->where('em.eliminado',false);
+            // })
+            // ->join(TBL_TELEFONO.' as t', function($join) {
+                // $join->on('t.idPersona','p.idPersona')
+                // ->where('t.fechaEliminacion',0);
+            // })
+            // ->where('m.idUn', $idUn)
+            // ->groupBy('p.idPersona')
+            // ->orderBy('inscripcion','asc')
+            // ->toSql();
 
-        $retval = DB::connection('crm')->query('SELECT * FROM ('.$iq.') o where o.inscripcion between \''.date('Y-m-d', $fecha).'\' and now()')
-            ->result_array();
-        /*
-         * Recordemos que la base esta en latin1 y JSON ocupa utf8
-         */
-        foreach ($retval as &$ret_actual) {
-            foreach ($ret_actual as &$valor) {
-                $valor = utf8_encode($valor);
+            $sql = "
+SELECT * FROM (
+    SELECT p.idPersona,
+    CONCAT_WS(' ',p.nombre,p.paterno,p.materno) AS nombre,
+    m.idMembresia,
+    GROUP_CONCAT(distinct em.mail) AS mail,
+    GROUP_CONCAT(DISTINCT IF(LENGTH(t.telefono) = 10, t.telefono, CONCAT(t.lada,t.telefono))) AS telefonos,
+    MIN(s.fechaRegistro) AS inscripcion
+    FROM persona AS p
+    INNER JOIN socio AS s ON p.idPersona = s.idPersona
+    INNER JOIN membresia AS m ON s.idUnicoMembresia = m.idUnicoMembresia
+    INNER JOIN mail AS em ON em.idPersona = p.idPersona AND em.eliminado = 0
+    INNER JOIN telefono AS t ON t.idPersona = p.idPersona AND t.fechaEliminacion = 0
+    WHERE m.idUn = {$idUn}
+    GROUP BY p.idPersona
+    ORDER BY inscripcion ASC
+) o
+WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
+            ";
+            $query = DB::connection('crm')->select($sql);
+            
+            if (count($query) > 0) {
+                $retval = array_map(function($x){return (array)$x;},$query);
+                /*
+                 * Recordemos que la base esta en latin1 y JSON ocupa utf8
+                 */
+                foreach ($retval as &$ret_actual) {
+                    foreach ($ret_actual as &$valor) {
+                        $valor = utf8_encode($valor);
+                    }
+                }
             }
-        }
-
         return $retval;
     }
 
-    public function getComisiones($idPersona)
+    public static function getComisiones($idPersona)
     {
         settype($idPersona, 'int');
         if ($idPersona == 0) {
-            throw new RuntimeException('No se pudo obtener el idPersona del empleado.');
+            throw new \RuntimeException('No se pudo obtener el idPersona del empleado.');
         }
-        $query = 'SELECT
+        $sql = 'SELECT
             c.idComision AS Identificador,
             c.idTipoEstatusComision,
             tec.descripcion AS TipoEstatusComision,
@@ -1190,28 +1232,42 @@ WHERE p.idCategoria={$idCategoria}";
         WHERE c.fechaEmision BETWEEN DATE(CONCAT(DATE_FORMAT(NOW(), "%Y-%m"),"-01")) AND LAST_DAY(NOW())
         AND c.idPersona = '.$idPersona.'
         GROUP BY Factura';
-        $sql = DB::connection('crm')->query($query)->result_array();
-        return $sql;
+        $res = DB::connection('crm')->select($sql);
+        
+        if (count($res) == 0) {
+            return [];
+        } else {
+            $res = array_map(function($x){return (array)$x;},$res);
+            return res;
+        }
     }
 
-    public function perfil($idPersona, $perfil = null)
+    public static function perfil($idPersona, $perfil = null)
     {
+        $upd_arr = [
+            'perfil_ep' => $perfil,
+            'idPersona' => $idPersona,
+            'idTipoEstatusEmpleado' => ESTATUS_EMPLEADO_ACTIVO,
+            'fechaEliminacion' => 0
+        ];
+        
         if (!is_null($perfil)) {
-            $update = DB::connection('crm')->update(TBL_EMPLEADO, array('perfil_ep' => $perfil), array(
-                'idPersona' => $idPersona,
-                'idTipoEstatusEmpleado' => ESTATUS_EMPLEADO_ACTIVO,
-                'fechaEliminacion' => 0
-            ));
-            if (DB::connection('crm')->affected_rows() === 0) {
-                throw new RuntimeException('idPersona incorrecto');
+            $update = DB::connection('crm')->table(TBL_EMPLEADO)->update($upd_arr);
+            if (!$update) {
+                throw new \RuntimeException('idPersona incorrecto');
             }
         }
-        return DB::connection('crm')->select('idEmpleado,idPersona,perfil_ep')
-            ->from(TBL_EMPLEADO)
+        $res = DB::connection('crm')->table(TBL_EMPLEADO)
+            ->select('idEmpleado','idPersona','perfil_ep')
             ->where('idPersona', $idPersona)
             ->where('idTipoEstatusEmpleado', ESTATUS_EMPLEADO_ACTIVO)
-            ->where('fechaEliminacion', 0)
-            ->get()->result()[0];
+            ->where('fechaEliminacion', 0);
+        if ($res->count() == 0) {
+            $res = [];
+        } else {
+            $res = $res->get()->toArray();
+        }
+        return $res;
     }
 
     /**
@@ -1220,14 +1276,19 @@ WHERE p.idCategoria={$idCategoria}";
      * @param  [int] $idEventoInscripcion
      * @return [int] calificacion
      */
-    public function obtenCalificacion($idEventoInscripcion)
+    public static function obtenCalificacion($idEventoInscripcion)
     {
         settype($idEventoInscripcion, 'integer');
-        $retval = DB::connection('crm')->select('calificacion')
-            ->from(TBL_EVENTOINSCRIPCION)
-            ->where('idEventoInscripcion', $idEventoInscripcion)
-            ->get()->row();
-        return $retval->calificacion;
+        $query = DB::connection('crm')->table(TBL_EVENTOINSCRIPCION)
+            ->select('calificacion')
+            ->where('idEventoInscripcion', $idEventoInscripcion);
+            
+        if ($query->count() == 0) {
+            return 0;
+        } else {
+            $res = ($query->get()->toArray())[0];
+            return $res->calificacion;
+        }
     }
 
     /**
@@ -1237,24 +1298,27 @@ WHERE p.idCategoria={$idCategoria}";
      * @param  [int] $calificacion
      * @return [bool]
      */
-    public function ingresaCalificacion($data)
+    public static function ingresaCalificacion($data)
     {
-        $resultCalificacion = DB::connection('crm')->select('*')
-        ->from('eventocalificacion')
+        $resultCalificacion = DB::connection('crm')
+        ->table('eventocalificacion')
+        ->select('*')
         ->where('idEventoInscripcion', $data["token"])
-        ->get()
-        ->row();
-        $resultInscripcion = DB::connection('crm')->select('*')
-        ->from('eventoinscripcion')
+        ->get();
+        
+        $resultInscripcion = DB::connection('crm')
+        ->table('eventoinscripcion')
+        ->select('*')
         ->where('idEventoInscripcion', $data["token"])
-        ->get()
-        ->row();
+        ->get();
+        
         if (count($resultCalificacion) > 0) {
-            throw new RuntimeException('Ya califiaste la clase');
+            throw new \RuntimeException('Ya califiaste la clase');
         } else {
             if (count($resultInscripcion) != 1) {
-                throw new RuntimeException('Error al Calirifar Clase');
+                throw new \RuntimeException('Error al Calirifar Clase');
             } else {
+                $resultInscripcion = $resultInscripcion[0];
                 $datos = [
                     'idEventoInscripcion' => $data['token'],
                     'idEmpleado'          => intval($resultInscripcion->idEmpleado),
@@ -1267,17 +1331,23 @@ WHERE p.idCategoria={$idCategoria}";
                     'q6'                  => $data['r6'],
                     'fechaRegistro'       => date('Y-m-d H:i:s')
                 ];
-                $inser = DB::connection('crm')->insert(TBL_EVENTOCALIFICACION, $datos);
+                $inser = DB::connection('crm')
+                ->table(TBL_EVENTOCALIFICACION)
+                ->insert($datos);
                 if ($inser == false) {
-                    throw new RuntimeException('Error al Insertar en la Base de Datos');
+                    throw new \RuntimeException('Error al Insertar en la Base de Datos');
                 }
             }
         }
 
         settype($idEventoInscripcion, 'integer');
         settype($calificacion, 'integer');
-        $retval = DB::connection('crm')->where('idEventoInscripcion', $idEventoInscripcion)
-        ->update(TBL_EVENTOINSCRIPCION, array('calificacion' => $calificacion));
+        
+        $retval = DB::connection('crm')
+        ->table(TBL_EVENTOINSCRIPCION)
+        ->where('idEventoInscripcion', $idEventoInscripcion)
+        ->update(array('calificacion' => $calificacion));
+        
         return $retval;
     }
 
@@ -1316,42 +1386,44 @@ WHERE p.idCategoria={$idCategoria}";
      * @param  [int] $idEmpleado
      * @return [double]
      */
-    public function obtenEntrenadores($idUn)
+    public static function obtenEntrenadores($idUn)
     {
         settype($idUn, 'integer');
-            $sql = "SELECT p.idPersona,
-            CONCAT_WS(
-                ' ',
-                p.nombre,
-                p.Paterno,
-                p.Materno
-            ) AS nombre,
-            ep.idPuesto,
-            pu.descripcion,
-            ep.idUn,
-            u.nombre AS club,
-            e.idEmpleado
-            FROM crm.persona p
-            JOIN crm.empleado e ON e.idPersona = p.idPersona
-            JOIN crm.empleadopuesto ep ON ep.idEmpleado = e.idEmpleado
-            JOIN crm.puesto pu ON pu.idPuesto = ep.idPuesto
-            JOIN crm.un u ON u.idUn = ep.idUn
-            JOIN crm.mail m ON m.idPersona = p.idPersona
-            WHERE  ep.idUn = $idUn
-            AND e.idTipoEstatusEmpleado = 196
-            AND ep.fechaEliminacion = 0
-            AND e.fechaEliminacion = 0
-            AND m.fechaEliminacion = 0
-            AND p.fechaEliminacion = 0
-            AND pu.fechaEliminacion = 0
-            AND u.fechaEliminacion = 0
-            AND pu.idPuesto IN (84, 111, 112, 132, 133, 134, 135, 136, 161, 175,  185, 189, 192, 194, 195, 197, 198, 210, 217, 226, 229, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 417, 418, 420, 421, 422, 444, 465, 468, 478, 479, 480, 481, 482, 485, 499, 506, 531, 533, 534, 535, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 598, 599, 600, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625, 626, 627, 628, 629, 630, 631, 632, 633, 634, 635, 636, 637, 638, 639, 640, 641, 642, 643, 644, 645, 646, 647, 648, 649, 650, 651, 652, 653, 654, 655, 656, 657, 658, 659, 660, 661, 662, 663, 664, 665, 666, 667, 750, 751, 752, 753, 754, 755, 770, 774,775, 779, 797, 798, 801, 802, 806, 817, 100014, 100018, 100027, 100029, 100034, 100031, 100034, 100042, 100045, 100056,100051, 100052, 100053, 100055, 100095)
-            GROUP BY p.idPersona";
+        
+        $sql = "
+SELECT p.idPersona,
+CONCAT_WS(
+    ' ',
+    p.nombre,
+    p.Paterno,
+    p.Materno
+) AS nombre,
+ep.idPuesto,
+pu.descripcion,
+ep.idUn,
+u.nombre AS club,
+e.idEmpleado
+FROM crm.persona p
+JOIN crm.empleado e ON e.idPersona = p.idPersona
+JOIN crm.empleadopuesto ep ON ep.idEmpleado = e.idEmpleado
+JOIN crm.puesto pu ON pu.idPuesto = ep.idPuesto
+JOIN crm.un u ON u.idUn = ep.idUn
+JOIN crm.mail m ON m.idPersona = p.idPersona
+WHERE  ep.idUn = {$idUn}
+AND e.idTipoEstatusEmpleado = 196
+AND ep.fechaEliminacion = 0
+AND e.fechaEliminacion = 0
+AND m.fechaEliminacion = 0
+AND p.fechaEliminacion = 0
+AND pu.fechaEliminacion = 0
+AND u.fechaEliminacion = 0
+AND pu.idPuesto IN (84, 111, 112, 132, 133, 134, 135, 136, 161, 175,  185, 189, 192, 194, 195, 197, 198, 210, 217, 226, 229, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 417, 418, 420, 421, 422, 444, 465, 468, 478, 479, 480, 481, 482, 485, 499, 506, 531, 533, 534, 535, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 598, 599, 600, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625, 626, 627, 628, 629, 630, 631, 632, 633, 634, 635, 636, 637, 638, 639, 640, 641, 642, 643, 644, 645, 646, 647, 648, 649, 650, 651, 652, 653, 654, 655, 656, 657, 658, 659, 660, 661, 662, 663, 664, 665, 666, 667, 750, 751, 752, 753, 754, 755, 770, 774,775, 779, 797, 798, 801, 802, 806, 817, 100014, 100018, 100027, 100029, 100034, 100031, 100034, 100042, 100045, 100056,100051, 100052, 100053, 100055, 100095)
+GROUP BY p.idPersona";
             // AND e.idoperador in (2,7)
-        $query = DB::connection('crm')->query($sql);
-        if ($query->num_rows>0) {
-            foreach ($query->result() as $fila) {
-                $calificacion = $this->obtenCalificacionEmpleado($fila->idEmpleado);
+        $query = DB::connection('crm')->select($sql);
+        if (count($query) > 0) {
+            foreach ($query as $fila) {
+                $calificacion = self::obtenCalificacionEmpleado($fila->idEmpleado);
                 $r['idPersona']    = $fila->idPersona;
                 $r['nombre']       = $fila->nombre;
                 $r['idEmpleado']   = $fila->idEmpleado;
