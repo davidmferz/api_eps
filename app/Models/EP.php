@@ -1425,7 +1425,7 @@ GROUP BY p.idPersona";
             foreach ($query as $fila) {
                 $calificacion = self::obtenCalificacionEmpleado($fila->idEmpleado);
                 $r['idPersona']    = $fila->idPersona;
-                $r['nombre']       = $fila->nombre;
+                $r['nombre']       = utf8_encode($fila->nombre);
                 $r['idEmpleado']   = $fila->idEmpleado;
                 $r['idPuesto']     = $fila->idPuesto;
                 $r['puesto']       = $fila->descripcion;
