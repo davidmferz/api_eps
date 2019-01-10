@@ -138,6 +138,10 @@ class EPController extends Controller
                     'idPuesto' => $_SESSION['idPuesto'],
                     'puestoNombre' => $_SESSION['puestoNombre'],
                     'entrenadores' => $_SESSION['entrenadores'],
+
+                    'NumSeguroSocial' => $_SESSION['NumSeguroSocial'],
+                    'razonSocial' => $_SESSION['razonSocial'],
+
                     'perfil_ep' => $_SESSION['perfil_ep'],
                     'calificacion' => $_SESSION['calificacion'],
                     'version' => Objeto::obtenerObjeto(953)['descripcion'],
@@ -153,8 +157,9 @@ class EPController extends Controller
      * [plantrabajo description]
      * @return [type] [description]
      */
-    public function plantrabajo($idPersona = 0)
+    public function plantrabajo($idPersona =0)
     {
+
         $idPersona = $idPersona === 0 ? $_SESSION['idPersona'] : $idPersona;
         session_write_close();
         try {
@@ -213,7 +218,7 @@ class EPController extends Controller
              * ya sea que hayamos insertado o no
              */
             $result = EP::renovaciones($idPersona);
-            if (count($result) == 0) {
+            if ( $result == 0 || count($result) == 0 ) {
                 $result = [];
             }
             $retval = [
@@ -621,7 +626,6 @@ class EPController extends Controller
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $res = EP::login($email, $password);
             $res_array = array_map(function($x){return (array)$x;},$res);
-            
             if (isset($res['response'])) {
                 foreach($res['response'] as $k => $v) {
                     $_SESSION[$k] = $v;
@@ -643,6 +647,21 @@ class EPController extends Controller
             // $this->output->set_output(json_encode($error));
             return response()->json($error, 400);
         }
+    }
+
+      /**
+     * [general description]
+     *
+     * @param  [type] $idUn [description]
+     *
+     * @return [type]       [description]
+     */
+    public function general($idUn)
+    {
+        header("Content-Type: application/json");
+        session_write_close();
+        $ep=new EP;
+        return response()->json($ep->general($idUn), 200);
     }
     
     /**
@@ -687,8 +706,7 @@ class EPController extends Controller
         // $criterio = $this->input->get('value');
         $criterio = $value;
         $arr = Persona::listaPersonas($criterio, 10);
-
-        if (count($arr) > 10) {
+            if (count($arr) > 10) {
             $retval = array(
                 'status' => 'error',
                 'data' => [],
@@ -986,7 +1004,6 @@ class EPController extends Controller
     public function logout()
     {
         session_destroy();
-        
         $retval = array(
             'status' => 'success',
             'data' => [],

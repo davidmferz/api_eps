@@ -2875,7 +2875,6 @@ GROUP BY p.idPersona";
         settype($edadMinima, 'integer');
         settype($edadMaxima, 'integer');
         $membresia = (int)trim($nombre);
-
         $w_mem = '';
         $tipoJoin = 'LEFT';
         if ($membresia>0) {
@@ -2920,14 +2919,15 @@ GROUP BY p.idPersona";
                 LIMIT {$numeroRegistros} ";
         } else {
             $nom = trim($nombre);
-            $nombre = $this->db->escape(trim($nombre));
+            $nombre = DB::connection('crm')->raw(trim($nombre));
+
             $sql = "CREATE TEMPORARY TABLE tmp_lista_raza
                 SELECT p1.idPersona
                 FROM personalevenshtein l
                 INNER JOIN persona p1 ON p1.idPersona=l.idPersona
                     AND p1.idEmpresaGrupo=1 AND p1.bloqueo=0
                    AND p1.fechaEliminacion='0000-00-00 00:00:00'
-                WHERE MATCH(nombreCompleto) AGAINST ({$nombre} IN BOOLEAN MODE)";
+                WHERE MATCH(nombreCompleto) AGAINST ('{$nombre}' IN BOOLEAN MODE)";
             $query = DB::connection('crm')->select($sql);
             
             $sql = "CREATE INDEX idx_tmp_lista_raza ON tmp_lista_raza (idPersona)";
@@ -2949,6 +2949,8 @@ LEFT JOIN un u ON u.idUn=m.idUn
 WHERE CONCAT_WS(' ', p.nombre, p.paterno, p.materno) LIKE '%$nom%' $w_min $w_max
 ORDER BY 7, p.nombre, p.paterno, p.materno
 LIMIT $numeroRegistros";
+
+
         }
         $query = DB::connection('crm')->select($sql);
 
