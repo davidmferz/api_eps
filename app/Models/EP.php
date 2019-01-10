@@ -541,7 +541,7 @@ GROUP BY pago";
      *
      * @return [type]       [description]
      */
-    public function general($idUn)
+    public  function general($idUn)
     {
         settype($idUn, 'integer');
 
@@ -720,6 +720,7 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
         }
         $sql = "SELECT p.idPersona, CONCAT_WS(' ', p.nombre, p.paterno, p.materno) AS nombre,
             e.idEmpleado, e.idTipoEstatusEmpleado, u.idUn, u.nombre AS unNombre,
+            e.imss as NumSeguroSocial,o.razonSocial,
             pu.idPuesto, pu.descripcion AS puestoNombre, if(pu.idPuesto in (192, 194, 197, 217, 229, 417, 419, 444, 465, 466, 468, 470, 485, 499, 806,74, 75, 76, 82, 92, 100, 177, 410, 441, 447, 486, 509, 510, 567, 780, 100044, 100047),(
                 SELECT GROUP_CONCAT(CONCAT_WS(',',p2.idPersona,CONCAT_WS(' ',p2.nombre,p2.Paterno,p2.Materno), ep2.idPuesto, pu2.descripcion) SEPARATOR '|')
                 FROM crm.persona p2
@@ -738,6 +739,7 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
             INNER JOIN empleadopuesto ep ON ep.idEmpleado=e.idEmpleado
                 AND ep.fechaEliminacion='0000-00-00 00:00:00'
             INNER JOIN un u ON u.idUn=ep.idUn
+            INNER JOIN operador o ON u.idOperador=o.idOperador
             INNER JOIN puesto pu ON pu.idPuesto=ep.idPuesto
             WHERE m.idTipoMail=37
                 AND m.mail = '{$email}'
@@ -832,7 +834,7 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
         $primera = array_search(intval($idPuesto->idPuesto), $pustNat);
         if ($primera !== false && $primera > 0) {
             $segunda = array_search(intval($idPuesto->idPuesto), $pust);
-            if ($sefunda !== false && $segunda > 0) {
+            if ($segunda !== false && $segunda > 0) {
                 $met = 10000;
             } else {
                 $met = 15000;
@@ -881,7 +883,7 @@ AND m.fechaRegistro BETWEEN DATE_SUB(NOW(),INTERVAL 3 MONTH) AND NOW()
 GROUP BY mes, renovacion
         ";
         $query = DB::connection('crm')->select($sql);
-        
+        $query = array_map(function($x){return (array)$x;},$query);
         if (count($query) > 0)
         foreach ($query as $value) {
             $retval[$value['mes']]['meta'] = $value['meta'];
@@ -897,7 +899,6 @@ GROUP BY mes, renovacion
          * Convertir el arreglo a como lo necesitamos
          */
         $retval2 = array();
-        
         if (count($retval) > 0)
         foreach ($retval as $key => $value) {
             $retval2[] = array(
@@ -1117,8 +1118,7 @@ WHERE p.idCategoria={$idCategoria}";
             AND c.fechaEliminacion = 0
             AND ep.fechaVenta IS NULL OR ep.fechaVenta >= '".date('Y-m')."-01'";
         $retval = DB::connection('crm')->select($sql);
-        if ($retval->count() > 0 ) {
-            $retval = $retval->get()->toArray();
+        if (count($retval) > 0 ) {
             
             foreach ($retval as &$ret_actual) {
                 foreach ($ret_actual as &$valor) {
