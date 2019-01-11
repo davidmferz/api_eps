@@ -2334,10 +2334,10 @@ class Un extends Model
         }
         $query = DB::connection('crm')->table(TBL_UN)
         ->select('nombre')
-        ->where('idUn', $club);
-        if ($query->count() > 0) {
-            $fila = ($query->get()->toArray())[0];
-            return $fila['nombre'];
+        ->where('idUn', $club)->get()->toArray();
+        if (count($query) > 0) {
+            $fila = $query[0];
+            return $fila->nombre;
         }
         return null;
     }

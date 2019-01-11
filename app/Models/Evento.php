@@ -1175,7 +1175,7 @@ LIMIT 1";
             ORDER BY euc.idEventoUnCapacidad DESC
             LIMIT 1";
         $query = DB::connection('crm')->select($sql);
-        if (countr($query) > 0) {
+        if (count($query) > 0) {
             $res = $query[0]->capacidad;
         }
         return $res;
@@ -1603,7 +1603,6 @@ LIMIT 1";
             WHERE eu.eliminado=0 AND eu.activo=1
                 AND eu.idEvento=$idEvento AND eu.idUn=$idUn";
         $query = DB::connection('crm')->select($qry);
-
         if (count($query) > 0) {
             $res = true;
         }
@@ -1650,21 +1649,20 @@ LIMIT 1";
      */
     public static function movientoDevengado($idMovimiento){
         $query = DB::connection('crm')->table(TBL_MOVIMIENTO.' `mov`')
-        ->select('eucap.activo AS activo, eucap.autorizado AS autorizado')
-        ->from(TBL_MOVIMIENTO.' `mov`')
-        ->join('crm.movimientoctacontable mcc','mov.idMovimiento = mcc.idMovimiento')
-        ->join('crm.eventomovimiento emov','mov.idMovimiento = emov.idMovimiento')
-        ->join('crm.eventoinscripcion eins','emov.idEventoInscripcion = eins.idEventoInscripcion')
-        ->join('crm.eventoun eun','eun.idEventoUn = eins.idEventoUn')
-        ->join('crm.eventouncapacidad eucap','eun.idEventoUn = eucap.idEventoUn')
-        ->join('crm.tipoeventocapacidad tec','tec.idTipoEventoCapacidad = eucap.idTipoEventoCapacidad')
+        ->select(DB::connection('crm')->raw('eucap.activo AS activo, eucap.autorizado AS autorizado'))
+        ->from(TBL_MOVIMIENTO.' AS mov')
+        ->join('crm.movimientoctacontable AS mcc','mov.idMovimiento', '=', 'mcc.idMovimiento')
+        ->join('crm.eventomovimiento AS emov','mov.idMovimiento' ,'=' ,'emov.idMovimiento')
+        ->join('crm.eventoinscripcion AS eins','emov.idEventoInscripcion' ,'=', 'eins.idEventoInscripcion')
+        ->join('crm.eventoun AS eun','eun.idEventoUn', '=' ,'eins.idEventoUn')
+        ->join('crm.eventouncapacidad AS eucap','eun.idEventoUn' ,'=' ,'eucap.idEventoUn')
+        ->join('crm.tipoeventocapacidad AS tec','tec.idTipoEventoCapacidad', '=', 'eucap.idTipoEventoCapacidad')
         ->where('eucap.idTipoEventoCapacidad', 30)
         ->where('mov.idMovimiento', $idMovimiento)
         ->distinct()
-        ->get();
-        $rs = $query[0];
+        ->first();
         
-        return $rs;
+        return $query;
     }
 
      /**
@@ -2549,7 +2547,8 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         );
         $id = DB::connection('crm')->table(TBL_EVENTOMOVIMIENTO)
         ->insertGetId($reg);
-        Permiso::log('Se vincula evento al movimiento ('.$idMovimiento.')', LOG_EVENTO);
+        $permiso=new Permiso;
+        $permiso->log('Se vincula evento al movimiento ('.$idMovimiento.')', LOG_EVENTO);
         
         return $id;
     }
@@ -2612,8 +2611,8 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
                     'horaEvento'               => $hora
                 );
                 $res = DB::connection('crm')->table(TBL_EVENTOFECHA)->insertGetId($reg);
-                
-                Permiso::log('Se agenda clase para la inscripcion ('.$idEventoInscripcion.')', LOG_EVENTO);
+                $permiso=new Permiso;
+                $permiso->log('Se agenda clase para la inscripcion ('.$idEventoInscripcion.')', LOG_EVENTO);
 
                 $totalClase = $totalClase + 1;
                 $set = array('totalSeguimiento' => $totalClase);

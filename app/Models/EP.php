@@ -939,7 +939,8 @@ GROUP BY mes, renovacion
                 AND euc4.activo=1 AND euc4.fechaEliminacion=0
                 AND euc4.autorizado=1 AND euc4.capacidad={$clases}";
         }
-        $cat = ($idCategoria != 109) ? "AND p.nombre LIKE '%2018%'" : "" ;
+        $year=date("Y");
+        $cat = ($idCategoria != 109) ? "AND p.nombre LIKE '%2019%'" : "" ;
         $sql = "SELECT * FROM (
                 SELECT e.idEvento, p.nombre
                 FROM producto p
@@ -1039,17 +1040,16 @@ GROUP BY mes, renovacion
         $res = 0;
 
         if ($idCategoria>0 && $idPersona>0) {
-            $sql = "
-SELECT COUNT(*) AS demos
-FROM producto p
-INNER JOIN evento e ON e.idProducto=p.idProducto
-INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-INNER JOIN eventoinscripcion ei ON ei.idEventoUn=eu.idEventoUn
-INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
-    AND ei.idPersona={$idPersona}
-    AND ef.fechaEliminacion=0
-    AND ef.idTipoEstatusEventoFecha=".ESTATUS_CLASE_DEMO."
-WHERE p.idCategoria={$idCategoria}";
+            $sql = "SELECT COUNT(*) AS demos
+                    FROM producto p
+                    INNER JOIN evento e ON e.idProducto=p.idProducto
+                    INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
+                    INNER JOIN eventoinscripcion ei ON ei.idEventoUn=eu.idEventoUn
+                    INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
+                        AND ei.idPersona={$idPersona}
+                        AND ef.fechaEliminacion=0
+                        AND ef.idTipoEstatusEventoFecha=".ESTATUS_CLASE_DEMO."
+                    WHERE p.idCategoria={$idCategoria}";
             $query = DB::connection('crm')->select($sql);
             if (count($query) > 0) {
                 $query = array_map(function($x){return (array)$x;},$query);
@@ -1057,6 +1057,7 @@ WHERE p.idCategoria={$idCategoria}";
                 $res = $fila['demos'];
             }
         }
+
         return $res;
     }
 
