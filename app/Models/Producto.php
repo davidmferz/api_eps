@@ -3,15 +3,15 @@
 namespace API_EPS\Models;
 
 use Carbon\Carbon;
+use API_EPS\Models\Un;
 use API_EPS\Models\CatRutinas;
+use API_EPS\Models\Tipocliente;
 use API_EPS\Models\MenuActividad;
 use Illuminate\Support\Facades\DB;
+
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use API_EPS\Models\UN;
-use API_EPS\Models\Tipocliente;
 
 class Producto extends Model
 {
@@ -628,13 +628,13 @@ LIMIT 1";
         settype($idProducto, 'integer');
         
         $cve = '';
-        $query = DB::connection('crm')->table(TBL_PRODUCTO|)
+        $query = DB::connection('crm')->table(TBL_PRODUCTO)
         ->select('cveUnidad')
-        ->where('idProducto', $idProducto);
+        ->where('idProducto', $idProducto)->get()->toArray();
         
-        if ($query->count() > 0) {
-            $fila = ($query->get()->toArray())[0];
-            $cve = $fila['cveUnidad'];
+        if (count($query) > 0) {
+            $fila = [0];
+            $cve = $fila->cveUnidad;
         }
         return $cve;
     }
@@ -2979,7 +2979,7 @@ LIMIT 1";
         $datos['query']           = array();
         $fechaVigencia            = ($fechaVigencia == '') ? date('Y-m-d') : $fechaVigencia;
         
-        $query = DB::connection('crm')->table(TBL_PRODUCTOPRECIO. ' pp');
+        $query = DB::connection('crm')->table(TBL_PRODUCTOPRECIO. ' AS  pp');
         if (! $idProducto or ! $idUn) {
             $datos['error']   = 1;
             $datos['mensaje'] = 'Faltan datos para consulta';
@@ -2996,7 +2996,7 @@ LIMIT 1";
         $where = [
             ['pp.eliminado','=',0],
             ['pu.eliminado','=',0],
-            [['pu.activo','=',1],
+            ['pu.activo','=',1],
             ['pu.idProducto','=',$idProducto],
             ['pu.idUn','=',$idUn],
             ['pp.idTipoRolCliente','=',$idTipoRolCliente],
@@ -3008,7 +3008,7 @@ LIMIT 1";
         if ($periodo > 0) {
             $where[] = ['pp.finVigencia','<=',$periodo.'-12-31'];
         } else {
-            $query = $query->where("DATE('".$fechaVigencia."') BETWEEN inicioVigencia AND finVigencia");
+            $query = $query->where(  DB::connection('crm')->raw("DATE('".$fechaVigencia."') BETWEEN inicioVigencia AND finVigencia"));
         }
         if ($validaActivo) {
             $where[] = ['pp.activo','=',1];
@@ -3019,56 +3019,64 @@ LIMIT 1";
         if ($fidelidad!='') {
             $query = $query->where('pp.idTipoFidelidad', $fidelidad);
         }
-        $query = $query->join(TBL_PRODUCTOUN.' pu', 'pu.idProductoUn = pp.idProductoUn AND pu.idProductoGrupo = pp.idProductoGrupo', 'inner');
-        $query = $query->join(TBL_UN.' u', "u.idUn = pu.idUn AND u.fechaEliminacion = '0000-00-00 00:00:00' AND u.activo = 1 ", 'inner');
-        $query = $query->join(TBL_CUENTACONTABLE.' cc', 'pp.idCuentaContable = cc.idCuentaContable', 'inner');
-        $query = $query->join(TBL_CUENTAPRODUCTO.' cp', 'pp.idCuentaProducto = cp.idCuentaProducto', 'inner');
-        $query = $query->selectRaw(
+        $query = $query->join(TBL_PRODUCTOUN.' AS pu',function ($join) {
+         $join->on('pu.idProductoUn', '=', 'pp.idProductoUn')
+                 ->where('pu.idProductoGrupo', '=', 'pp.idProductoGrupo');
+        });
+        $query = $query->join(TBL_UN.' AS u',function ($join) {
+            $join->on('u.idUn', '=', 'pu.idUn')
+                    ->where('u.fechaEliminacion', '=', '0000-00-00 00:00:00')
+                    ->where('u.activo', '=', '1');
+           }); 
+        $query = $query->join(TBL_CUENTACONTABLE.' AS cc', 'pp.idCuentaContable', '=', 'cc.idCuentaContable');
+        $query = $query->join(TBL_CUENTAPRODUCTO.' AS cp', 'pp.idCuentaProducto' ,'=', 'cp.idCuentaProducto');
+        $query = $query->select(
+            DB::connection('crm')->raw(
             "pp.importe, pp.idProductoPrecio AS id, pp.idCuentaContable, CONCAT('(', cc.numCuenta, ') ', cc.descripcion) AS cuenta,
             cc.numCuenta, cp.idCuentaProducto, CONCAT('(', cp.cuentaProducto, ') ', cp.descripcion) AS cuentaProducto, IFNULL(cp.cuentaProducto, '') AS numCuentaProducto, pp.activo"
+            )
         )->orderBy('pp.idProductoPrecio', 'DESC')
-        ->where($where);
-
-        if ($query->num_rows) {
-            $fila                       = $query->row_array();
-            $datos['monto']             = number_format($fila["importe"], 2, '.', '');
-            $datos['id']                = $fila['id'];
-            $datos['idCta']             = $fila['idCuentaContable'];
-            $datos['idCtaProd']         = $fila['idCuentaProducto'];
-            $datos['cuenta']            = $fila['cuenta'];
-            $datos['cuentaProducto']    = $fila['cuentaProducto'];
-            $datos['numCuenta']         = $fila['numCuenta'];
-            $datos['numCuentaProducto'] = $fila['numCuentaProducto'];
-            $datos['activo']            = $fila['activo'];
+        ->where($where)->get()->toArray();
+        if (count($query)) {
+            $fila                       = $query;
+            $datos['monto']             = number_format($fila->importe, 2, '.', '');
+            $datos['id']                = $fila->id;
+            $datos['idCta']             = $fila->idCuentaContable;
+            $datos['idCtaProd']         = $fila->idCuentaProducto;
+            $datos['cuenta']            = $fila->cuenta;
+            $datos['cuentaProducto']    = $fila->cuentaProducto;
+            $datos['numCuenta']         = $fila->numCuenta;
+            $datos['numCuentaProducto'] = $fila->numCuentaProducto;
+            $datos['activo']            = $fila->activo;
         } else {
             if ($usarGeneral) {
                 $idEmpresa = Un::obtenerEmpresa($idUn);
                 $idUnAdmin = Un::obtenUnAdiministracion($idEmpresa);
-
+                $productoModel=new self;
                 if ($idUn != $idUnAdmin) {
-                    $datos = $this->precio($idProducto, $idUnAdmin, $idTipoRolCliente, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
+                    $datos = $productoModel->precio($idProducto, $idUnAdmin, $idTipoRolCliente, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
                 }
                 if (! $datos['id'] && $idTipoCliente) {
                     $CI->load->model('tipocliente_model');
                     $rolBase   = Tipocliente::obtenRolBase($idTipoCliente);
 
                     if (! $datos['id'] and ($rolBase != $idTipoRolCliente)) {
-                        $datos = $this->precio($idProducto, $idUn, $rolBase, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
+                        $datos = $productoModel->precio($idProducto, $idUn, $rolBase, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
                         if (! $datos['id'] and ($idUn != $idUnAdmin)) {
-                            $datos = $this->precio($idProducto, $idUnAdmin, $rolBase, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
+                            $datos = $productoModel->precio($idProducto, $idUnAdmin, $rolBase, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
                         }
                     }
                     if (! $datos['id'] and $idTipoRolClienteBD and ($idTipoRolClienteBD != $idTipoRolCliente) and ($idTipoRolClienteBD != $rolBase)) {
-                        $datos = $this->precio($idProducto, $idUn, $idTipoRolClienteBD, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
+                        $datos = $productoModel->precio($idProducto, $idUn, $idTipoRolClienteBD, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
                         if (! $datos['id'] and ($idUn != $idUnAdmin)) {
-                            $datos = $this->precio($idProducto, $idUnAdmin, $idTipoRolClienteBD, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
+                            $datos = $productoModel->precio($idProducto, $idUnAdmin, $idTipoRolClienteBD, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
                         }
                     }
                 }
                 if (! $datos['id']) {
-                    $datos = $this->precio($idProducto, $idUn, ROL_CLIENTE_NINGUNO, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
+                    $datos = $productoModel->precio($idProducto, $idUn, ROL_CLIENTE_NINGUNO, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
                     if (! $datos['id'] and ($idUn != $idUnAdmin)) {
-                        $datos = $this->precio($idProducto, $idUnAdmin, ROL_CLIENTE_NINGUNO, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
+                        $datos = $productoModel->precio($idProducto, $idUnAdmin, ROL_CLIENTE_NINGUNO, $idEsquemaPago, $fechaVigencia, $idTipoMembresia, $unidades, $idCuentaContable, 0, $idTipoCliente, $idTipoRolClienteBD, $periodo, $validaActivo, $idProductoGrupo, $idCuentaProducto, $fidelidad);
                     }
                 }
             }

@@ -1962,11 +1962,10 @@ class Un extends Model
         ->select('idUn')
         ->where('idEmpresa', $idEmpresa)
         ->where('idTipoUn', 1)
-        ->where('fechaEliminacion', '0000-00-00 00:00:00');
+        ->where('fechaEliminacion', '0000-00-00 00:00:00')->get()->toArray();
         
-        if ($query->count() > 0) {
-            $row = ($query->get()->toArray())[0];
-            $idUn = $row['idUn'];
+        if (count($query) > 0) {
+            $idUn = $query[0]->idUn;
         }
         return $idUn;
     }
@@ -2090,12 +2089,11 @@ class Un extends Model
         }
         $query = DB::connection('crm')->table(TBL_UN)
         ->select('idEmpresa')
-        ->where('idUn', $idUn);
+        ->where('idUn', $idUn)->get()->toArray();
         
-        if ($query->count() > 0) {
-            $query = $query->get()->toArray();
+        if (count($query) > 0) {
             $fila = $query[0];
-            $idEmpresa = $fila['idEmpresa'];
+            $idEmpresa = $fila->idEmpresa;
         }
         return $idEmpresa;
     }

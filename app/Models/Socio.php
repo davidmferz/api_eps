@@ -3268,9 +3268,8 @@ class Socio extends Model
         $query = DB::connection('crm')->table(TBL_SOCIO)
         ->select('idUnicoMembresia')
         ->where('idSocio', $idSocio)
-        ->where('eliminado', 0)
-        if ($query->count() > 0) {
-            $query = $query->get();
+        ->where('eliminado', 0)->get()->toArray();
+        if(count($query) > 0) {
             $idUnicoMembresia = $query[0]->idUnicoMembresia;
         }
         return $idUnicoMembresia;

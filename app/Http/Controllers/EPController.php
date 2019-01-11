@@ -405,7 +405,6 @@ class EPController extends Controller
                     $totalSesiones, TIPO_CLIENTEEXTERNO,
                     1, 0, $jsonData['participantes'], $jsonData['idEntrenador']
                 );
-
                 $generales = Evento::datosGenerales($idEvento, $jsonData['idUn']);
                 $cuenta = Evento::ctaContable($idEvento, $jsonData['idUn']);
                 $cuentaProducto = Evento::ctaProducto($idEvento, $jsonData['idUn']);
@@ -432,7 +431,7 @@ class EPController extends Controller
                     $tipoCliente,
                     $esquemaPago
                 );
-
+                dd($p);
                 if ($p['numCuentaProducto'] != '') {
                     $cuentaProducto = $p['numCuentaProducto'];
                 }
