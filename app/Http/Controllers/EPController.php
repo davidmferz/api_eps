@@ -2,21 +2,21 @@
 
 namespace API_EPS\Http\Controllers;
 
-use Illuminate\Http\Request;
-use API_EPS\Http\Requests;
-use API_EPS\Models\Anualidad;
-use API_EPS\Models\Categoria;
-use API_EPS\Models\Comision;
-use API_EPS\Models\Empleado;
 use API_EPS\Models\EP;
+use API_EPS\Models\Un;
+use API_EPS\Models\Socio;
+use API_EPS\Http\Requests;
 use API_EPS\Models\Evento;
-use API_EPS\Models\Movimiento;
-use API_EPS\Models\Membresia;
 use API_EPS\Models\Objeto;
 use API_EPS\Models\Persona;
+use API_EPS\Models\Comision;
+use API_EPS\Models\Empleado;
 use API_EPS\Models\Producto;
-use API_EPS\Models\Socio;
-use API_EPS\Models\UN;
+use Illuminate\Http\Request;
+use API_EPS\Models\Anualidad;
+use API_EPS\Models\Categoria;
+use API_EPS\Models\Membresia;
+use API_EPS\Models\Movimiento;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -405,7 +405,6 @@ class EPController extends Controller
                     $totalSesiones, TIPO_CLIENTEEXTERNO,
                     1, 0, $jsonData['participantes'], $jsonData['idEntrenador']
                 );
-
                 $generales = Evento::datosGenerales($idEvento, $jsonData['idUn']);
                 $cuenta = Evento::ctaContable($idEvento, $jsonData['idUn']);
                 $cuentaProducto = Evento::ctaProducto($idEvento, $jsonData['idUn']);
@@ -432,7 +431,6 @@ class EPController extends Controller
                     $tipoCliente,
                     $esquemaPago
                 );
-
                 if ($p['numCuentaProducto'] != '') {
                     $cuentaProducto = $p['numCuentaProducto'];
                 }
@@ -531,8 +529,10 @@ class EPController extends Controller
                     //Se valida si el movimiento se va a devengar en 60 20 20
                     $movDevengado = Evento::movientoDevengado($idMovimiento);
                     //aplicar Devengado 60 20 20 a Movimiento contable
-                    if (0 != $movDevengado->activo &&  0 != $movDevengado->autorizado) {
-                        $registroContable = Evento::devengarMovimientoContable($idMovimiento);
+                    if($movDevengado !== null){
+                        if (0 != $movDevengado->activo &&  0 != $movDevengado->autorizado) {
+                            $registroContable = Evento::devengarMovimientoContable($idMovimiento);
+                        }
                     }
                     if ($idIncripcion['idIncripcion']>0) {
                         if ($demo==1) {
@@ -560,15 +560,14 @@ class EPController extends Controller
                                     $idTipoComision = TIPO_COMISION_CLASEPERSONALIZADA;
                                     $porcentaje = Comision::obtenCapacidad($jsonData['idUn']);
                                     $porcentaje = ($porcentaje == '') ? 0 : $porcentaje;
-                                    if ($tipoPersona == 8) {#Empleado
-                                        $porcentaje = 0;
-                                    }
+                                   
                                 } elseif ($generales['tipoEvento'] == TIPO_EVENTO_PROGRAMA) {
                                     $descripcionTipoEvento = 'VENTA DE PROGRAMA DEPORTIVO DE';
                                     $idTipoComision = TIPO_COMISION_PROGRAMADEPORTIVO;
-                                    if ($tipoPersona == 9) {#Externo
+                                    //$isSocio=Socio::where('fechaEliminacion','=','0000-00-00 00:00:00')->where('idPersona','=',$jsonData['idCliente'])->get()->toArray();
+                                if ($jsonData['tipo'] != 'Socio') {#Externo
                                         $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONEXTERNA);
-                                    } elseif ($tipoPersona == 0) {#Socio
+                                    } else{#Socio
                                         $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONINTERNA);
                                     }
                                 } elseif ($generales['tipoEvento'] == TIPO_EVENTO_CURSOVERANO) {
@@ -942,7 +941,7 @@ class EPController extends Controller
                     'idMembresia' => $v['idMembresia'],
                     'idPersona' => $v['idPersona'],
                     'mail' => explode(',',$v['mail']),
-                    'telefono' => explode(',',$v['telefono'])
+                    'telefono' => explode(',',$v['telefonos'])
                 );
             $retval = array(
                 'status' => 'success',
