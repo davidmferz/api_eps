@@ -1223,7 +1223,7 @@ class Comision extends Model
             $sql .= ' AND e.idTipoEventoCapacidad=8 ';
         }
         
-        $query = $this->db->select($sql);
+        $query = DB::connection('crm')->select($sql);
         if (count($query) > 0) {
             $row = $query[0];
             $data= $row->capacidad;

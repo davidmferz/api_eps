@@ -1118,6 +1118,7 @@ GROUP BY mes, renovacion
             AND p.fechaEliminacion = 0
             AND c.fechaEliminacion = 0
             AND ep.fechaVenta IS NULL OR ep.fechaVenta >= '".date('Y-m')."-01'";
+            dd($sql);
         $retval = DB::connection('crm')->select($sql);
         if (count($retval) > 0 ) {
             

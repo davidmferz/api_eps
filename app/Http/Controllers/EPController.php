@@ -560,16 +560,14 @@ class EPController extends Controller
                                     $idTipoComision = TIPO_COMISION_CLASEPERSONALIZADA;
                                     $porcentaje = Comision::obtenCapacidad($jsonData['idUn']);
                                     $porcentaje = ($porcentaje == '') ? 0 : $porcentaje;
-                                    if ($tipoPersona == 8) {#Empleado
-                                        $porcentaje = 0;
-                                    }
+                                   
                                 } elseif ($generales['tipoEvento'] == TIPO_EVENTO_PROGRAMA) {
                                     $descripcionTipoEvento = 'VENTA DE PROGRAMA DEPORTIVO DE';
                                     $idTipoComision = TIPO_COMISION_PROGRAMADEPORTIVO;
-                                dd($idTipoComision );
-                                if ($tipoPersona == 9) {#Externo
+                                    //$isSocio=Socio::where('fechaEliminacion','=','0000-00-00 00:00:00')->where('idPersona','=',$jsonData['idCliente'])->get()->toArray();
+                                if ($jsonData['tipo'] != 'Socio') {#Externo
                                         $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONEXTERNA);
-                                    } elseif ($tipoPersona == 0) {#Socio
+                                    } else{#Socio
                                         $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONINTERNA);
                                     }
                                 } elseif ($generales['tipoEvento'] == TIPO_EVENTO_CURSOVERANO) {
@@ -943,7 +941,7 @@ class EPController extends Controller
                     'idMembresia' => $v['idMembresia'],
                     'idPersona' => $v['idPersona'],
                     'mail' => explode(',',$v['mail']),
-                    'telefono' => explode(',',$v['telefono'])
+                    'telefono' => explode(',',$v['telefonos'])
                 );
             $retval = array(
                 'status' => 'success',

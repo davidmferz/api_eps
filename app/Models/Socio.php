@@ -14,8 +14,8 @@ class Socio extends Model
 {
     use SoftDeletes;
     protected $connection = 'crm';
-    protected $table = 'crm.objecto';
-    protected $primaryKey = 'idObjeto';
+    protected $table = 'crm.socio';
+    protected $primaryKey = 'idSocio';
 
     const CREATED_AT = 'fechaRegistro';
     const UPDATED_AT = 'fechaActualizacion';
