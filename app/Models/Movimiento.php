@@ -1036,6 +1036,8 @@ class Movimiento extends Model
      */
     public static function inserta($datos)
     {
+        $permiso=new Permiso;
+
         if (isset($datos['fecha'])) {
 
         } else {
@@ -1096,7 +1098,8 @@ class Movimiento extends Model
         } else {
             $datos['numeroCuenta'] = '';
         }
-        if (isset($datos['cuentaProducto'])) {
+        
+        if (isset($datos['cuentaProducto']) && !is_array($datos['cuentaProducto'])) {
             $datos['cuentaProducto'] = trim($datos['cuentaProducto']);
         } else {
             $datos['cuentaProducto'] = '';
@@ -1172,7 +1175,7 @@ class Movimiento extends Model
         if ($total == 0) {
             return (-5);
         }
-        Permiso::log(utf8_decode('Se inserto Movimiento('.$movimiento.') ('.date('Y-m-d').')'), LOG_SISTEMAS, $datos['membresia']);
+        $permiso->log(utf8_decode('Se inserto Movimiento('.$movimiento.') ('.date('Y-m-d').')'), LOG_SISTEMAS, $datos['membresia']);
         $numeroCuenta = trim($datos['numeroCuenta']);
 
         if( !isset($datos['soloMovimiento']) ){
@@ -1238,12 +1241,13 @@ class Movimiento extends Model
                     
                     return (-7);
                 }
-                Permiso::log(utf8_decode('Se inserto Movimiento Cta. Contable('.$movimiento_cta.') con cuenta ('.$numeroCuenta.') y movimiento ('.$movimiento.') ('.date('Y-m-d').')'), LOG_SISTEMAS, $datos['membresia']);
+                $permiso->log(utf8_decode('Se inserto Movimiento Cta. Contable('.$movimiento_cta.') con cuenta ('.$numeroCuenta.') y movimiento ('.$movimiento.') ('.date('Y-m-d').')'), LOG_SISTEMAS, $datos['membresia']);
             }
         }
         
         if ($movimiento > 0) {
-            $this->mttoMontosMenores($movimiento);
+            $movimientoModel=new self;
+            $movimientoModel->mttoMontosMenores($movimiento);
         }
         return $movimiento;
     }
