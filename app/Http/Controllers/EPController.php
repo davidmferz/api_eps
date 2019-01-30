@@ -368,18 +368,20 @@ class EPController extends Controller
             }
         }
         $idEmpleado = Empleado::obtenIdEmpleado($jsonData['idEntrenador'], 1);
-        $fechaClase = explode(' ', $jsonData['fecha']);
-
-        $valida = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
-        if($valida > 0){
-            $error['status']    = 400;
-            $error['message']   = 'La hora ya esta ocupada ';
-            $error['code']      = '1010';
-            $error['more_info'] = 'http://localhost/docs/error/1010';
-            return response()->json($error, $error['status']);
-        }
+       
+        
         if ($fail == 0) {
             if ($demo == 1) {
+                $fechaClase = explode(' ', $jsonData['fecha']);
+
+                $valida = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
+                if($valida > 0){
+                    $error['status']    = 400;
+                    $error['message']   = 'La hora ya esta ocupada ';
+                    $error['code']      = '1010';
+                    $error['more_info'] = 'http://localhost/docs/error/1010';
+                    return response()->json($error, $error['status']);
+                }
                 $totalDemos = EP::totalDemos($jsonData['idCategoria'], $jsonData['idCliente']);
                 if ($totalDemos >= 2) {
                     $error['status']    = 400;
