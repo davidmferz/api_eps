@@ -1239,7 +1239,7 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
             return [];
         } else {
             $res = array_map(function($x){return (array)$x;},$res);
-            return res;
+            return $res;
         }
     }
 
