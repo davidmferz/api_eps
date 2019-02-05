@@ -190,7 +190,7 @@ class EPController extends Controller
                 /*
                  * Obtener precio
                  */
-                $idProducto = $this->evento_model->datosGenerales($idEvento, $this->session->userData('idUn'));
+                $idProducto = Evento::datosGenerales($idEvento, $_SESSION['idUn']);
                 if (!isset($idProducto['idProducto'])) {
                     throw new \RuntimeException('No se pudo encontrar el producto.');
                 } else {
@@ -198,10 +198,10 @@ class EPController extends Controller
                 }
                 $programas = [3219, 3220];
                 $esquema   = in_array($idProducto, $programas) ? 1 : TIPO_ESQUEMA_PAGO_EVENTO_PAQUETE;
-                $p         = $this->producto_model->precio(
+                $p         = Producto::precio(
                     $idProducto,
-                    $this->session->userData('idUn'),
-                    $this->socio_model->obtenIdSocio($request['idPersona']) > 0 ? ROL_CLIENTE_SOCIO : ROL_CLIENTE_NINGUNO,
+                    $_SESSION['idUn'],
+                    $idSocio = Socio::obtenIdSocio($request['idPersona']) > 0 ? ROL_CLIENTE_SOCIO : ROL_CLIENTE_NINGUNO,
                     $esquema
                 );
                 if ($p == 0) {
@@ -368,14 +368,13 @@ class EPController extends Controller
             }
         }
         $idEmpleado = Empleado::obtenIdEmpleado($jsonData['idEntrenador'], 1);
-       
-        
+
         if ($fail == 0) {
             if ($demo == 1) {
                 $fechaClase = explode(' ', $jsonData['fecha']);
 
                 $valida = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
-                if($valida > 0){
+                if ($valida > 0) {
                     $error['status']    = 400;
                     $error['message']   = 'La hora ya esta ocupada ';
                     $error['code']      = '1010';
