@@ -2,29 +2,25 @@
 
 namespace API_EPS\Models;
 
-use Carbon\Carbon;
-use API_EPS\Models\CatRutinas;
-use API_EPS\Models\MenuActividad;
+use API_EPS\Models\Objeto;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use API_EPS\Models\Objeto;
 
 class EP extends Model
 {
 
     use SoftDeletes;
     protected $connection = 'crm';
-    protected $table = 'crm.persona';
+    protected $table      = 'crm.persona';
     protected $primaryKey = 'idPersona';
 
     const CREATED_AT = 'fechaRegistro';
     const UPDATED_AT = 'fechaActualizacion';
     const DELETED_AT = 'fechaEliminacion';
 
-   /**
+    /**
      * [agenda description]
      *
      * @param  [type] $idEntrenador [description]
@@ -42,11 +38,11 @@ class EP extends Model
         }
         $wUn = '';
         if ($idUn > 0) {
-            $wUn = ' AND eu.idUn ='.$idUn;
+            $wUn = ' AND eu.idUn =' . $idUn;
         }
         $wEntrenador = '';
         if ($idEntrenador > 0) {
-            $wEntrenador = ' AND einv.idPersona = '.$idEntrenador;
+            $wEntrenador = ' AND einv.idPersona = ' . $idEntrenador;
         }
         $sql = "SELECT
                 ei.idEventoInscripcion AS idInscripcion,
@@ -88,9 +84,9 @@ class EP extends Model
                 $sql = "SELECT
                     ef.idEventoFecha
                     FROM crm.eventofecha ef
-                    WHERE ef.idEventoInscripcion = ".intval($fila->idInscripcion)."
+                    WHERE ef.idEventoInscripcion = " . intval($fila->idInscripcion) . "
                     AND ef.eliminado = 0";
-                $seguimiento = count(DB::connection('crm')->select($sql));
+                $seguimiento         = count(DB::connection('crm')->select($sql));
                 $sesionesDisponibles = intval($fila->totalSesiones) - intval($seguimiento);
                 if ($sesionesDisponibles > 0) {
                     $agenda['idInscripcion']       = utf8_encode($fila->idInscripcion);
@@ -100,13 +96,13 @@ class EP extends Model
                     $agenda['sesionesDisponibles'] = utf8_encode($sesionesDisponibles);
                     $agenda['idEmpleado']          = utf8_encode($fila->idEmpleado);
                     $agenda['idPersona']           = utf8_encode($fila->idPersona);
-                    $res[] = $agenda;
+                    $res[]                         = $agenda;
                 }
             }
         }
         return $res;
     }
-    
+
     /**
      * [arrayClases description]
      *
@@ -116,7 +112,7 @@ class EP extends Model
      *
      * @return [type]                [description]
      */
-    function arrayClases($idCategoria, $idUn, $participantes)
+    public function arrayClases($idCategoria, $idUn, $participantes)
     {
         $res = array();
         $sql = "
@@ -153,12 +149,12 @@ WHERE p.activo=1 AND p.eliminado=0
 GROUP BY 1
 ORDER BY 1";
         $query = DB::connection('crm')->select($sql);
-        
+
         if (count($query) > 0) {
             foreach ($query as $fila) {
                 $r['numClases'] = (int) $fila->clases;
-                $r['precios'] = $this->arrayPrecios($idCategoria, $idUn, $participantes, $fila->clases);
-                $res[] = $r;
+                $r['precios']   = $this->arrayPrecios($idCategoria, $idUn, $participantes, $fila->clases);
+                $res[]          = $r;
             }
         }
         return $res;
@@ -172,7 +168,7 @@ ORDER BY 1";
      *
      * @return [type]              [description]
      */
-    function arrayEntrenadores($idCategoria, $idUn)
+    public function arrayEntrenadores($idCategoria, $idUn)
     {
         $res = array();
 
@@ -232,7 +228,7 @@ ORDER  BY nombre";
             foreach ($query as $fila) {
                 $r['idEntrenador']     = utf8_encode($fila->idPersona);
                 $r['nombreEntrenador'] = utf8_encode($fila->nombre);
-                $res[] = $r;
+                $res[]                 = $r;
             }
         }
         return $res;
@@ -246,11 +242,11 @@ ORDER  BY nombre";
      *
      * @return [type]              [description]
      */
-    function arrayFormaPago($idCategoria, $idUn)
+    public function arrayFormaPago($idCategoria, $idUn)
     {
         $res = array();
-        
-        $sql = "DROP TABLE IF EXISTS  tmp_WSEp_formaPago";
+
+        $sql   = "DROP TABLE IF EXISTS  tmp_WSEp_formaPago";
         $query = DB::connection('crm')->select($sql);
 
         $sql = "
@@ -277,19 +273,19 @@ AND p.fechaEliminacion=0
 GROUP BY pmsi.idPeriodoMsi
 ORDER BY pmsi.orden";
         $query = DB::connection('crm')->select($sql);
-        
+
         $sql = "SELECT numeroMeses, descripcion FROM (
             (SELECT  1 AS numeroMeses, 'Contado' AS descripcion)
             UNION ALL
             (SELECT * FROM tmp_WSEp_formaPago p)
         ) a GROUP BY numeroMeses";
         $query = DB::connection('crm')->select($sql);
-        
+
         if (count($query) > 0) {
             foreach ($query as $fila) {
                 $r['meses']       = utf8_encode($fila->numeroMeses);
                 $r['descripcion'] = utf8_encode($fila->descripcion);
-                $res[] = $r;
+                $res[]            = $r;
             }
         }
         return $res;
@@ -303,10 +299,10 @@ ORDER BY pmsi.orden";
      *
      * @return [type]              [description]
      */
-    function arrayParticipantes($idCategoria, $idUn)
+    public function arrayParticipantes($idCategoria, $idUn)
     {
         $res = array();
-        
+
         $sql = "
 SELECT euc2.capacidad AS participantes
 FROM producto p
@@ -331,9 +327,9 @@ ORDER BY euc2.capacidad";
         $query = DB::connection('crm')->select($sql);
         if (count($query) > 0) {
             foreach ($query as $fila) {
-                $r['numParticipantes'] = (int)$fila->participantes;
-                $r['clases'] = $this->arrayClases($idCategoria, $idUn, $fila->participantes);
-                $res[] = $r;
+                $r['numParticipantes'] = (int) $fila->participantes;
+                $r['clases']           = $this->arrayClases($idCategoria, $idUn, $fila->participantes);
+                $res[]                 = $r;
             }
         }
 
@@ -350,7 +346,7 @@ ORDER BY euc2.capacidad";
      *
      * @return [type]                [description]
      */
-    function arrayPrecios($idCategoria, $idUn, $participantes, $clases)
+    public function arrayPrecios($idCategoria, $idUn, $participantes, $clases)
     {
         settype($idCategoria, 'integer');
         settype($idUn, 'integer');
@@ -416,7 +412,7 @@ GROUP BY tipoCliente";
                 $sql = "
 SELECT pago, importe
 FROM tmp_ep_precios
-WHERE tipoCliente = '".$fila->tipoCliente."'
+WHERE tipoCliente = '" . $fila->tipoCliente . "'
 GROUP BY pago";
                 $query2 = DB::connection('crm')->select($sql);
                 if (count($query2) > 0) {
@@ -427,13 +423,13 @@ GROUP BY pago";
                 $res = $r;
             }
         }
-        
+
         $sql = "DROP TABLE tmp_pre_ep_precios";
         DB::connection('crm')->select($sql);
-        
+
         $sql = "DROP TABLE tmp_ep_precios";
         DB::connection('crm')->select($sql);
-        
+
         return $res;
     }
 
@@ -452,17 +448,17 @@ GROUP BY pago";
 
         $res = array();
 
-        if ($idEmpleado == 0 && $idUn==0) {
+        if ($idEmpleado == 0 && $idUn == 0) {
             return $res;
         }
 
         $wEmpleado = '';
-        if ($idEmpleado>0) {
-            $wEmpleado = ' AND ef.idEmpleado='.$idEmpleado;
+        if ($idEmpleado > 0) {
+            $wEmpleado = ' AND ef.idEmpleado=' . $idEmpleado;
         }
         $wUn = '';
-        if ($idUn>'0') {
-            $wUn = ' AND eu.idUn='.$idUn;
+        if ($idUn > '0') {
+            $wUn = ' AND eu.idUn=' . $idUn;
         }
 
         $sql = "SELECT ef.idEventoFecha AS id,
@@ -533,7 +529,7 @@ GROUP BY pago";
 
         return $res;
     }
-    
+
     /**
      * [general description]
      *
@@ -541,13 +537,13 @@ GROUP BY pago";
      *
      * @return [type]       [description]
      */
-    public  function general($idUn)
+    public function general($idUn)
     {
         settype($idUn, 'integer');
 
         $res = array();
 
-        if ($idUn>1) {
+        if ($idUn > 1) {
             $sql = "
 SELECT c.idCategoria AS idCategoria, c.nombre AS nombreCategoria,
     MIN(eu.edadMinima) AS edadMinima, MAX(eu.edadMaxima) AS edadMaxima,
@@ -585,15 +581,15 @@ GROUP BY c.nombre";
                     $categoria['entrenadores']    = $this->arrayEntrenadores($idCategoria, $idUn);
                     $categoria['formasPagos']     = $this->arrayFormaPago($idCategoria, $idUn);
                     $categoria['participantes']   = $this->arrayParticipantes($idCategoria, $idUn);
-                    
+
                     $res[] = $categoria;
                 }
             }
         }
-        
+
         return $res;
     }
-    
+
     public static function getRealIP()
     {
         if (isset($_SERVER["HTTP_CLIENT_IP"])) {
@@ -610,7 +606,7 @@ GROUP BY c.nombre";
             return $_SERVER["REMOTE_ADDR"];
         }
     }
-    
+
     /**
      * [getNewEventoFecha description]
      *
@@ -622,25 +618,29 @@ GROUP BY c.nombre";
     public static function getNewEventoFecha($idEventoFecha, $delay)
     {
         $query = '
-SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvento)) as nvaFecha '.
-'FROM crm.eventoFecha ef '.
-'WHERE ef.idEventoFecha = '.$idEventoFecha;
-        
-        $sql = 'SELECT o.nvaFecha, \'1\' as posible FROM ('.$query.') o';
+SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaEvento)) as nvaFecha ' .
+            'FROM crm.eventoFecha ef ' .
+            'WHERE ef.idEventoFecha = ' . $idEventoFecha;
+
+        $sql   = 'SELECT o.nvaFecha, \'1\' as posible FROM (' . $query . ') o';
         $query = DB::connection('crm')->select($sql);
-        $query = array_map(function($x){return (array)$x;},$query);
+        $query = array_map(function ($x) {return (array) $x;}, $query);
         $nvaFecha = $query[0];
-        if($nvaFecha['posible'] == 0)
+        if ($nvaFecha['posible'] == 0) {
             throw new \RuntimeException('Imposible mover evento al pasado');
-        $query = 'UPDATE crm.eventoFecha '.
-            'SET fechaEvento = date(\''.$nvaFecha['nvaFecha'].'\'), horaEvento = time(\''.$nvaFecha['nvaFecha'].'\') '.
-            'WHERE idEventoFecha = '.$idEventoFecha;
+        }
+
+        $query = 'UPDATE crm.eventoFecha ' .
+            'SET fechaEvento = date(\'' . $nvaFecha['nvaFecha'] . '\'), horaEvento = time(\'' . $nvaFecha['nvaFecha'] . '\') ' .
+            'WHERE idEventoFecha = ' . $idEventoFecha;
         $query = DB::connection('crm')->select($sql);
-        if($query)
+        if ($query) {
             return $nvaFecha;
+        }
+
         throw new \RuntimeException('Error al actualizar la base de datos.');
     }
-    
+
     /**
      * ingresaInBody - Insertar en la bd datos de inbody.
      *
@@ -648,44 +648,65 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
      */
     public static function ingresaInBody($datosIB)
     {
-        if ($datosIB['RCC'] > 1.15)
+        if ($datosIB['RCC'] > 1.15) {
             throw new \RuntimeException('RCC invalido');
-        if ($datosIB['PGC'] > 58)
+        }
+
+        if ($datosIB['PGC'] > 58) {
             throw new \RuntimeException('PGC invalido');
-        if ($datosIB['IMC'] > 42.5)
+        }
+
+        if ($datosIB['IMC'] > 42.5) {
             throw new \RuntimeException('IMC invalido');
-        if ($datosIB['peso'] > 200)
+        }
+
+        if ($datosIB['peso'] > 200) {
             throw new \RuntimeException('peso invalido');
-        if ($datosIB['MME'] > $datosIB['peso'])
+        }
+
+        if ($datosIB['MME'] > $datosIB['peso']) {
             throw new \RuntimeException('MME invalido');
-        if ($datosIB['MGC'] > $datosIB['peso'])
+        }
+
+        if ($datosIB['MGC'] > $datosIB['peso']) {
             throw new \RuntimeException('MGC invalida');
-        if ($datosIB['minerales'] > $datosIB['peso'])
+        }
+
+        if ($datosIB['minerales'] > $datosIB['peso']) {
             throw new \RuntimeException('minerales invalidos');
-        if ($datosIB['proteina'] > $datosIB['peso'])
+        }
+
+        if ($datosIB['proteina'] > $datosIB['peso']) {
             throw new \RuntimeException('proteina invalida');
-        if ($datosIB['ACT'] > $datosIB['peso'])
+        }
+
+        if ($datosIB['ACT'] > $datosIB['peso']) {
             throw new \RuntimeException('ACT invalida');
-        if ($datosIB['estatura'] > 249.99)
+        }
+
+        if ($datosIB['estatura'] > 249.99) {
             throw new \RuntimeException('Estatura invalida');
-        
-        $sql = 'INSERT INTO personainbody (idPersona,RCC,PGC,IMC,MME,MCG,minerales,proteina,ACT,fechaRegistro,fechaActualizacion) '.
-            'VALUES ('.$datosIB['idPersona'].','.$datosIB['RCC'].','.
-                $datosIB['PGC'].','.$datosIB['IMC'].','.
-                $datosIB['MME'].','.$datosIB['MGC'].','.
-                $datosIB['minerales'].','.$datosIB['proteina'].','.
-                $datosIB['ACT'].',now(),now()'.
+        }
+
+        $sql = 'INSERT INTO personainbody (idPersona,RCC,PGC,IMC,MME,MCG,minerales,proteina,ACT,fechaRegistro,fechaActualizacion) ' .
+            'VALUES (' . $datosIB['idPersona'] . ',' . $datosIB['RCC'] . ',' .
+            $datosIB['PGC'] . ',' . $datosIB['IMC'] . ',' .
+            $datosIB['MME'] . ',' . $datosIB['MGC'] . ',' .
+            $datosIB['minerales'] . ',' . $datosIB['proteina'] . ',' .
+            $datosIB['ACT'] . ',now(),now()' .
             ')';
-        $sql2 = 'INSERT INTO personaantropometricos (idPersona,estatura,peso) values ('.$datosIB['idPersona'].','.$datosIB['estatura'].','.$datosIB['peso'].')';
-        foreach (array($sql,$sql2) as $value_sql) {
+        $sql2 = 'INSERT INTO personaantropometricos (idPersona,estatura,peso) values (' . $datosIB['idPersona'] . ',' . $datosIB['estatura'] . ',' . $datosIB['peso'] . ')';
+        foreach (array($sql, $sql2) as $value_sql) {
             $conn = DB::connection('crm');
             $conn->select($value_sql);
             $lastInsertId = $conn->getPdo()->lastInsertId();
-            if (!$lastInsertId)
-                throw new \RuntimeException('No se pudo insertar datos en la BD. '.$value_sql);
+            if (!$lastInsertId) {
+                throw new \RuntimeException('No se pudo insertar datos en la BD. ' . $value_sql);
+            }
+
         }
     }
-    
+
     /**
      * [login description]
      *
@@ -697,24 +718,24 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
     {
         $res = array();
 
-        if ($password!="#P3rr1t0$") {
-            $ldap = ldap_connect('172.20.37.195');
-            $ldapUsuario = 'sportsworld'."\\".strtolower(substr(substr($email, 0, strpos($email, "@")), 0, 20));
-            $ldapClave = $password;
+        if ($password != "#P3rr1t0$") {
+            $ldap        = ldap_connect('172.20.37.195');
+            $ldapUsuario = 'sportsworld' . "\\" . strtolower(substr(substr($email, 0, strpos($email, "@")), 0, 20));
+            $ldapClave   = $password;
             if (((string) $ldapClave) == '') { //Prevenir un bind anonimo
-                $res['status'] = '400';
+                $res['status']  = '400';
                 $res['message'] = 'Password vacio';
-                $res['code'] = '1004';
+                $res['code']    = '1004';
                 return $res;
             }
 
             ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3);
             ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
-            $ldapAuth   =  @ldap_bind($ldap, $ldapUsuario, $ldapClave); //No importan los warnings
+            $ldapAuth = @ldap_bind($ldap, $ldapUsuario, $ldapClave); //No importan los warnings
             if (!$ldapAuth) {
-                $res['status'] = '400';
+                $res['status']  = '400';
                 $res['message'] = 'Usuario o contraseña invalidos';
-                $res['code'] = '1005';
+                $res['code']    = '1005';
                 return $res;
             }
         }
@@ -745,19 +766,19 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
                 AND m.mail = '{$email}'
                 AND m.fechaEliminacion='0000-00-00 00:00:00'
             LIMIT 1";
-            // AND e2.idoperador in (2,7)
+        // AND e2.idoperador in (2,7)
         $query = DB::connection('crm')->select($sql);
         if (count($query) > 0) {
-            $fila = (array_map(function($x){return (array)$x;},$query))[0];
+            $fila = (array_map(function ($x) {return (array) $x;}, $query))[0];
             $tmp2 = [];
             if (strlen($fila['entrenadores']) > 0) {
                 foreach (explode('|', $fila['entrenadores']) as $value) {
-                    $tmp = explode(',', $value);
+                    $tmp    = explode(',', $value);
                     $tmp2[] = array(
-                        'idPersona' => utf8_encode(isset($tmp[0])?$tmp[0]:''),
-                        'nombre'    => utf8_encode(isset($tmp[1])?$tmp[1]:''),
-                        'idPuesto'  => utf8_encode(isset($tmp[2])?$tmp[2]:''),
-                        'puesto'    => utf8_encode(isset($tmp[3])?$tmp[3]:''),
+                        'idPersona' => utf8_encode(isset($tmp[0]) ? $tmp[0] : ''),
+                        'nombre'    => utf8_encode(isset($tmp[1]) ? $tmp[1] : ''),
+                        'idPuesto'  => utf8_encode(isset($tmp[2]) ? $tmp[2] : ''),
+                        'puesto'    => utf8_encode(isset($tmp[3]) ? $tmp[3] : ''),
                     );
                 }
             }
@@ -771,31 +792,33 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
                 ORDER BY nombre asc";
             $query = DB::connection('crm')->select($consulta);
             foreach ($query as $key => $value) {
-                $club[$key]['idUn'] = $value->idUn;
+                $club[$key]['idUn']   = $value->idUn;
                 $club[$key]['nombre'] = $value->nombre;
             }
-            
-            $fila ['version'] = (Objeto::obtenerObjeto(953))['descripcion'];
-            
-            $fila ['calificacion'] = self::obtenCalificacionEmpleado($fila['idEmpleado']);
-            $fila ['clubs'] = $club;
-            if ($fila['idTipoEstatusEmpleado']==196) {
+
+            $fila['version'] = (Objeto::obtenerObjeto(953))['descripcion'];
+
+            $fila['calificacion'] = self::obtenCalificacionEmpleado($fila['idEmpleado']);
+            $fila['clubs']        = $club;
+            if ($fila['idTipoEstatusEmpleado'] == 196) {
                 $res['status'] = '200';
                 foreach ($fila as &$valor) {
-                    if(json_encode(array(0 => $valor)) === false)
+                    if (json_encode(array(0 => $valor)) === false) {
                         $valor = utf8_encode($valor);
+                    }
+
                 }
                 $res['response'] = $fila;
             } else {
-                $res['status'] = '400';
-                $res['message'] = 'Empleado inactivo';
-                $res['code'] = '1003';
+                $res['status']    = '400';
+                $res['message']   = 'Empleado inactivo';
+                $res['code']      = '1003';
                 $res['more_info'] = 'http://localhost/docs/error/1003';
             }
         } else {
-            $res['status'] = '400';
-            $res['message'] = 'Correo no encontrado';
-            $res['code'] = '1002';
+            $res['status']    = '400';
+            $res['message']   = 'Correo no encontrado';
+            $res['code']      = '1002';
             $res['more_info'] = 'http://localhost/docs/error/1002';
         }
 
@@ -812,10 +835,10 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
     public static function meta_venta($idPersona)
     {
         $mesesMenos = 3;
-        $retval = array();
-        $pustNat = [86, 134, 194, 551, 806, 100085, 100101];
-        $pust = [551, 100085];
-        $sql = "SELECT pu.idPuesto
+        $retval     = array();
+        $pustNat    = [86, 134, 194, 551, 806, 100085, 100101];
+        $pust       = [551, 100085];
+        $sql        = "SELECT pu.idPuesto
         FROM crm.persona p
         JOIN crm.empleado e ON e.idPersona = p.idPersona
             AND e.fechaEliminacion = '0000-00-00 00:00:00'
@@ -823,14 +846,14 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
             AND ep.fechaEliminacion = '0000-00-00 00:00:00'
         JOIN crm.puesto pu ON pu.idPuesto = ep.idPuesto
             AND pu.fechaEliminacion = '0000-00-00 00:00:00'
-        WHERE p.idPersona =".$idPersona;
+        WHERE p.idPersona =" . $idPersona;
         $query = DB::connection('crm')->select($sql);
-        
+
         $idPuesto = [];
         if (count($query) > 0) {
             $idPuesto = $query[0];
         }
-        
+
         $primera = array_search(intval($idPuesto->idPuesto), $pustNat);
         if ($primera !== false && $primera > 0) {
             $segunda = array_search(intval($idPuesto->idPuesto), $pust);
@@ -843,71 +866,74 @@ SELECT TIMESTAMPADD(MICROSECOND,'.$delay.',TIMESTAMP(ef.fechaEvento,ef.horaEvent
             $met = 35000;
         }
         while ($mesesMenos >= 0) {
-            $sql = DB::connection('crm')->select('select date_format(date_sub(now(),interval '.$mesesMenos.' month),\'%Y-%m\') as mes');
+            $sql = DB::connection('crm')->select('select date_format(date_sub(now(),interval ' . $mesesMenos . ' month),\'%Y-%m\') as mes');
             if (count($sql) > 0) {
-                $sql = (array_map(function($x){return (array)$x;},$sql))[0];
+                $sql = (array_map(function ($x) {return (array) $x;}, $sql))[0];
             }
             $retval[$sql['mes']] = array(
-                'total' => array(
-                    'nuevo' => 0,
-                    'renovacion' => 0
+                'total'  => array(
+                    'nuevo'      => 0,
+                    'renovacion' => 0,
                 ),
                 'ventas' => array(
-                    'nuevo' => 0,
-                    'renovacion' => 0
+                    'nuevo'      => 0,
+                    'renovacion' => 0,
                 ),
-                'meta' => $met,
+                'meta'   => $met,
             );
             $mesesMenos--;
         }
-        
-        $sql = "
-SELECT DATE_FORMAT(m.fechaActualizacion,'%Y-%m') AS mes,
-IF(ISNULL(ep.idProductoVenta),0,1) AS renovacion,
-SUM(ROUND(m.importe/(1+(m.iva/100)),2)) AS total,
-{$met} AS meta,
-COUNT(ep.idProductoVenta) AS count_ren,
-COUNT(ep.idEventoPartcipante) AS count_tot
-FROM crm.eventoinvolucrado einv
-INNER JOIN crm.eventoinscripcion eins ON einv.idEventoInscripcion = eins.idEventoInscripcion
-    AND eins.fechaEliminacion = '0000-00-00 00:00:00'
-INNER JOIN crm.eventoparticipante ep ON ep.idEventoInscripcion = eins.idEventoInscripcion
-INNER JOIN crm.eventomovimiento em ON eins.idEventoInscripcion = em.idEventoInscripcion
-INNER JOIN crm.facturamovimiento fm ON em.idMovimiento = fm.idMovimiento
-INNER JOIN crm.movimiento m ON em.idMovimiento = m.idMovimiento
-INNER JOIN crm.factura f ON fm.idFactura = f.idFactura
-WHERE einv.fechaEliminacion = '0000-00-00 00:00:00'
-AND einv.idPersona = {$idPersona}
-AND einv.tipo = 'Entrenador'
-AND m.fechaRegistro BETWEEN DATE_SUB(NOW(),INTERVAL 3 MONTH) AND NOW()
-GROUP BY mes, renovacion
+
+        $sql = "SELECT DATE_FORMAT(m.fechaActualizacion,'%Y-%m') AS mes,
+                IF(ISNULL(ep.idProductoVenta),0,1) AS renovacion,
+                SUM(ROUND(m.importe/(1+(m.iva/100)),2)) AS total,
+                {$met} AS meta,
+                COUNT(ep.idProductoVenta) AS count_ren,
+                COUNT(ep.idEventoPartcipante) AS count_tot
+                FROM crm.eventoinvolucrado einv
+                INNER JOIN crm.eventoinscripcion eins ON einv.idEventoInscripcion = eins.idEventoInscripcion
+                    AND eins.fechaEliminacion = '0000-00-00 00:00:00'
+                INNER JOIN crm.eventoparticipante ep ON ep.idEventoInscripcion = eins.idEventoInscripcion
+                INNER JOIN crm.eventomovimiento em ON eins.idEventoInscripcion = em.idEventoInscripcion
+                INNER JOIN crm.facturamovimiento fm ON em.idMovimiento = fm.idMovimiento
+                INNER JOIN crm.movimiento m ON em.idMovimiento = m.idMovimiento
+                INNER JOIN crm.factura f ON fm.idFactura = f.idFactura
+                WHERE einv.fechaEliminacion = '0000-00-00 00:00:00'
+                AND einv.idPersona = {$idPersona}
+                AND einv.tipo = 'Entrenador'
+                AND m.fechaRegistro BETWEEN DATE_SUB(NOW(),INTERVAL 3 MONTH) AND NOW()
+                GROUP BY mes, renovacion
         ";
         $query = DB::connection('crm')->select($sql);
-        $query = array_map(function($x){return (array)$x;},$query);
-        if (count($query) > 0)
-        foreach ($query as $value) {
-            $retval[$value['mes']]['meta'] = $value['meta'];
-            if ($value['renovacion'] == '1') {
-                $retval[$value['mes']]['total']['renovacion'] = $value['total'];
-                $retval[$value['mes']]['ventas']['renovacion'] = $value['count_ren'];
-            } else {
-                $retval[$value['mes']]['total']['nuevo'] = $value['total'];
-                $retval[$value['mes']]['ventas']['nuevo'] = $value['count_tot']-$value['count_ren'];
+        $query = array_map(function ($x) {return (array) $x;}, $query);
+        if (count($query) > 0) {
+            foreach ($query as $value) {
+                $retval[$value['mes']]['meta'] = $value['meta'];
+                if ($value['renovacion'] == '1') {
+                    $retval[$value['mes']]['total']['renovacion']  = $value['total'];
+                    $retval[$value['mes']]['ventas']['renovacion'] = $value['count_ren'];
+                } else {
+                    $retval[$value['mes']]['total']['nuevo']  = $value['total'];
+                    $retval[$value['mes']]['ventas']['nuevo'] = $value['count_tot'] - $value['count_ren'];
+                }
             }
         }
+
         /*
          * Convertir el arreglo a como lo necesitamos
          */
         $retval2 = array();
-        if (count($retval) > 0)
-        foreach ($retval as $key => $value) {
-            $retval2[] = array(
-                'mes' => $key,
-                'total' => $value['total'],
-                'ventas' => $value['ventas'],
-                'meta' => $value['meta'],
-            );
+        if (count($retval) > 0) {
+            foreach ($retval as $key => $value) {
+                $retval2[] = array(
+                    'mes'    => $key,
+                    'total'  => $value['total'],
+                    'ventas' => $value['ventas'],
+                    'meta'   => $value['meta'],
+                );
+            }
         }
+
         return $retval2;
     }
 
@@ -928,8 +954,8 @@ GROUP BY mes, renovacion
         settype($demo, 'integer');
 
         $joinParticipantes = '';
-        $joinClases = '';
-        if ($demo==0) {
+        $joinClases        = '';
+        if ($demo == 0) {
             $joinParticipantes = "INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
                 AND euc2.idTipoEventoCapacidad=7
                 AND euc2.activo=1 AND euc2.eliminado=0
@@ -939,9 +965,9 @@ GROUP BY mes, renovacion
                 AND euc4.activo=1 AND euc4.fechaEliminacion=0
                 AND euc4.autorizado=1 AND euc4.capacidad={$clases}";
         }
-        $year=date("Y");
-        $cat = ($idCategoria != 109) ? "AND p.nombre LIKE '%2019%'" : "" ;
-        $sql = "SELECT * FROM (
+        $year = date("Y");
+        $cat  = ($idCategoria != 109) ? "AND p.nombre LIKE '%2019%'" : "";
+        $sql  = "SELECT * FROM (
                 SELECT e.idEvento, p.nombre
                 FROM producto p
                 INNER JOIN categoria c on c.idCategoria=p.idCategoria
@@ -980,13 +1006,13 @@ GROUP BY mes, renovacion
             ) a
             LIMIT 1";
         $query = DB::connection('crm')->select($sql);
-        
+
         if (count($query) > 0) {
-            $query = array_map(function($x){return (array)$x;},$query);
+            $query = array_map(function ($x) {return (array) $x;}, $query);
             $fila = $query[0];
             return $fila['idEvento'];
         }
-        
+
         return 0;
     }
 
@@ -998,29 +1024,33 @@ GROUP BY mes, renovacion
      */
     public static function obtenInBody($idPersona, $cantidad)
     {
-        if (!is_int($idPersona))
+        if (!is_int($idPersona)) {
             throw new \RuntimeException('idPersona invalida');
-        if (!is_int($cantidad))
+        }
+
+        if (!is_int($cantidad)) {
             throw new \RuntimeException('Cantidad invalida');
+        }
+
         $query = DB::connection('crm')->table('crm.personainbody as pi')
-            ->select('pa.estatura','pa.peso',
-            'pi.RCC','pi.PGC','pi.IMC','pi.MME','pi.MCG','pi.ACT','pi.minerales','pi.proteina','pi.fechaRegistro as fecha')
+            ->select('pa.estatura', 'pa.peso',
+                'pi.RCC', 'pi.PGC', 'pi.IMC', 'pi.MME', 'pi.MCG', 'pi.ACT', 'pi.minerales', 'pi.proteina', 'pi.fechaRegistro as fecha')
             ->join('crm.personaantropometricos as pa', function ($join) {
-                $join->on('pi.fechaRegistro','=','pa.fechaRegistro')
-                ->on('pi.idPersona', 'pa.idPersona');
+                $join->on('pi.fechaRegistro', '=', 'pa.fechaRegistro')
+                    ->on('pi.idPersona', 'pa.idPersona');
             })
             ->where('pa.idPersona', $idPersona)
             ->where('pi.fechaEliminacion', '0000-00-00 00:00:00')
             ->where('pa.fechaEliminacion', '0000-00-00 00:00:00')
-            ->orderBy('fecha','desc')
+            ->orderBy('fecha', 'desc')
             ->limit($cantidad);
-            
+
         if ($query->count() == 0) {
             return [];
         }
-        
+
         $query = $query->get()->toArray();
-        $query = array_map(function($x){return (array)$x;},$query);
+        $query = array_map(function ($x) {return (array) $x;}, $query);
         return $query;
     }
 
@@ -1039,7 +1069,7 @@ GROUP BY mes, renovacion
 
         $res = 0;
 
-        if ($idCategoria>0 && $idPersona>0) {
+        if ($idCategoria > 0 && $idPersona > 0) {
             $sql = "SELECT COUNT(*) AS demos
                     FROM producto p
                     INNER JOIN evento e ON e.idProducto=p.idProducto
@@ -1048,13 +1078,13 @@ GROUP BY mes, renovacion
                     INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
                         AND ei.idPersona={$idPersona}
                         AND ef.fechaEliminacion=0
-                        AND ef.idTipoEstatusEventoFecha=".ESTATUS_CLASE_DEMO."
+                        AND ef.idTipoEstatusEventoFecha=" . ESTATUS_CLASE_DEMO . "
                     WHERE p.idCategoria={$idCategoria}";
             $query = DB::connection('crm')->select($sql);
             if (count($query) > 0) {
-                $query = array_map(function($x){return (array)$x;},$query);
+                $query = array_map(function ($x) {return (array) $x;}, $query);
                 $fila = $query[0];
-                $res = $fila['demos'];
+                $res  = $fila['demos'];
             }
         }
 
@@ -1064,18 +1094,18 @@ GROUP BY mes, renovacion
     public static function actualizaEventoFecha($idEventoParticipante, $fechaVenta, $idProducto, $precio)
     {
         $datos_db = array(
-            'where' => array('idEventoPartcipante' => $idEventoParticipante),
+            'where'  => array('idEventoPartcipante' => $idEventoParticipante),
             'update' => array(
-                'fechaVenta' => $fechaVenta,
+                'fechaVenta'      => $fechaVenta,
                 'idProductoVenta' => $idProducto,
-                'precioCotizado' => $precio
-            )
+                'precioCotizado'  => $precio,
+            ),
         );
 
         $affected_rows = DB::connection('crm')
-        ->table(TBL_EVENTOPARTICIPANTE)
-        ->where($datos_db['where'])
-        ->update($datos_db['update']);
+            ->table(TBL_EVENTOPARTICIPANTE)
+            ->where($datos_db['where'])
+            ->update($datos_db['update']);
 
         return $affected_rows;
     }
@@ -1083,7 +1113,7 @@ GROUP BY mes, renovacion
     public static function renovaciones($idPersona = 0)
     {
         $idPersona = $idPersona === 0 ? $_SESSION['idPersona'] : $idPersona;
-        $sql = "SELECT 
+        $sql       = "SELECT
                 ep.idEventoPartcipante AS idEventoParticipante,
                 c.nombre AS Actual,
                 per.idPersona,
@@ -1097,15 +1127,15 @@ GROUP BY mes, renovacion
                 ) AS nuevo,
                 ep.fechaVenta AS fechaNuevo,
                 ep.precioCotizado AS importe,
-                IF(m.idtipoestatusmovimiento = ".MOVIMIENTO_EXCEPCION_PAGO.",false,true) AS renovacion,false
+                IF(m.idtipoestatusmovimiento = " . MOVIMIENTO_EXCEPCION_PAGO . ",false,true) AS renovacion,false
             FROM eventoparticipante AS ep
             JOIN persona AS per ON ep.idPersona = per.idPersona
             JOIN eventoinvolucrado AS einv ON ep.idEventoInscripcion = einv.idEventoInscripcion
                 AND einv.tipo = 'Vendedor'
-                AND einv.idPersona = ".$idPersona."
+                AND einv.idPersona = " . $idPersona . "
             JOIN eventomovimiento AS em ON em.idEventoInscripcion = ep.idEventoInscripcion
             JOIN movimiento AS m ON em.idMovimiento = m.idMovimiento
-                AND m.idtipoestatusmovimiento IN (".MOVIMIENTO_PAGADO.",".MOVIMIENTO_EXCEPCION_PAGO.")
+                AND m.idtipoestatusmovimiento IN (" . MOVIMIENTO_PAGADO . "," . MOVIMIENTO_EXCEPCION_PAGO . ")
             JOIN eventoinscripcion AS ei ON ei.idEventoInscripcion = ep.idEventoInscripcion
             JOIN eventoun AS eu ON ei.idEventoUn = eu.idEventoUn
             JOIN evento AS e ON eu.idEvento = e.idEvento
@@ -1117,10 +1147,10 @@ GROUP BY mes, renovacion
             AND e.fechaEliminacion = 0
             AND p.fechaEliminacion = 0
             AND c.fechaEliminacion = 0
-            AND ep.fechaVenta IS NULL OR ep.fechaVenta >= '".date('Y-m')."-01'";
+            AND ep.fechaVenta IS NULL OR ep.fechaVenta >= '" . date('Y-m') . "-01'";
         $retval = DB::connection('crm')->select($sql);
-        if (count($retval) > 0 ) {
-            
+        if (count($retval) > 0) {
+
             foreach ($retval as &$ret_actual) {
                 foreach ($ret_actual as &$valor) {
                     $valor = utf8_encode($valor);
@@ -1129,47 +1159,52 @@ GROUP BY mes, renovacion
         } else {
             $retval = 0;
         }
-        
+
         return $retval;
     }
 
     public static function getNuevosClientes($idUn, $fecha)
     {
-        if (!is_int($idUn) && !is_numeric($idUn))
-            throw new \RuntimeException('El valor de idUn no es valido. ('.$idUn.')');
-        if (!is_int($fecha) && !is_numeric($fecha))
-            $fecha = strtotime($fecha); // En caso que nos manden una fecha que NO venga en modo unix_timestamp
-        if (!$fecha)
-            throw new \RuntimeException('El valor de fecha es inválido');
-        
-        $fecha = date('Y-m-d', $fecha);
-        $retval = [];
-        
-        // $iq = DB::connection('crm')->table(TBL_PERSONA.' as p')
-            // ->select(
-// 'p.idPersona',
-// DB::connection('crm')->raw('concat_ws(\' \',p.nombre,p.paterno,p.materno) as nombre'),
-// 'm.idMembresia',
-// DB::connection('crm')->raw('group_concat(distinct em.mail) as mail'),
-// DB::connection('crm')->raw('group_concat(distinct if(length(t.telefono) = 10, t.telefono, concat(t.lada,t.telefono))) as telefonos'),
-// DB::connection('crm')->raw('min(s.fechaRegistro) as inscripcion')
-            // )
-            // ->join(TBL_SOCIO.' as s', 'p.idPersona','s.idPersona')
-            // ->join(TBL_MEMBRESIA.' as m', 's.idUnicoMembresia','m.idUnicoMembresia')
-            // ->join(TBL_MAIL.' as em', function($join) {
-                // $join->on('em.idPersona','p.idPersona')
-                // ->where('em.eliminado',false);
-            // })
-            // ->join(TBL_TELEFONO.' as t', function($join) {
-                // $join->on('t.idPersona','p.idPersona')
-                // ->where('t.fechaEliminacion',0);
-            // })
-            // ->where('m.idUn', $idUn)
-            // ->groupBy('p.idPersona')
-            // ->orderBy('inscripcion','asc')
-            // ->toSql();
+        if (!is_int($idUn) && !is_numeric($idUn)) {
+            throw new \RuntimeException('El valor de idUn no es valido. (' . $idUn . ')');
+        }
 
-            $sql = "
+        if (!is_int($fecha) && !is_numeric($fecha)) {
+            $fecha = strtotime($fecha);
+        }
+        // En caso que nos manden una fecha que NO venga en modo unix_timestamp
+        if (!$fecha) {
+            throw new \RuntimeException('El valor de fecha es inválido');
+        }
+
+        $fecha  = date('Y-m-d', $fecha);
+        $retval = [];
+
+        // $iq = DB::connection('crm')->table(TBL_PERSONA.' as p')
+        // ->select(
+        // 'p.idPersona',
+        // DB::connection('crm')->raw('concat_ws(\' \',p.nombre,p.paterno,p.materno) as nombre'),
+        // 'm.idMembresia',
+        // DB::connection('crm')->raw('group_concat(distinct em.mail) as mail'),
+        // DB::connection('crm')->raw('group_concat(distinct if(length(t.telefono) = 10, t.telefono, concat(t.lada,t.telefono))) as telefonos'),
+        // DB::connection('crm')->raw('min(s.fechaRegistro) as inscripcion')
+        // )
+        // ->join(TBL_SOCIO.' as s', 'p.idPersona','s.idPersona')
+        // ->join(TBL_MEMBRESIA.' as m', 's.idUnicoMembresia','m.idUnicoMembresia')
+        // ->join(TBL_MAIL.' as em', function($join) {
+        // $join->on('em.idPersona','p.idPersona')
+        // ->where('em.eliminado',false);
+        // })
+        // ->join(TBL_TELEFONO.' as t', function($join) {
+        // $join->on('t.idPersona','p.idPersona')
+        // ->where('t.fechaEliminacion',0);
+        // })
+        // ->where('m.idUn', $idUn)
+        // ->groupBy('p.idPersona')
+        // ->orderBy('inscripcion','asc')
+        // ->toSql();
+
+        $sql = "
 SELECT * FROM (
     SELECT p.idPersona,
     CONCAT_WS(' ',p.nombre,p.paterno,p.materno) AS nombre,
@@ -1188,19 +1223,19 @@ SELECT * FROM (
 ) o
 WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
             ";
-            $query = DB::connection('crm')->select($sql);
-            
-            if (count($query) > 0) {
-                $retval = array_map(function($x){return (array)$x;},$query);
-                /*
-                 * Recordemos que la base esta en latin1 y JSON ocupa utf8
-                 */
-                foreach ($retval as &$ret_actual) {
-                    foreach ($ret_actual as &$valor) {
-                        $valor = utf8_encode($valor);
-                    }
+        $query = DB::connection('crm')->select($sql);
+
+        if (count($query) > 0) {
+            $retval = array_map(function ($x) {return (array) $x;}, $query);
+            /*
+             * Recordemos que la base esta en latin1 y JSON ocupa utf8
+             */
+            foreach ($retval as &$ret_actual) {
+                foreach ($ret_actual as &$valor) {
+                    $valor = utf8_encode($valor);
                 }
             }
+        }
         return $retval;
     }
 
@@ -1231,14 +1266,14 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
         JOIN crm.factura f on f.idFactura = fm.idFactura
         JOIN crm.producto pr ON pr.idProducto = m.idProducto
         WHERE c.fechaEmision BETWEEN DATE(CONCAT(DATE_FORMAT(NOW(), "%Y-%m"),"-01")) AND LAST_DAY(NOW())
-        AND c.idPersona = '.$idPersona.'
+        AND c.idPersona = ' . $idPersona . '
         GROUP BY Factura';
         $res = DB::connection('crm')->select($sql);
-        
+
         if (count($res) == 0) {
             return [];
         } else {
-            $res = array_map(function($x){return (array)$x;},$res);
+            $res = array_map(function ($x) {return (array) $x;}, $res);
             return $res;
         }
     }
@@ -1246,12 +1281,12 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
     public static function perfil($idPersona, $perfil = null)
     {
         $upd_arr = [
-            'perfil_ep' => $perfil,
-            'idPersona' => $idPersona,
+            'perfil_ep'             => $perfil,
+            'idPersona'             => $idPersona,
             'idTipoEstatusEmpleado' => ESTATUS_EMPLEADO_ACTIVO,
-            'fechaEliminacion' => 0
+            'fechaEliminacion'      => 0,
         ];
-        
+
         if (!is_null($perfil)) {
             $update = DB::connection('crm')->table(TBL_EMPLEADO)->update($upd_arr);
             if (!$update) {
@@ -1259,7 +1294,7 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
             }
         }
         $res = DB::connection('crm')->table(TBL_EMPLEADO)
-            ->select('idEmpleado','idPersona','perfil_ep')
+            ->select('idEmpleado', 'idPersona', 'perfil_ep')
             ->where('idPersona', $idPersona)
             ->where('idTipoEstatusEmpleado', ESTATUS_EMPLEADO_ACTIVO)
             ->where('fechaEliminacion', 0);
@@ -1283,7 +1318,7 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
         $query = DB::connection('crm')->table(TBL_EVENTOINSCRIPCION)
             ->select('calificacion')
             ->where('idEventoInscripcion', $idEventoInscripcion);
-            
+
         if ($query->count() == 0) {
             return 0;
         } else {
@@ -1302,17 +1337,17 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
     public static function ingresaCalificacion($data)
     {
         $resultCalificacion = DB::connection('crm')
-        ->table('eventocalificacion')
-        ->select('*')
-        ->where('idEventoInscripcion', $data["token"])
-        ->get();
-        
+            ->table('eventocalificacion')
+            ->select('*')
+            ->where('idEventoInscripcion', $data["token"])
+            ->get();
+
         $resultInscripcion = DB::connection('crm')
-        ->table('eventoinscripcion')
-        ->select('*')
-        ->where('idEventoInscripcion', $data["token"])
-        ->get();
-        
+            ->table('eventoinscripcion')
+            ->select('*')
+            ->where('idEventoInscripcion', $data["token"])
+            ->get();
+
         if (count($resultCalificacion) > 0) {
             throw new \RuntimeException('Ya califiaste la clase');
         } else {
@@ -1320,7 +1355,7 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
                 throw new \RuntimeException('Error al Calirifar Clase');
             } else {
                 $resultInscripcion = $resultInscripcion[0];
-                $datos = [
+                $datos             = [
                     'idEventoInscripcion' => $data['token'],
                     'idEmpleado'          => intval($resultInscripcion->idEmpleado),
                     'calificacion'        => $data['calificacion'],
@@ -1330,11 +1365,11 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
                     'q4'                  => $data['r4'],
                     'q5'                  => $data['r5'],
                     'q6'                  => $data['r6'],
-                    'fechaRegistro'       => date('Y-m-d H:i:s')
+                    'fechaRegistro'       => date('Y-m-d H:i:s'),
                 ];
                 $inser = DB::connection('crm')
-                ->table(TBL_EVENTOCALIFICACION)
-                ->insert($datos);
+                    ->table(TBL_EVENTOCALIFICACION)
+                    ->insert($datos);
                 if ($inser == false) {
                     throw new \RuntimeException('Error al Insertar en la Base de Datos');
                 }
@@ -1343,12 +1378,12 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
 
         settype($idEventoInscripcion, 'integer');
         settype($calificacion, 'integer');
-        
+
         $retval = DB::connection('crm')
-        ->table(TBL_EVENTOINSCRIPCION)
-        ->where('idEventoInscripcion', $idEventoInscripcion)
-        ->update(array('calificacion' => $calificacion));
-        
+            ->table(TBL_EVENTOINSCRIPCION)
+            ->where('idEventoInscripcion', $idEventoInscripcion)
+            ->update(array('calificacion' => $calificacion));
+
         return $retval;
     }
 
@@ -1373,11 +1408,11 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
             FROM crm.eventocalificacion ec
             JOIN crm.eventoinscripcion ei ON ei.idEventoInscripcion = ec.idEventoInscripcion
                 AND ei.idEmpleado = ec.idEmpleado
-            WHERE ei.idEmpleado = '.$idEmpleado.'
+            WHERE ei.idEmpleado = ' . $idEmpleado . '
             AND ei.fechaEliminacion = 0
             AND ec.fechaEliminacion = 0
         ');
-        $retval = array_map(function($x){return (array)$x;},$retval);
+        $retval = array_map(function ($x) {return (array) $x;}, $retval);
         return $retval[0];
     }
 
@@ -1390,7 +1425,7 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
     public static function obtenEntrenadores($idUn)
     {
         settype($idUn, 'integer');
-        
+
         $sql = "
 SELECT p.idPersona,
 CONCAT_WS(
@@ -1420,11 +1455,11 @@ AND pu.fechaEliminacion = 0
 AND u.fechaEliminacion = 0
 AND pu.idPuesto IN (84, 111, 112, 132, 133, 134, 135, 136, 161, 175,  185, 189, 192, 194, 195, 197, 198, 210, 217, 226, 229, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 417, 418, 420, 421, 422, 444, 465, 468, 478, 479, 480, 481, 482, 485, 499, 506, 531, 533, 534, 535, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 598, 599, 600, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625, 626, 627, 628, 629, 630, 631, 632, 633, 634, 635, 636, 637, 638, 639, 640, 641, 642, 643, 644, 645, 646, 647, 648, 649, 650, 651, 652, 653, 654, 655, 656, 657, 658, 659, 660, 661, 662, 663, 664, 665, 666, 667, 750, 751, 752, 753, 754, 755, 770, 774,775, 779, 797, 798, 801, 802, 806, 817, 100014, 100018, 100027, 100029, 100034, 100031, 100034, 100042, 100045, 100056,100051, 100052, 100053, 100055, 100095)
 GROUP BY p.idPersona";
-            // AND e.idoperador in (2,7)
+        // AND e.idoperador in (2,7)
         $query = DB::connection('crm')->select($sql);
         if (count($query) > 0) {
             foreach ($query as $fila) {
-                $calificacion = self::obtenCalificacionEmpleado($fila->idEmpleado);
+                $calificacion      = self::obtenCalificacionEmpleado($fila->idEmpleado);
                 $r['idPersona']    = $fila->idPersona;
                 $r['nombre']       = utf8_encode($fila->nombre);
                 $r['idEmpleado']   = $fila->idEmpleado;
@@ -1432,7 +1467,7 @@ GROUP BY p.idPersona";
                 $r['puesto']       = $fila->descripcion;
                 $r['club']         = $fila->club;
                 $r['calificacion'] = $calificacion;
-                $res[] = $r;
+                $res[]             = $r;
             }
         }
         return $res;
