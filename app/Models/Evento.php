@@ -1000,6 +1000,7 @@ LIMIT 1";
         
         $cat = '';
         
+        
         $query = DB::connection('crm')->table(TBL_EVENTO.' AS e')
         ->select('p.idProducto','p.nombre', 'eu.idEventoUn', 'e.idTipoEvento', 'eu.inicioRegistro', 'eu.finRegistro', 'eu.inicioEvento', 'eu.finEvento', 'eu.reservarInstalacion', 'eu.anticipo', 'eu.edadMinima', 'eu.edadMaxima')
         ->join(TBL_PRODUCTO.' AS p',function ($join) {
@@ -1014,7 +1015,7 @@ LIMIT 1";
                  // ->where('eu.fechaEliminacion', '=', '0000-00-00 00:00:00');
         })
         ->where('e.idEvento', $idEvento)
-        ->where('e.eliminado', '=', 0);
+        ->where('e.eliminado', '=', 0)
         // ->where('e.fechaEliminacion', '0000-00-00 00:00:00')
         ->where('eu.idUn', $idUn)
         ->get()
