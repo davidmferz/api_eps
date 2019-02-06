@@ -140,7 +140,7 @@ class EPController extends Controller
                     'entrenadores' => $_SESSION['entrenadores'],
                     'perfil_ep' => $_SESSION['perfil_ep'],
                     'calificacion' => $_SESSION['calificacion'],
-                    'version' => Objeto::obtenerObjeto(953)['descripcion'],
+                    'version' => '3.0.3', //Objeto::obtenerObjeto(953)['descripcion'],
                     'clubs' => $_SESSION['clubs']
                 );
         return response()->json($out, 200);
