@@ -1004,16 +1004,21 @@ LIMIT 1";
         ->select('p.idProducto','p.nombre', 'eu.idEventoUn', 'e.idTipoEvento', 'eu.inicioRegistro', 'eu.finRegistro', 'eu.inicioEvento', 'eu.finEvento', 'eu.reservarInstalacion', 'eu.anticipo', 'eu.edadMinima', 'eu.edadMaxima')
         ->join(TBL_PRODUCTO.' AS p',function ($join) {
             $join->on('p.idProducto', '=', 'e.idProducto')
-                 ->where('p.fechaEliminacion', '=', '0000-00-00 00:00:00');
+                 ->where('p.eliminado', '=', 0);
+                 // ->where('p.fechaEliminacion', '=', '0000-00-00 00:00:00');
         })
         ->join(TBL_TIPOEVENTO.' AS te', 'te.idTipoEvento','=','e.idTipoEvento')
         ->join(TBL_EVENTOUN.' AS eu', function ($join) {
-        $join->on('eu.idEvento', '=', 'e.idEvento')
-                 ->where('eu.fechaEliminacion', '=', '0000-00-00 00:00:00');
+            $join->on('eu.idEvento', '=', 'e.idEvento')
+                ->where('eu.eliminado', '=', 0);
+                 // ->where('eu.fechaEliminacion', '=', '0000-00-00 00:00:00');
         })
         ->where('e.idEvento', $idEvento)
-        ->where('e.fechaEliminacion', '0000-00-00 00:00:00')
-        ->where('eu.idUn', $idUn)->get()->toArray();
+        ->where('e.eliminado', '=', 0);
+        // ->where('e.fechaEliminacion', '0000-00-00 00:00:00')
+        ->where('eu.idUn', $idUn)
+        ->get()
+        ->toArray();
         
         if (count($query) > 0) {
             $fila = $query[0];

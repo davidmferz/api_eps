@@ -584,7 +584,7 @@ WHERE p.idProducto={$idProducto} AND p.activo=1 AND p.eliminado=0
 ORDER BY pp.idProductoPrecio DESC
 LIMIT 1";
         $query = DB::connection('crm')->select($sql);
-        
+
         $res = [];
         if (count($query) > 0) {
             $fila = $query[0];
@@ -603,12 +603,12 @@ LIMIT 1";
     public static function cveProducto($idProducto)
     {
         settype($idProducto, 'integer');
-        
+
         $cve = '';
         $query = DB::connection('crm')->table(TBL_PRODUCTO)
         ->select('cveProductoServicio')
         ->where('idProducto', $idProducto)->get()->toArray();
-        
+
         if (count($query) > 0) {
             $fila = $query[0];
             $cve = $fila->cveProductoServicio;
@@ -626,7 +626,7 @@ LIMIT 1";
     public static function cveUnidad($idProducto)
     {
         settype($idProducto, 'integer');
-        
+
         $cve = '';
         $query = DB::connection('crm')->table(TBL_PRODUCTO)
         ->select('cveUnidad')
@@ -2957,7 +2957,7 @@ LIMIT 1";
      * @return array
      */
     public static function precio ($idProducto, $idUn, $idTipoRolCliente = ROL_CLIENTE_NINGUNO, $idEsquemaPago = ESQUEMA_PAGO_CONTADO
-    /*, 
+    /*,
         $fechaVigencia = '', $idTipoMembresia = 0, $unidades = 1, $idCuentaContable = 0, $usarGeneral = 1, $idTipoCliente = 0,
         $idTipoRolClienteBD = 0, $periodo = 0, $validaActivo = true, $idProductoGrupo = '', $idCuentaProducto = 0, $fidelidad=''*/
         )
@@ -2979,22 +2979,23 @@ LIMIT 1";
         $datos['activo']          = 0;
         $datos['query']           = array();
         //$fechaVigencia            = ($fechaVigencia == '') ? date('Y-m-d') : $fechaVigencia;
-        
-        $query = DB::connection('crm')->table(TBL_PRODUCTOPRECIO. ' AS  pp');
+
         if (! $idProducto or ! $idUn) {
             $datos['error']   = 1;
             $datos['mensaje'] = 'Faltan datos para consulta';
 
             return $datos;
         }
+        
+        // $query = DB::connection('crm')->table(TBL_PRODUCTOPRECIO. ' AS  pp');
       /*  if ($idCuentaContable) {
             $query = $query->where('pp.idCuentaContable', $idCuentaContable);
         }
         if ($idCuentaProducto) {
             $query = $query->where('pc.idCuentaProducto', $idCuentaProducto);
         }
-        
-        
+
+
         if ($periodo > 0) {
             $where[] = ['pp.finVigencia','<=',$periodo.'-12-31'];
         } else {
@@ -3009,35 +3010,31 @@ LIMIT 1";
         if ($fidelidad!='') {
             $query = $query->where('pp.idTipoFidelidad', $fidelidad);
         }*/
-
+        
         $sql= "SELECT pp.importe, pp.idProductoPrecio AS id, pp.idCuentaContable, CONCAT('(', cc.numCuenta, ') ', cc.descripcion) AS cuenta,cc.numCuenta, cp.idCuentaProducto, CONCAT('(', cp.cuentaProducto, ') ', cp.descripcion) AS cuentaProducto, IFNULL(cp.cuentaProducto, '') AS numCuentaProducto, pp.activo
-	from productoprecio as pp
-	JOIN productoUn as  pu ON pu.idProductoUn = pp.idProductoUn 
-		AND pu.idProductoGrupo = pp.idProductoGrupo
-	JOIN un as  u ON u.idUn = pu.idUn 
-		AND u.fechaEliminacion = '0000-00-00 00:00:00' 
-        AND u.activo = 1 
-	JOIN cuentacontable AS cc ON pp.idCuentaContable = cc.idCuentaContable
-	JOIN cuentaproducto AS cp ON pp.idCuentaProducto = cp.idCuentaProducto
-		where  pp.eliminado        = 0
-            AND pu.eliminado        = 0
-            AND pu.activo           = 1
-            AND pu.idProducto       = {$idProducto}
-            AND pu.idUn             = {$idUn}
+            from productoprecio as pp
+            JOIN productoUn as  pu ON pu.idProductoUn = pp.idProductoUn
+                AND pu.idProductoGrupo = pp.idProductoGrupo
+                AND pu.eliminado = 0
+                AND pu.activo = 1
+                AND pu.idProducto       = {$idProducto}
+                AND pu.idUn             = {$idUn}
+            JOIN un as u ON u.idUn = pu.idUn
+                -- AND u.fechaEliminacion = '0000-00-00 00:00:00'
+                AND u.eliminado = 0
+                AND u.activo = 1
+            JOIN cuentacontable AS cc ON pp.idCuentaContable = cc.idCuentaContable
+            JOIN cuentaproducto AS cp ON pp.idCuentaProducto = cp.idCuentaProducto
+            WHERE 1 = 1
+            AND pp.eliminado        = 0
+            AND pp.activo=1
             AND pp.idTipoRolCliente = {$idTipoRolCliente}
             AND pp.idEsquemaPago    = {$idEsquemaPago}
             AND pp.idTipoMembresia  = 0
             AND pp.unidades         = 1
-            AND pp.activo=1
-            order by pp.idProductoPrecio DESC;
-        ";
-
+            order by pp.idProductoPrecio DESC ";
+        $query= DB::connection('crm')->select($sql);
         
-            $query= DB::connection('crm')->select($sql);
-        
-     
-
-
         if (count($query)>0) {
             $fila                       = $query[0];
             $datos['monto']             = number_format($fila->importe, 2, '.', '');
@@ -3049,8 +3046,8 @@ LIMIT 1";
             $datos['numCuenta']         = $fila->numCuenta;
             $datos['numCuentaProducto'] = $fila->numCuentaProducto;
             $datos['activo']            = $fila->activo;
-        } 
-
+        }
+        
         return $datos;
     }
 

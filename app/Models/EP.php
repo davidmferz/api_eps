@@ -958,53 +958,63 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
         if ($demo == 0) {
             $joinParticipantes = "INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
                 AND euc2.idTipoEventoCapacidad=7
-                AND euc2.activo=1 AND euc2.eliminado=0
-                AND euc2.autorizado=1 AND euc2.capacidad={$participantes}";
+                AND euc2.activo=1
+                AND euc2.eliminado=0
+                AND euc2.autorizado=1
+                AND euc2.capacidad={$participantes}";
             $joinClases = "INNER JOIN eventouncapacidad euc4 ON euc4.idEventoUn=eu.idEventoUn
                 AND euc4.idTipoEventoCapacidad=6
-                AND euc4.activo=1 AND euc4.fechaEliminacion=0
-                AND euc4.autorizado=1 AND euc4.capacidad={$clases}";
+                AND euc4.activo=1
+                -- AND euc4.fechaEliminacion=0
+                AND euc4.eliminado=0
+                AND euc4.autorizado=1
+                AND euc4.capacidad={$clases}";
         }
         $year = date("Y");
         $cat  = ($idCategoria != 109) ? "AND p.nombre LIKE '%2019%'" : "";
         $sql  = "SELECT * FROM (
-                SELECT e.idEvento, p.nombre
-                FROM producto p
-                INNER JOIN categoria c on c.idCategoria=p.idCategoria
-                    AND c.idCategoria={$idCategoria}
-                INNER JOIN evento e on e.idProducto=p.idProducto
-                    AND e.idEventoClasificacion>0
-                    AND e.fechaEliminacion=0
-                    {$cat}
-                INNER JOIN productoun pu ON pu.idProducto = p.idProducto
-                    AND pu.activo=1
-                    AND pu.fechaEliminacion=0
-                    AND pu.idUn={$idUn}
-                INNER JOIN eventoun eu ON eu.idEvento = e.idEvento
-                    AND eu.idUn={$idUn} AND eu.activo=1
-                    AND eu.fechaEliminacion=0
-                    AND DATE(NOW()) BETWEEN eu.inicioRegistro
-                    AND eu.finRegistro
-                    AND DATE(NOW()) <= eu.finEvento
-                INNER JOIN eventouncapacidad euc ON euc.idEventoUn = eu.idEventoUn
-                    AND euc.idTipoEventoCapacidad = 1
-                    AND euc.activo = 1
-                    AND euc.eliminado = 0
-                    AND euc.autorizado = 1
-                    AND euc.capacidad > 0
-                    {$joinParticipantes}
-                INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn = eu.idEventoUn
-                    AND euc3.idTipoEventoCapacidad = 26
-                    AND euc3.activo = 1
-                    AND euc3.eliminado = 0
-                    AND euc3.autorizado = 1
-                    AND euc3.capacidad > 0
-                    {$joinClases}
-                WHERE p.activo = 1
-                AND p.fechaEliminacion = 0
-                {$cat}
-            ) a
-            LIMIT 1";
+SELECT e.idEvento, p.nombre
+FROM producto p
+INNER JOIN categoria c on c.idCategoria=p.idCategoria
+    AND c.idCategoria = {$idCategoria}
+INNER JOIN evento e on e.idProducto=p.idProducto
+    AND e.idEventoClasificacion>0
+    -- AND e.fechaEliminacion=0
+    AND e.eliminado=0
+    -- {$cat}
+INNER JOIN productoun pu ON pu.idProducto = p.idProducto
+    AND pu.activo=1
+    -- AND pu.fechaEliminacion=0
+    AND pu.eliminado=0
+    AND pu.idUn={$idUn}
+INNER JOIN eventoun eu ON eu.idEvento = e.idEvento
+    AND eu.idUn={$idUn}
+    AND eu.activo=1
+    -- AND eu.fechaEliminacion=0
+    AND eu.eliminado=0
+    AND DATE(NOW()) BETWEEN eu.inicioRegistro
+    AND eu.finRegistro
+    AND DATE(NOW()) <= eu.finEvento
+INNER JOIN eventouncapacidad euc ON euc.idEventoUn = eu.idEventoUn
+    AND euc.idTipoEventoCapacidad = 1
+    AND euc.activo = 1
+    AND euc.eliminado = 0
+    AND euc.autorizado = 1
+    AND euc.capacidad > 0
+    {$joinParticipantes}
+INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn = eu.idEventoUn
+    AND euc3.idTipoEventoCapacidad = 26
+    AND euc3.activo = 1
+    AND euc3.eliminado = 0
+    AND euc3.autorizado = 1
+    AND euc3.capacidad > 0
+    {$joinClases}
+WHERE p.activo = 1
+AND p.eliminado = 0
+-- AND p.fechaEliminacion = 0
+{$cat} ) a
+LIMIT 1";
+            // echo $sql; exit;
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
@@ -1012,7 +1022,6 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
             $fila = $query[0];
             return $fila['idEvento'];
         }
-
         return 0;
     }
 
