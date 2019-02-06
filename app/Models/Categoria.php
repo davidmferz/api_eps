@@ -135,26 +135,18 @@ class Categoria extends Model
      *
      * @return string
      */
-    public function campo($id, $campo)
+    public static function campo($id, $campo)
     {
         settype($id, 'integer');
-        if ($id == 0) {
-            return null;
-        }
-        if ($campo == "") {
-            return null;
-        }
-        if (DB::connection('crm')->table(TBL_CATEGORIA)->field_exists($campo) == false) {
-            return null;
-        }
+        
         
         $query = DB::connection('crm')->table(TBL_CATEGORIA)
-        ->select($campo)
+        ->select(DB::connection('crm')->raw("$campo as campo"))
         ->where('fechaEliminacion', '0000-00-00 00:00:00')
-        ->where('idCategoria', $id);
-        if ($query->count() > 0) {
-            $fila = ($query->get()->toArray())[0];
-            return $fila[$campo];
+        ->where('idCategoria', $id)->get()->toArray();
+        if (count($query) > 0) {
+            $fila = $query[0];
+            return $fila->campo;
         }
         return null;
     }

@@ -1000,30 +1000,35 @@ LIMIT 1";
         
         $cat = '';
         
-        $query = DB::connection('crm')->table(TBL_EVENTO.' e')
-        ->select('p.idProducto, p.nombre, eu.idEventoUn, e.idTipoEvento, eu.inicioRegistro, eu.finRegistro, eu.inicioEvento, eu.finEvento, eu.reservarInstalacion, eu.anticipo, eu.edadMinima, eu.edadMaxima')
-        ->join(TBL_PRODUCTO.' p', 'p.idProducto=e.idProducto'.$cat.' and p.fechaEliminacion=\'0000-00-00 00:00:00\'', 'INNER')
-        ->join(TBL_TIPOEVENTO.' te', 'te.idTipoEvento=e.idTipoEvento', 'INNER')
-        ->join(TBL_EVENTOUN.' eu', 'eu.idEvento=e.idEvento and eu.fechaEliminacion=\'0000-00-00 00:00:00\'', 'INNER')
+        $query = DB::connection('crm')->table(TBL_EVENTO.' AS e')
+        ->select('p.idProducto','p.nombre', 'eu.idEventoUn', 'e.idTipoEvento', 'eu.inicioRegistro', 'eu.finRegistro', 'eu.inicioEvento', 'eu.finEvento', 'eu.reservarInstalacion', 'eu.anticipo', 'eu.edadMinima', 'eu.edadMaxima')
+        ->join(TBL_PRODUCTO.' AS p',function ($join) {
+            $join->on('p.idProducto', '=', 'e.idProducto')
+                 ->where('p.fechaEliminacion', '=', '0000-00-00 00:00:00');
+        })
+        ->join(TBL_TIPOEVENTO.' AS te', 'te.idTipoEvento','=','e.idTipoEvento')
+        ->join(TBL_EVENTOUN.' AS eu', function ($join) {
+        $join->on('eu.idEvento', '=', 'e.idEvento')
+                 ->where('eu.fechaEliminacion', '=', '0000-00-00 00:00:00');
+        })
         ->where('e.idEvento', $idEvento)
         ->where('e.fechaEliminacion', '0000-00-00 00:00:00')
-        ->where('eu.idUn', $idUn);
+        ->where('eu.idUn', $idUn)->get()->toArray();
         
-        if ($query->count() > 0) {
-            $query = $query->get()->toArray();
+        if (count($query) > 0) {
             $fila = $query[0];
-            $datos['idProducto'] = $fila['idProducto'];
-            $datos['nombre'] = $fila['nombre'];
-            $datos['idEventoUn'] = $fila['idEventoUn'];
-            $datos['tipoEvento'] = $fila['idTipoEvento'];
-            $datos['inicioRegistro'] = $fila['inicioRegistro'];
-            $datos['finRegistro'] = $fila['finRegistro'];
-            $datos['inicioEvento'] = $fila['inicioEvento'];
-            $datos['finEvento'] = $fila['finEvento'];
-            $datos['reservar'] = $fila['reservarInstalacion'];
-            $datos['anticipo'] = $fila['anticipo'];
-            $datos['minina'] = $fila['edadMinima'];
-            $datos['maxima'] = $fila['edadMaxima'];
+            $datos['idProducto'] = $fila->idProducto;
+            $datos['nombre'] = $fila->nombre;
+            $datos['idEventoUn'] = $fila->idEventoUn;
+            $datos['tipoEvento'] = $fila->idTipoEvento;
+            $datos['inicioRegistro'] = $fila->inicioRegistro;
+            $datos['finRegistro'] = $fila->finRegistro;
+            $datos['inicioEvento'] = $fila->inicioEvento;
+            $datos['finEvento'] = $fila->finEvento;
+            $datos['reservar'] = $fila->reservarInstalacion;
+            $datos['anticipo'] = $fila->anticipo;
+            $datos['minina'] = $fila->edadMinima;
+            $datos['maxima'] = $fila->edadMaxima;
         }
         return $datos;
     }
@@ -1170,7 +1175,7 @@ LIMIT 1";
             ORDER BY euc.idEventoUnCapacidad DESC
             LIMIT 1";
         $query = DB::connection('crm')->select($sql);
-        if (countr($query) > 0) {
+        if (count($query) > 0) {
             $res = $query[0]->capacidad;
         }
         return $res;
@@ -1598,7 +1603,6 @@ LIMIT 1";
             WHERE eu.eliminado=0 AND eu.activo=1
                 AND eu.idEvento=$idEvento AND eu.idUn=$idUn";
         $query = DB::connection('crm')->select($qry);
-
         if (count($query) > 0) {
             $res = true;
         }
@@ -1645,21 +1649,20 @@ LIMIT 1";
      */
     public static function movientoDevengado($idMovimiento){
         $query = DB::connection('crm')->table(TBL_MOVIMIENTO.' `mov`')
-        ->select('eucap.activo AS activo, eucap.autorizado AS autorizado')
-        ->from(TBL_MOVIMIENTO.' `mov`')
-        ->join('crm.movimientoctacontable mcc','mov.idMovimiento = mcc.idMovimiento')
-        ->join('crm.eventomovimiento emov','mov.idMovimiento = emov.idMovimiento')
-        ->join('crm.eventoinscripcion eins','emov.idEventoInscripcion = eins.idEventoInscripcion')
-        ->join('crm.eventoun eun','eun.idEventoUn = eins.idEventoUn')
-        ->join('crm.eventouncapacidad eucap','eun.idEventoUn = eucap.idEventoUn')
-        ->join('crm.tipoeventocapacidad tec','tec.idTipoEventoCapacidad = eucap.idTipoEventoCapacidad')
+        ->select(DB::connection('crm')->raw('eucap.activo AS activo, eucap.autorizado AS autorizado'))
+        ->from(TBL_MOVIMIENTO.' AS mov')
+        ->join('crm.movimientoctacontable AS mcc','mov.idMovimiento', '=', 'mcc.idMovimiento')
+        ->join('crm.eventomovimiento AS emov','mov.idMovimiento' ,'=' ,'emov.idMovimiento')
+        ->join('crm.eventoinscripcion AS eins','emov.idEventoInscripcion' ,'=', 'eins.idEventoInscripcion')
+        ->join('crm.eventoun AS eun','eun.idEventoUn', '=' ,'eins.idEventoUn')
+        ->join('crm.eventouncapacidad AS eucap','eun.idEventoUn' ,'=' ,'eucap.idEventoUn')
+        ->join('crm.tipoeventocapacidad AS tec','tec.idTipoEventoCapacidad', '=', 'eucap.idTipoEventoCapacidad')
         ->where('eucap.idTipoEventoCapacidad', 30)
         ->where('mov.idMovimiento', $idMovimiento)
         ->distinct()
-        ->get();
-        $rs = $query[0];
+        ->first();
         
-        return $rs;
+        return $query;
     }
 
      /**
@@ -2069,10 +2072,10 @@ LIMIT 1";
         if ($idCategoria==CATEGORIA_CARRERAS) {
             $sql = "
 SELECT IF(MAX(ep.numfolio) IS NULL,0, MAX(ep.numfolio)) AS ultimoFolio
-FROM crm.eventoparticipante ep
-INNER JOIN crm.eventoinscripcion ei ON ei.idEventoInscripcion=ep.idEventoInscripcion AND ei.monto=ei.pagado
-INNER JOIN crm.eventoun eu ON eu.idEventoUn=ei.idEventoUn
-INNER JOIN crm.evento e ON e.idEvento=eu.idEvento AND e.idEvento IN (".$idEvento.")
+FROM crm.eventoparticipante  AS ep
+INNER JOIN crm.eventoinscripcion AS ei ON ei.idEventoInscripcion=ep.idEventoInscripcion AND ei.monto=ei.pagado
+INNER JOIN crm.eventoun AS eu ON eu.idEventoUn=ei.idEventoUn
+INNER JOIN crm.evento AS e ON e.idEvento=eu.idEvento AND e.idEvento IN (".$idEvento.")
 WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
             ";
             $query = DB::connection('crm')->select($sql);
@@ -2094,7 +2097,8 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         }
 
         $id = DB::connection('crm')->table(TBL_EVENTOPARTICIPANTE)->insertGetId($set);
-        Permiso::log('Se asigna persona al evento ('.$idPersona.')', LOG_EVENTO);
+        $permiso=new Permiso;
+        $permiso->log('Se asigna persona al evento ('.$idPersona.')', LOG_EVENTO);
 
         return $id;
     }
@@ -2409,36 +2413,38 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         }
         
         $query = DB::connection('crm')->table(TBL_EVENTOUN)
-        ->select('idEventoUn, edadMinima, edadMaxima')
+        ->select('idEventoUn', 'edadMinima', 'edadMaxima')
         ->where('idUn', $idUn)
         ->where('idEvento', $idEvento)
         ->where('activo', 1)
-        ->where('fechaEliminacion', '0000-00-00 00:00:00');
-        
-        if ($query->count() > 0) {
-            $fila = ($query->get()->toArray())[0];
-            $idEventoUn = $fila['idEventoUn'];
-            $edadMinima = $fila['edadMinima'];
-            $edadMaxima = $fila['edadMaxima'];
+        ->where('fechaEliminacion', '0000-00-00 00:00:00')
+        ->get()
+        ->toArray();
+        if (count($query) > 0) {
+            $fila = $query[0];
+            $idEventoUn = $fila->idEventoUn;
+            $edadMinima = $fila->edadMinima;
+            $edadMaxima = $fila->edadMaxima;
         } else {
             return (-1);
         }
         
-        $query = DB::connection('crm')->table(TBL_EVENTO.' e')
+        $query = DB::connection('crm')->table(TBL_EVENTO.' AS  e')
         ->select('p.nombre')
-        ->join(TBL_PRODUCTO.' p', 'e.idProducto=p.idProducto')
-        ->where('e.idEvento', $idEvento);
+        ->join(TBL_PRODUCTO.' AS p', 'e.idProducto','=','p.idProducto')
+        ->where('e.idEvento', $idEvento)->get()->toArray();
         
-        if ($query->count() > 0) {
-            $fila = ($query->get()->toArray())[0];
-            $nombre = $fila['nombre'];
+        if (count($query) > 0) {
+            $fila = $query[0];
+            $nombre = $fila->nombre;
         } else {
             $nombre = '';
         }
 
-        $idCategoria = $this->obtenIdCategoria($idEvento);
+        $aux=new self;
+        $idCategoria = $aux->obtenIdCategoria($idEvento);
         if ($participantes == 0) {
-            $participantes = $this->capacidadEvento($idEvento, $idUn, TIPO_NUMERO_PARTICIPANTES);
+            $participantes = $aux->capacidadEvento($idEvento, $idUn, TIPO_NUMERO_PARTICIPANTES);
         }
 
         $unSession = (int)$_SESSION['idUn'];
@@ -2469,8 +2475,8 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         );
 
         $inscripcion = DB::connection('crm')->table(TBL_EVENTOINSCRIPCION)->insertGetId($reg);
-        
-        Permiso::log(
+        $permiso = new Permiso;
+        $permiso->log(
             'Se realiza incripcion al evento '.$nombre.' (Num. Inscripcion '.$inscripcion.')',
             LOG_EVENTO,
             $membresia,
@@ -2481,10 +2487,10 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
 
         if ( ( ($edadMinima == 0 && $edadMaxima == 0) || ($edad >= $edadMinima && $edad <= $edadMaxima)) && $inscripcion > 0 ) {
             if ($idCategoria==CATEGORIA_CARRERAS) {
-                $this->guardaParticipante($inscripcion, $idPersona, $idEvento);
+                $aux->guardaParticipante($inscripcion, $idPersona, $idEvento);
             } else {
                 if ($idCategoria!=CATEGORIA_SUMMERCAMP) {
-                    $this->guardaParticipante($inscripcion, $idPersona);
+                    $aux->guardaParticipante($inscripcion, $idPersona);
                 }
             }
         }
@@ -2541,7 +2547,8 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         );
         $id = DB::connection('crm')->table(TBL_EVENTOMOVIMIENTO)
         ->insertGetId($reg);
-        Permiso::log('Se vincula evento al movimiento ('.$idMovimiento.')', LOG_EVENTO);
+        $permiso=new Permiso;
+        $permiso->log('Se vincula evento al movimiento ('.$idMovimiento.')', LOG_EVENTO);
         
         return $id;
     }
@@ -2604,8 +2611,8 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
                     'horaEvento'               => $hora
                 );
                 $res = DB::connection('crm')->table(TBL_EVENTOFECHA)->insertGetId($reg);
-                
-                Permiso::log('Se agenda clase para la inscripcion ('.$idEventoInscripcion.')', LOG_EVENTO);
+                $permiso=new Permiso;
+                $permiso->log('Se agenda clase para la inscripcion ('.$idEventoInscripcion.')', LOG_EVENTO);
 
                 $totalClase = $totalClase + 1;
                 $set = array('totalSeguimiento' => $totalClase);
