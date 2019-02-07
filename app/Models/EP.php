@@ -122,34 +122,55 @@ INNER JOIN categoria c ON c.idCategoria=p.idCategoria
     AND c.idCategoria={$idCategoria}
 INNER JOIN evento e ON e.idProducto=p.idProducto
    AND e.idEventoClasificacion>0
-   AND e.fechaEliminacion=0
+   -- AND e.fechaEliminacion=0
+   AND e.eliminado=0
 INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-   AND pu.activo=1 AND pu.fechaEliminacion=0
+   AND pu.activo=1
+   -- AND pu.fechaEliminacion=0
+   AND pu.eliminado=0
    AND pu.idUn={$idUn}
 INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
-    AND pp.activo=1 AND pp.fechaEliminacion=0
+    AND pp.activo=1
+    -- AND pp.fechaEliminacion=0
+    AND pp.eliminado=0
     AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
 INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.fechaEliminacion=0
+    AND eu.idUn={$idUn}
+    AND eu.activo=1
+    -- AND eu.fechaEliminacion=0
+    AND eu.eliminado=0
     AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
     AND DATE(NOW()) <= eu.finEvento
 INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
-    AND euc.idTipoEventoCapacidad=1 AND euc.activo=1 AND euc.autorizado=1
-    AND euc.fechaEliminacion=0 AND euc.capacidad>0
+    AND euc.idTipoEventoCapacidad=1
+    AND euc.activo=1 AND euc.autorizado=1
+    -- AND euc.fechaEliminacion=0
+    AND euc.eliminado=0
+    AND euc.capacidad>0
 INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
-    AND euc2.idTipoEventoCapacidad=7 AND euc2.activo=1 AND euc2.autorizado=1
-    AND euc2.eliminado=0 AND euc2.capacidad={$participantes}
+    AND euc2.idTipoEventoCapacidad=7
+    AND euc2.activo=1
+    AND euc2.autorizado=1
+    AND euc2.eliminado=0
+    AND euc2.capacidad={$participantes}
 INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn=eu.idEventoUn
-    AND euc3.idTipoEventoCapacidad=26 AND euc3.activo=1 AND euc3.autorizado=1
-    AND euc3.eliminado=0 AND euc3.capacidad>0
+    AND euc3.idTipoEventoCapacidad=26
+    AND euc3.activo=1
+    AND euc3.autorizado=1
+    AND euc3.eliminado=0
+    AND euc3.capacidad>0
 INNER JOIN eventouncapacidad euc4 ON euc4.idEventoUn=eu.idEventoUn
-    AND euc4.idTipoEventoCapacidad=6 AND euc4.activo=1 AND euc4.autorizado=1
-    AND euc4.eliminado=0 AND euc4.capacidad>0
-WHERE p.activo=1 AND p.eliminado=0
+    AND euc4.idTipoEventoCapacidad=6
+    AND euc4.activo=1
+    AND euc4.autorizado=1
+    AND euc4.eliminado=0
+    AND euc4.capacidad>0
+WHERE p.activo=1
+AND p.eliminado=0
 GROUP BY 1
 ORDER BY 1";
         $query = DB::connection('crm')->select($sql);
-
+        
         if (count($query) > 0) {
             foreach ($query as $fila) {
                 $r['numClases'] = (int) $fila->clases;
@@ -168,66 +189,95 @@ ORDER BY 1";
      *
      * @return [type]              [description]
      */
-    public function arrayEntrenadores($idCategoria, $idUn)
+    public function arrayEntrenadores($idCategoria, $idUn, $tipo_cat = null)
     {
         $res = array();
-
+        
+        $str_categoria = " AND c.idCategoria = {$idCategoria} ";
+        $str_select_categoria = "";
+        $str_order_categoria = "";
+        $str_groupby = "";
+        $str_groupby_global = "GROUP BY a.idPersona";
+        
+        if ($tipo_cat == 'lista_cat') {
+            $str_categoria = " AND c.idCategoria in ({$idCategoria}) ";
+            $str_select_categoria = ",c.idCategoria";
+            $str_order_categoria = " idCategoria ASC, ";
+            $str_groupby = ",c.idCategoria";
+            $str_groupby_global = "";
+        }
+        
         $sql = "
 SELECT * FROM (
-        (SELECT emp.idPersona, CONCAT_WS(' ', per.nombre, per.paterno, per.materno) AS nombre
+        (SELECT emp.idPersona, CONCAT_WS(' ', per.nombre, per.paterno, per.materno) AS nombre {$str_select_categoria}
 FROM producto p
 INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-    AND c.idCategoria={$idCategoria}
+    {$str_categoria}
 INNER JOIN evento e ON e.idProducto=p.idProducto
     AND e.idEventoClasificacion>0
     AND e.eliminado=0
 INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-    AND pu.activo=1 AND pu.eliminado=0
+    AND pu.activo=1
+    AND pu.eliminado=0
     AND pu.idUn={$idUn}
 INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.eliminado=0
+    AND eu.idUn={$idUn}
+    AND eu.activo=1
+    AND eu.eliminado=0
     AND DATE(NOW()) BETWEEN eu.inicioRegistro and eu.finRegistro
     AND DATE(NOW()) <= eu.finEvento
 INNER JOIN eventopuestocomision epc ON epc.idEvento=e.idEvento
-    AND epc.activo=1 AND epc.fechaEliminacion='0000-00-00 00:00:00'
+    AND epc.activo=1
+    AND epc.fechaEliminacion='0000-00-00 00:00:00'
 INNER JOIN empleadopuesto ep ON ep.idPuesto=epc.idPuesto
-    AND ep.idUn={$idUn} AND ep.fechaEliminacion='0000-00-00 00:00:00'
+    AND ep.idUn={$idUn}
+    AND ep.fechaEliminacion='0000-00-00 00:00:00'
 INNER JOIN empleado emp ON emp.idEmpleado=ep.idEmpleado
-    AND emp.idTipoEstatusEmpleado=196 AND emp.fechaEliminacion='0000-00-00 00:00:00'
+    AND emp.idTipoEstatusEmpleado=196
+    AND emp.fechaEliminacion='0000-00-00 00:00:00'
 INNER JOIN persona per ON per.idPersona=emp.idPersona
-WHERE p.activo=1 AND p.eliminado=0
-GROUP BY emp.idPersona)
+WHERE p.activo=1
+AND p.eliminado=0
+GROUP BY emp.idPersona {$str_groupby})
 UNION
-(SELECT emp.idPersona, CONCAT_WS(' ', per.nombre, per.paterno, per.materno) AS nombre
+(SELECT emp.idPersona, CONCAT_WS(' ', per.nombre, per.paterno, per.materno) AS nombre {$str_select_categoria}
 FROM producto p
 INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-    AND c.idCategoria={$idCategoria}
+    {$str_categoria}
 INNER JOIN evento e ON e.idProducto=p.idProducto
     AND e.idEventoClasificacion>0
     AND e.eliminado=0
 INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-    AND pu.activo=1 AND pu.eliminado=0
+    AND pu.activo=1
+    AND pu.eliminado=0
     AND pu.idUn={$idUn}
 INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.eliminado=0
+    AND eu.idUn={$idUn}
+    AND eu.activo=1
+    AND eu.eliminado=0
     AND DATE(NOW()) BETWEEN eu.inicioRegistro and eu.finRegistro
     AND DATE(NOW()) <= eu.finEvento
 INNER JOIN eventounpuestoexcepcion eupe ON eupe.idEventoUn=eu.idEventoUn
-    AND eupe.idEmpleado>0 AND eupe.activo=1
+    AND eupe.idEmpleado>0
+    AND eupe.activo=1
     AND eupe.fechaEliminacion='0000-00-00 00:00:00'
 INNER JOIN empleado emp ON emp.idEmpleado=eupe.idEmpleado
     AND emp.idTipoEstatusEmpleado=196
     AND emp.fechaEliminacion = '0000-00-00 00:00:00'
 INNER JOIN persona per ON per.idPersona=emp.idPersona
-GROUP BY emp.idPersona)
-) a GROUP BY a.idPersona
-ORDER  BY nombre";
+GROUP BY emp.idPersona {$str_groupby})
+) a
+{$str_groupby_global}
+ORDER BY {$str_order_categoria} nombre";
         $query = DB::connection('crm')->select($sql);
-
+        
         if (count($query) > 0) {
             foreach ($query as $fila) {
-                $r['idEntrenador']     = utf8_encode($fila->idPersona);
+                $r['idEntrenador']     = $fila->idPersona;
                 $r['nombreEntrenador'] = utf8_encode($fila->nombre);
+                if ($tipo_cat == 'lista_cat') {
+                    $r['categoria'] = $fila->idCategoria;
+                }
                 $res[]                 = $r;
             }
         }
@@ -242,49 +292,77 @@ ORDER  BY nombre";
      *
      * @return [type]              [description]
      */
-    public function arrayFormaPago($idCategoria, $idUn)
+    public function arrayFormaPago($idCategoria, $idUn, $tipo_cat = null)
     {
         $res = array();
-
+        
+        $str_categoria = " AND c.idCategoria = {$idCategoria} ";
+        $str_select_categoria = "";
+        $str_select_categoria_2 = "";
+        $str_select_categoria_3 = " (SELECT  1 AS numeroMeses, 'Contado' AS descripcion) UNION ALL ";
+        $str_order_categoria = "";
+        $str_groupby = " GROUP BY pmsi.idPeriodoMsi ";
+        $str_groupby_2 = " GROUP BY numeroMeses ";
+        
+        if ($tipo_cat == 'lista_cat') {
+            $str_categoria = " AND c.idCategoria in ({$idCategoria}) ";
+            $str_select_categoria = ",c.idCategoria";
+            $str_select_categoria_2 = ",idCategoria";
+            $str_select_categoria_3 = " (SELECT  1 AS numeroMeses, 'Contado' AS descripcion, NULL AS idCategoria) UNION ALL ";
+            $str_order_categoria = " idCategoria ASC, ";
+            $str_groupby = " GROUP BY pmsi.idPeriodoMsi, c.idCategoria ";
+            $str_groupby_2 = " GROUP BY numeroMeses, idCategoria ";
+        }
+        
         $sql   = "DROP TABLE IF EXISTS  tmp_WSEp_formaPago";
         $query = DB::connection('crm')->select($sql);
 
         $sql = "
 CREATE TEMPORARY TABLE tmp_WSEp_formaPago
-SELECT pmsi.numeroMeses, CONCAT(pmsi.numeroMeses, ' ', pmsi.descripcion) AS descripcion
+SELECT pmsi.numeroMeses, CONCAT(pmsi.numeroMeses, ' ', pmsi.descripcion) AS descripcion {$str_select_categoria}
 FROM producto p
 INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-    AND c.idCategoria={$idCategoria}
+    {$str_categoria}
 INNER JOIN evento e ON e.idProducto=p.idProducto
     AND e.idEventoClasificacion>0
-    AND e.fechaEliminacion=0
+    -- AND e.fechaEliminacion=0
+    AND e.eliminado=0
 INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-    AND pu.activo=1 AND pu.fechaEliminacion=0
+    AND pu.activo=1
+    -- AND pu.fechaEliminacion=0
+    AND pu.eliminado=0
     AND pu.idUn={$idUn}
 INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.fechaEliminacion=0
+    AND eu.idUn={$idUn}
+    AND eu.activo=1
+    -- AND eu.fechaEliminacion=0
+    AND eu.eliminado=0
     AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
     AND DATE(NOW()) <= eu.finEvento
 INNER JOIN productomsi pm ON pm.idProducto=p.idProducto
-    AND pu.idUn=pm.idUn AND pm.activo=1
+    AND pu.idUn=pm.idUn
+    AND pm.activo=1
 INNER JOIN periodomsi pmsi on pmsi.idPeriodoMsi=pm.idPeriodoMsi
+    AND pmsi.numeroMeses <> 1
 WHERE p.activo=1
-AND p.fechaEliminacion=0
-GROUP BY pmsi.idPeriodoMsi
-ORDER BY pmsi.orden";
+-- AND p.fechaEliminacion=0
+AND p.eliminado=0
+{$str_groupby}
+ORDER BY pmsi.orden ";
         $query = DB::connection('crm')->select($sql);
-
-        $sql = "SELECT numeroMeses, descripcion FROM (
-            (SELECT  1 AS numeroMeses, 'Contado' AS descripcion)
-            UNION ALL
-            (SELECT * FROM tmp_WSEp_formaPago p)
-        ) a GROUP BY numeroMeses";
+        
+        $sql = "SELECT numeroMeses, descripcion {$str_select_categoria_2} FROM ( {$str_select_categoria_3}
+            (SELECT numeroMeses, descripcion {$str_select_categoria_2} FROM tmp_WSEp_formaPago p)
+        ) a {$str_groupby_2}";
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
             foreach ($query as $fila) {
                 $r['meses']       = utf8_encode($fila->numeroMeses);
                 $r['descripcion'] = utf8_encode($fila->descripcion);
+                if ($tipo_cat == 'lista_cat') {
+                    $r['idCategoria'] = $fila->idCategoria;
+                }
                 $res[]            = $r;
             }
         }
@@ -299,40 +377,59 @@ ORDER BY pmsi.orden";
      *
      * @return [type]              [description]
      */
-    public function arrayParticipantes($idCategoria, $idUn)
+    public function arrayParticipantes($idCategoria, $idUn, $tipo_cat = null)
     {
         $res = array();
-
+        
+        $str_categoria = " AND c.idCategoria = {$idCategoria} ";
+        $str_select_categoria = "";
+        $str_groupby = " GROUP BY euc2.capacidad ";
+        $str_orderby = " ORDER BY euc2.capacidad ";
+        
+        if ($tipo_cat == 'lista_cat') {
+            $str_categoria = " AND c.idCategoria in ({$idCategoria}) ";
+            $str_select_categoria = ",c.idCategoria";
+            $str_groupby = " GROUP BY euc2.capacidad, c.idCategoria ";
+            $str_orderby = " ORDER BY c.idCategoria, euc2.capacidad ";
+        }
+        
         $sql = "
-SELECT euc2.capacidad AS participantes
+SELECT euc2.capacidad AS numParticipantes {$str_select_categoria}
 FROM producto p
 INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-    AND c.idCategoria={$idCategoria}
+    {$str_categoria}
 INNER JOIN evento e ON e.idProducto=p.idProducto
     AND e.idEventoClasificacion>0
     AND e.fechaEliminacion=0
 INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-    AND pu.activo=1 AND pu.fechaEliminacion=0
+    AND pu.activo=1
+    AND pu.fechaEliminacion=0
     AND pu.idUn={$idUn}
 INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.fechaEliminacion=0
+    AND eu.idUn={$idUn}
+    AND eu.activo=1 AND eu.fechaEliminacion=0
     AND DATE(NOW()) BETWEEN eu.inicioRegistro and eu.finRegistro
     AND DATE(NOW()) <= eu.finEvento
 INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
-    AND euc2.idTipoEventoCapacidad=7 AND euc2.activo=1 AND euc2.fechaEliminacion=0
-    AND euc2.autorizado=1 AND euc2.capacidad>0
+    AND euc2.idTipoEventoCapacidad=7
+    AND euc2.activo=1
+    AND euc2.fechaEliminacion=0
+    AND euc2.autorizado=1
+    AND euc2.capacidad>0
 WHERE p.activo=1 AND p.fechaEliminacion=0
-GROUP BY euc2.capacidad
-ORDER BY euc2.capacidad";
+{$str_groupby}
+{$str_orderby} ";
         $query = DB::connection('crm')->select($sql);
         if (count($query) > 0) {
+            
             foreach ($query as $fila) {
-                $r['numParticipantes'] = (int) $fila->participantes;
-                $r['clases']           = $this->arrayClases($idCategoria, $idUn, $fila->participantes);
-                $res[]                 = $r;
+                $r['numParticipantes'] = utf8_encode($fila->numParticipantes);
+                if ($tipo_cat == 'lista_cat') {
+                    $r['idCategoria'] = $fila->idCategoria;
+                }
+                $res[]            = $r;
             }
         }
-
         return $res;
     }
 
@@ -353,9 +450,9 @@ ORDER BY euc2.capacidad";
         settype($participantes, 'integer');
         settype($participantes, 'integer');
         settype($clases, 'integer');
-
+        
         $res = array();
-
+        
         $sql = "
 CREATE TEMPORARY TABLE tmp_pre_ep_precios
 SELECT tc.descripcion  AS tipoCliente, IF(ep.idEsquemaPago=8, 'Contado', ep.descripcion) AS pago, pp.importe
@@ -365,29 +462,50 @@ INNER JOIN categoria c ON c.idCategoria=p.idCategoria
 INNER JOIN evento e ON e.idProducto=p.idProducto
    AND e.idEventoClasificacion>0
    AND e.fechaEliminacion=0
+   -- AND e.eliminado=0
 INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-   AND pu.activo=1 AND pu.fechaEliminacion=0
+   AND pu.activo=1
+   AND pu.fechaEliminacion=0
+   -- AND pu.eliminado=0
    AND pu.idUn={$idUn}
 INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
-    AND pp.activo=1 AND pp.fechaEliminacion=0 AND pp.idEsquemaPago NOT IN (7, 11)
+    AND pp.activo=1
+    AND pp.fechaEliminacion=0
+    -- AND pp.eliminado=0
+    AND pp.idEsquemaPago NOT IN (7, 11)
     AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
 INNER JOIN tipocliente tc ON tc.idTipoCliente=pp.idTipoCliente
 INNER JOIN esquemapago ep ON ep.idEsquemaPago=pp.idEsquemaPago
 INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-    AND eu.idUn={$idUn} AND eu.activo=1 AND eu.fechaEliminacion=0
+    AND eu.idUn={$idUn}
+    AND eu.activo=1
+    AND eu.fechaEliminacion=0
+    -- AND eu.eliminado=0
     AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
     AND DATE(NOW()) <= eu.finEvento
 INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
-    AND euc.idTipoEventoCapacidad=1 AND euc.activo=1 AND euc.autorizado=1
-    AND euc.fechaEliminacion=0 AND euc.capacidad>0
+    AND euc.idTipoEventoCapacidad=1
+    AND euc.activo=1
+    AND euc.autorizado=1
+    AND euc.fechaEliminacion=0
+    -- AND euc.eliminado=0
+    AND euc.capacidad>0
 INNER JOIN eventouncapacidad euc2 ON euc2.idEventoUn=eu.idEventoUn
-    AND euc2.idTipoEventoCapacidad=7 AND euc2.activo=1 AND euc2.autorizado=1
-    AND euc2.eliminado=0 AND euc2.capacidad={$participantes}
+    AND euc2.idTipoEventoCapacidad=7
+    AND euc2.activo=1
+    AND euc2.autorizado=1
+    AND euc2.eliminado=0
+    AND euc2.capacidad={$participantes}
 INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn=eu.idEventoUn
-    AND euc3.idTipoEventoCapacidad=26 AND euc3.activo=1 AND euc3.autorizado=1
-    AND euc3.eliminado=0 AND euc3.capacidad>0
+    AND euc3.idTipoEventoCapacidad=26
+    AND euc3.activo=1
+    AND euc3.autorizado=1
+    AND euc3.eliminado=0
+    AND euc3.capacidad>0
 INNER JOIN eventouncapacidad euc4 ON euc4.idEventoUn=eu.idEventoUn
-    AND euc4.idTipoEventoCapacidad=6 AND euc4.activo=1 AND euc4.autorizado=1
+    AND euc4.idTipoEventoCapacidad=6
+    AND euc4.activo=1
+    AND euc4.autorizado=1
     AND euc4.eliminado=0
     AND euc4.capacidad={$clases}
 WHERE p.activo=1 AND p.eliminado=0
@@ -423,16 +541,16 @@ GROUP BY pago";
                 $res = $r;
             }
         }
-
-        $sql = "DROP TABLE tmp_pre_ep_precios";
+        
+        $sql = "DROP TABLE IF EXISTS tmp_pre_ep_precios";
         DB::connection('crm')->select($sql);
-
-        $sql = "DROP TABLE tmp_ep_precios";
+        
+        $sql = "DROP TABLE IF EXISTS tmp_ep_precios";
         DB::connection('crm')->select($sql);
-
+        
         return $res;
     }
-
+    
     /**
      * [clase description]
      *
@@ -540,9 +658,9 @@ GROUP BY pago";
     public function general($idUn)
     {
         settype($idUn, 'integer');
-
+        
         $res = array();
-
+        
         if ($idUn > 1) {
             $sql = "
 SELECT c.idCategoria AS idCategoria, c.nombre AS nombreCategoria,
@@ -570,6 +688,20 @@ WHERE p.activo=1 AND p.fechaEliminacion=0
 GROUP BY c.nombre";
             $query = DB::connection('crm')->select($sql);
             if (count($query) > 0) {
+                $arr_idCategoria = [];
+                foreach ($query as $fila) {
+                    $arr_idCategoria[] = $fila->idCategoria;
+                }
+                sort($arr_idCategoria);
+                $arrayEntrenadores = $this->arrayEntrenadores(implode(',',$arr_idCategoria), $idUn, 'lista_cat');
+                // print_r($arrayEntrenadores); exit;
+                
+                $arrayFormaPago = $this->arrayFormaPago(implode(',',$arr_idCategoria), $idUn, 'lista_cat');
+                // print_r($arrayFormaPago); exit;
+                
+                $arrayParticipantes = $this->arrayParticipantes(implode(',',$arr_idCategoria), $idUn, 'lista_cat');
+                // print_r($arrayParticipantes); exit;
+                
                 foreach ($query as $fila) {
                     $idCategoria                  = utf8_encode($fila->idCategoria);
                     $categoria['idCategoria']     = utf8_encode($fila->idCategoria);
@@ -578,18 +710,48 @@ GROUP BY c.nombre";
                     $categoria['edadMaxima']      = utf8_encode($fila->edadMaxima);
                     $categoria['edadMaxima']      = utf8_encode($fila->edadMaxima);
                     $categoria['inscripciones']   = utf8_encode($fila->inscripciones);
-                    $categoria['entrenadores']    = $this->arrayEntrenadores($idCategoria, $idUn);
-                    $categoria['formasPagos']     = $this->arrayFormaPago($idCategoria, $idUn);
-                    $categoria['participantes']   = $this->arrayParticipantes($idCategoria, $idUn);
-
+                    foreach ($arrayEntrenadores as $entrenador) {
+                        if ($entrenador['categoria'] == $idCategoria) {
+                            unset($entrenador['categoria']);
+                            $entrenador['idEntrenador'] = strval($entrenador['idEntrenador']);
+                            $categoria['entrenadores'][] = $entrenador;
+                        }
+                    }
+                    foreach ($arrayFormaPago as $formaPago) {
+                        $formaPago['meses'] = strval($formaPago['meses']);
+                        if ( $formaPago['idCategoria'] == null) {
+                            $aux = $formaPago;
+                            unset($aux['idCategoria']);
+                            $categoria['formasPagos'][] = $aux;
+                        }
+                        
+                        if ($formaPago['idCategoria'] == $idCategoria) {
+                            unset($formaPago['idCategoria']);
+                            $categoria['formasPagos'][] = $formaPago;
+                        }
+                    }
+                    foreach ($arrayParticipantes as $participante) {
+                        if ($participante['idCategoria'] == $idCategoria) {
+                            unset($participante['idCategoria']);
+                            $participante['numParticipantes'] = intval($participante['numParticipantes']);
+                            $categoria['participantes'][] = $participante;
+                        }
+                    }
+                    
+                    // Se ageregan las clases a los participantes
+                    foreach($categoria['participantes'] as &$arr_participante) {
+                        $arr_participante['clases'] = $this->arrayClases($idCategoria, $idUn, $arr_participante['numParticipantes']);
+                    }
                     $res[] = $categoria;
+                    $categoria['entrenadores'] = [];
+                    $categoria['formasPagos'] = [];
+                    $categoria['participantes'] = [];
                 }
             }
         }
-
         return $res;
     }
-
+    
     public static function getRealIP()
     {
         if (isset($_SERVER["HTTP_CLIENT_IP"])) {
@@ -1014,7 +1176,6 @@ AND p.eliminado = 0
 -- AND p.fechaEliminacion = 0
 {$cat} ) a
 LIMIT 1";
-            // echo $sql; exit;
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
