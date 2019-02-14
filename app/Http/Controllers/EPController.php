@@ -6,7 +6,6 @@ use API_EPS\Models\EP;
 use API_EPS\Models\Un;
 use API_EPS\Models\Socio;
 use API_EPS\Models\Evento;
-use API_EPS\Models\Objeto;
 use API_EPS\Models\Persona;
 use API_EPS\Models\Comision;
 use API_EPS\Models\Empleado;
@@ -142,7 +141,7 @@ class EPController extends Controller
 
                 'perfil_ep'             => $_SESSION['perfil_ep'],
                 'calificacion'          => $_SESSION['calificacion'],
-                'version'               => '3.0.4', // Objeto::obtenerObjeto(953)['descripcion'],
+                'version'               => '3.0.5', // Objeto::obtenerObjeto(953)['descripcion'],
                 'clubs'                 => $_SESSION['clubs'],
             );
             return response()->json($out, 200);
