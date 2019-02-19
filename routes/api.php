@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -11,7 +9,7 @@ use Illuminate\Http\Request;
 | routes are loaded by the RouteServiceProvider within a group which
 | is assigned the "api" middleware group. Enjoy building your API!
 |
-*/
+ */
 
 Route::group(['prefix' => 'v1/'], function () {
     Route::middleware(['cors'])->group(function () {
@@ -24,7 +22,12 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['post', 'options'], 'plantrabajo/{idPersona?}', 'EPController@plantrabajo');
         Route::match(['get', 'options'], 'plantrabajo/{idPersona?}', 'EPController@plantrabajo');
         Route::match(['get', 'options'], 'meta/{idPersona}', 'EPController@meta');
+
         Route::match(['get', 'options'], 'clase/{idEntrenador}/{idUn}', 'EPController@clase');
+
+        Route::match(['get', 'options'], 'agendaEps/{idEntrenador}/{idUn}', 'EPController@agendaEps');
+        Route::match(['get', 'options'], 'asignaEntrenador/{idEmpleado}/{idUn}/{idAgenda}', 'EPController@asignaEntrenador');
+
         Route::match(['get', 'options'], 'general/{idUn}', 'EPController@general');
         Route::match(['post', 'options'], 'inscribir', 'EPController@inscribir');
         Route::match(['get', 'options'], 'reAgendar/{idEventoFecha}/{delay}', 'EPController@reAgendar');
@@ -41,8 +44,6 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['get', 'options'], 'perfil/{idPersona}', 'EPController@perfil');
         Route::match(['post', 'options'], 'calificacion/{idEventoInscripcion?}', 'EPController@calificacion');
         Route::match(['get', 'options'], 'getEntrenadores/{idUn}', 'EPController@getEntrenadores');
-        
-        
-        
+
     });
 });
