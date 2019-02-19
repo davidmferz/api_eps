@@ -45,7 +45,7 @@ class AgendaInbody extends Model
      * @param $data
      * @return JSON
      */
-    public static function scopeConsultaInbodyEmpleado($query, $idUn, $idEmpleado)
+    public static function scopeConsultaInbodyEmpleado($query, $idEmpleado, $idUn)
     {
         $sql = "SELECT  CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno) AS nombre
         from persona
@@ -85,14 +85,13 @@ class AgendaInbody extends Model
 
         $res = $res->orderBy('agenda_inbody.idUn', 'asc')
             ->orderBy('fechaSolicitud', 'asc')
-            ->get()
-            ->toArray();
+          ->get()
+        ->toArray();
 
-        /*   $addSlashes = str_replace('?', "'?'", $res->toSql());
-        $sq= vsprintf(str_replace('?', '%s', $addSlashes), $res->getBindings());
+       /* $addSlashes = str_replace('?', "'?'", $res->toSql());
+        $sq         = vsprintf(str_replace('?', '%s', $addSlashes), $res->getBindings());
         dd($sq);
-        /*
-         */
+*/
         if (count($res) > 0) {
 
             return $res;

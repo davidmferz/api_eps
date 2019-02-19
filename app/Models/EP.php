@@ -3,10 +3,10 @@
 namespace API_EPS\Models;
 
 use API_EPS\Models\Objeto;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class EP extends Model
 {
@@ -903,7 +903,7 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
             e.idEmpleado, e.idTipoEstatusEmpleado, u.idUn, u.nombre AS unNombre,
             e.imss as NumSeguroSocial,o.razonSocial,
             pu.idPuesto, pu.descripcion AS puestoNombre, if(pu.idPuesto in (192, 194, 197, 217, 229, 417, 419, 444, 465, 466, 468, 470, 485, 499, 806,74, 75, 76, 82, 92, 100, 177, 410, 441, 447, 486, 509, 510, 567, 780, 100044, 100047),(
-                SELECT GROUP_CONCAT(CONCAT_WS(',',p2.idPersona,CONCAT_WS(' ',p2.nombre,p2.Paterno,p2.Materno), ep2.idPuesto, pu2.descripcion) SEPARATOR '|')
+                SELECT GROUP_CONCAT(CONCAT_WS(',',p2.idPersona,CONCAT_WS(' ',p2.nombre,p2.Paterno,p2.Materno), ep2.idPuesto, pu2.descripcion,e2.idEmpleado) SEPARATOR '|')
                 FROM crm.persona p2
                 JOIN crm.empleado e2 ON e2.idPersona = p2.idPersona
                 JOIN crm.empleadopuesto ep2 ON ep2.idEmpleado = e2.idEmpleado

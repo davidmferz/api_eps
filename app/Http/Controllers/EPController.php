@@ -16,14 +16,16 @@ use API_EPS\Models\Categoria;
 use API_EPS\Models\Membresia;
 use API_EPS\Models\Movimiento;
 use API_EPS\Models\EventoFecha;
+use API_EPS\Models\AgendaInbody;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use API_EPS\Http\Controllers\ApiController;
 
 /**
  * Extraído desde el controller /crm/system/application/controllers/ep.php
  * y desde el model /crm/system/application/models/ep_model.php
  */
-class EPController extends Controller
+class EPController extends ApiController
 {
 
     /**
@@ -301,6 +303,31 @@ class EPController extends Controller
                 'message' => 'Error',
             );
             return response()->json($retval, $retval['code']);
+        }
+    }
+
+    /**
+     * [agendaEps description]
+     *
+     * @param  [type] $idEntrenador [description]
+     * @param  [type] $idUn         [description]
+     *
+     * @return [type]               [description]
+     */
+    public function agendaEps($idEntrenador, $idUn)
+    {
+        session_write_close();
+        $idEmpleado = Empleado::obtenIdEmpleado($idEntrenador);
+
+        $datos   = EP::clase($idEmpleado, $idUn);
+        $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
+        $arrayMerge = array_merge($datos, $inbodys);
+        if (is_array($arrayMerge)) {
+
+            return $this->successResponse($arrayMerge, 'Agenda ');
+        } else {
+            return $this->errorResponse('No se encontraron datos', 400);
+
         }
     }
 
