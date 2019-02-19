@@ -3,8 +3,8 @@
 namespace API_EPS\Models;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class AgendaInbody extends Model
 {
@@ -45,7 +45,7 @@ class AgendaInbody extends Model
      * @param $data
      * @return JSON
      */
-    public static function scopeConsultaInbodyEmpleado($query, $idEmpleado, $idUn)
+    public static function scopeConsultaInbodyEmpleado($query, $idEmpleado, $idUn, $fecha = '')
     {
         $sql = "SELECT  CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno) AS nombre
         from persona
@@ -83,15 +83,18 @@ class AgendaInbody extends Model
             ->where('agenda_inbody.idUn', '=', $idUn)
             ->where('agenda_inbody.idEmpleado', '=', $idEmpleado);
 
+        if ($fecha != '') {
+            $res->where('fechaSolicitud', '=', $fecha);
+        }
         $res = $res->orderBy('agenda_inbody.idUn', 'asc')
             ->orderBy('fechaSolicitud', 'asc')
-          ->get()
-        ->toArray();
+            ->get()
+            ->toArray();
 
-       /* $addSlashes = str_replace('?', "'?'", $res->toSql());
+        /* $addSlashes = str_replace('?', "'?'", $res->toSql());
         $sq         = vsprintf(str_replace('?', '%s', $addSlashes), $res->getBindings());
         dd($sq);
-*/
+         */
         if (count($res) > 0) {
 
             return $res;

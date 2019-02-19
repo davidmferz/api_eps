@@ -3,10 +3,10 @@
 namespace API_EPS\Models;
 
 use API_EPS\Models\Objeto;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EP extends Model
 {
@@ -558,7 +558,7 @@ GROUP BY pago";
      *
      * @return [type]               [description]
      */
-    public static function clase($idEmpleado, $idUn)
+    public static function clase($idEmpleado, $idUn, $fecha = '', $hora = '')
     {
         settype($idEmpleado, 'integer');
         settype($idUn, 'integer');
@@ -567,6 +567,10 @@ GROUP BY pago";
 
         if ($idEmpleado == 0 && $idUn == 0) {
             return $res;
+        }
+        $sql_horario = '';
+        if ($hora != '') {
+            $sql_horario = " AND ef.fechaEvento ='{$fecha}' AND ef.horaEvento = '{$hora}' ";
         }
 
         $wEmpleado = '';
@@ -624,6 +628,7 @@ GROUP BY pago";
                 AND euc3.eliminado=0
                 AND euc3.capacidad>0
             WHERE p.activo=1 AND p.eliminado=0
+            {$sql_horario}
             ORDER BY ef.fechaEvento, ef.horaEvento";
         $query = DB::connection('crm')->select($sql);
 

@@ -2,24 +2,24 @@
 
 namespace API_EPS\Http\Controllers;
 
-use API_EPS\Models\EP;
-use API_EPS\Models\Un;
-use API_EPS\Models\Socio;
-use API_EPS\Models\Evento;
-use API_EPS\Models\Persona;
-use API_EPS\Models\Comision;
-use API_EPS\Models\Empleado;
-use API_EPS\Models\Producto;
-use Illuminate\Http\Request;
+use API_EPS\Http\Controllers\ApiController;
+use API_EPS\Models\AgendaInbody;
 use API_EPS\Models\Anualidad;
 use API_EPS\Models\Categoria;
+use API_EPS\Models\Comision;
+use API_EPS\Models\Empleado;
+use API_EPS\Models\EP;
+use API_EPS\Models\Evento;
+use API_EPS\Models\EventoFecha;
 use API_EPS\Models\Membresia;
 use API_EPS\Models\Movimiento;
-use API_EPS\Models\EventoFecha;
-use API_EPS\Models\AgendaInbody;
+use API_EPS\Models\Persona;
+use API_EPS\Models\Producto;
+use API_EPS\Models\Socio;
+use API_EPS\Models\Un;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use API_EPS\Http\Controllers\ApiController;
 
 /**
  * Extraído desde el controller /crm/system/application/controllers/ep.php
@@ -319,8 +319,8 @@ class EPController extends ApiController
         session_write_close();
         $idEmpleado = Empleado::obtenIdEmpleado($idEntrenador);
 
-        $datos   = EP::clase($idEmpleado, $idUn);
-        $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
+        $datos      = EP::clase($idEmpleado, $idUn);
+        $inbodys    = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
         $arrayMerge = array_merge($datos, $inbodys);
         if (is_array($arrayMerge)) {
 
@@ -328,6 +328,41 @@ class EPController extends ApiController
         } else {
             return $this->errorResponse('No se encontraron datos', 400);
 
+        }
+    }
+
+    /**
+     * [agendaEps description]
+     *
+     * @param  [type] $idEntrenador [description]
+     * @param  [type] $idUn         [description]
+     *
+     * @return [type]               [description]
+     */
+    public function asignaEntrenador($idEmpleado, $idUn, $idAgenda)
+    {
+        session_write_close();
+        if ($idEmpleado == 0) {
+            return $this->errorResponse('Selecciona un Entrenador', 400);
+        }
+
+        $inbody   = AgendaInbody::findOrFail($idAgenda);
+        $fechaAux = explode(' ', $inbody->fechaSolicitud);
+        $fecha    = $fechaAux[0];
+        $hora     = $fechaAux[1];
+        $datos    = EP::clase($idEmpleado, $idUn, $fecha, $hora);
+        $inbodys  = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn, $inbody->fechaSolicitud);
+
+        $arrayMerge = array_merge($datos, $inbodys);
+        if (is_array($arrayMerge) && count($arrayMerge) > 0) {
+
+            return $this->errorResponse('El horario ya esta ocupado', 400);
+        } else {
+            $inbody->idEmpleado = $idEmpleado;
+            $inbody->save();
+            $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
+
+            return $this->successResponse($inbodys, 'Asignado correctamente');
         }
     }
 
