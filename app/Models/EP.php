@@ -581,18 +581,19 @@ GROUP BY pago";
         if ($idUn > '0') {
             $wUn = ' AND eu.idUn=' . $idUn;
         }
+        $intervaloDias = 220;
 
         $sql = "SELECT ef.idEventoFecha AS id,
-                CONCAT(c.nombre, ' - ', CONCAT_WS(' ', p_c.nombre, p_c.paterno, p_c.materno)) AS title,
                 CONCAT(c.nombre, ' - ', CONCAT_WS(' ', p_c.nombre, p_c.paterno, p_c.materno)) AS title,
                 REPLACE(TIMESTAMP(ef.fechaEvento,ef.horaEvento), ' ', 'T') AS start,
                 TIMESTAMPADD(HOUR,1,TIMESTAMP(ef.fechaEvento,ef.horaEvento)) AS end,
                 CONCAT_WS(' ', p_e.nombre, p_e.paterno, p_e.materno) AS nombreEntrenador,
-                CONCAT_WS(' ', p_e.nombre, p_e.paterno, p_e.materno) AS nombreEntrenador,
                 IF (ef.idTipoEstatusEventoFecha IN (2, 3, 4, 6), 0,
                     IF (TIMESTAMP(ef.fechaEvento,ef.horaEvento) < DATE_ADD(NOW(), INTERVAL 1 HOUR), 0 , 1)
                 ) AS editable, tef.idTipoEstatusEventoFecha AS estatusClasem,
-                tef.descripcion AS descripcionClase, IF(co.idTipoEstatusComision=2, 1, 0) AS comisionPagada
+                tef.descripcion AS descripcionClase, IF(co.idTipoEstatusComision=2, 1, 0) AS comisionPagada,
+                if(DATEDIFF(NOW(),so.fechaRegistro )>{$intervaloDias},0,1) as nuevo,
+                if(memre.idUnicoMembresia IS  NULL,0,1) as nuevoMembresia
             FROM producto p
             INNER JOIN categoria c ON c.idCategoria=p.idCategoria
             INNER JOIN evento e ON e.idProducto=p.idProducto
@@ -607,6 +608,8 @@ GROUP BY pago";
             INNER JOIN eventoinscripcion ei ON ei.idEventoUn=eu.idEventoUn
                 AND ei.eliminado=0
             INNER JOIN persona p_c ON p_c.idPersona=ei.idPersona
+            inner JOIN socio so ON so.idPersona=p_c.idPersona AND so.eliminado=0
+            left JOIN membresiareactivacion as memre ON memre.idUnicoMembresia=so.idUnicoMembresia AND memre.fechaEliminacion ='0000-00-00 00:00:00' AND if(DATEDIFF(NOW(),memre.fechaRegistro )>{$intervaloDias},0,1) = 1
             INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
                 AND ef.eliminado=0
                 AND ef.idTipoEstatusEventoFecha<>5 {$wEmpleado}
@@ -644,6 +647,7 @@ GROUP BY pago";
                 $clase['estatusClasem']    = utf8_encode($fila->estatusClasem);
                 $clase['descripcionClase'] = utf8_encode($fila->descripcionClase);
                 $clase['comisionPagada']   = utf8_encode($fila->comisionPagada);
+                $clase['nuevo']            = $fila->nuevo == 1 || $fila->nuevoMembresia == 1 ? 1 : 0;
 
                 $res[] = $clase;
             }
