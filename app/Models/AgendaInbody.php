@@ -62,6 +62,7 @@ class AgendaInbody extends Model
 
         $res = self::select(DB::connection('aws')->raw("un.nombre ,
             idAgenda as id ,
+            persona.idPersona,
             CONCAT('InBody', ' - ', CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno)) AS title,
             horario , fechaSolicitud as start ,
             if(`fechaConfirmacion`<>'0000-00-00 00:00:00' OR fechaCancelacion <> '0000-00-00 00:00:00',0,1)  as editable ,
@@ -69,12 +70,12 @@ class AgendaInbody extends Model
             'InBody' as descripcionClase,
             '{$nombreEntrenador}' as nombreEntrenador,
             if(`fechaConfirmacion`<>'0000-00-00 00:00:00',1,0) as confirmado,
-            if(`fechaCancelacion`<>'0000-00-00 00:00:00',1,0) as cancelado
+            if(`fechaCancelacion`<>'0000-00-00 00:00:00',1,0) as cancelado,
+            0 as  nuevo
             "))
             ->join('deportiva.persona', function ($join) {
                 $join->on('persona.idPersona', '=', 'agenda_inbody.idPersona');
             })
-
             ->join('deportiva.un', function ($join) {
                 $join->on('un.idUn', '=', 'agenda_inbody.idUn');
             })
@@ -96,6 +97,28 @@ class AgendaInbody extends Model
         dd($sq);
          */
         if (count($res) > 0) {
+
+            $idPersonas    = array_unique(array_column($res, 'idPersona'));
+            $ids           = implode(',', $idPersonas);
+            $intervaloDias = 700;
+            $sql           = "SELECT  CAST(so.idPersona AS char(50)) as idPersona
+                            from socio as so
+                            LEFT join membresiareactivacion as mem ON  so.idUnicoMembresia=mem.idUnicoMembresia AND mem.fechaEliminacion='0000-00-00 00:00:00'
+
+                            where so.eliminado=0
+                            AND so.idPersona IN ({$ids})
+                            AND IF(DATEDIFF(NOW(),mem.fechaRegistro )<{$intervaloDias} OR  DATEDIFF(NOW(),so.fechaRegistro )<{$intervaloDias},1,0) = 1
+                            order by mem.idMembresiaReactivacion DESC
+                            ";
+
+            $elemts = DB::connection('crm')->select($sql);
+            $finIds=array_column($elemts,'idPersona');
+            foreach ($res as $key => $value) {
+                if (in_array((string) $value['idPersona'], $finIds)) {
+                    $res[$key]['nuevo'] = 1;
+
+                }
+            }
 
             return $res;
 
