@@ -561,7 +561,7 @@ class EPController extends ApiController
 
                 $datos['producto']                = $generales['idProducto'];
                 $datos['persona']                 = $jsonData['idCliente'];
-                $datos['origen']                  = 'WS_EVT_INS-' . str_replace(' ', '_', strtoupper($jsonData['tipo']) . $desc_extra);
+                $datos['origen']                  = 'APP_WS_EVT_INS-' . str_replace(' ', '_', strtoupper($jsonData['tipo']) . $desc_extra);
                 $datos['numeroCuenta']            = $cuenta;
                 $datos['cuentaProducto']          = $cuentaProducto;
                 $datos['msi']                     = $jsonData['formaPago'];
