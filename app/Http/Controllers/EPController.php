@@ -2,21 +2,22 @@
 
 namespace API_EPS\Http\Controllers;
 
-use API_EPS\Models\EP;
-use API_EPS\Models\Un;
-use API_EPS\Models\Socio;
-use API_EPS\Models\Evento;
-use API_EPS\Models\Objeto;
-use API_EPS\Models\Persona;
-use API_EPS\Models\Comision;
-use API_EPS\Models\Empleado;
-use API_EPS\Models\Producto;
-use Illuminate\Http\Request;
+use API_EPS\Http\Controllers\ApiController;
+use API_EPS\Models\AgendaInbody;
 use API_EPS\Models\Anualidad;
 use API_EPS\Models\Categoria;
+use API_EPS\Models\Comision;
+use API_EPS\Models\Empleado;
+use API_EPS\Models\EP;
+use API_EPS\Models\Evento;
+use API_EPS\Models\EventoFecha;
 use API_EPS\Models\Membresia;
 use API_EPS\Models\Movimiento;
-use API_EPS\Models\EventoFecha;
+use API_EPS\Models\Persona;
+use API_EPS\Models\Producto;
+use API_EPS\Models\Socio;
+use API_EPS\Models\Un;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -24,7 +25,7 @@ use Illuminate\Support\Facades\Log;
  * Extraído desde el controller /crm/system/application/controllers/ep.php
  * y desde el model /crm/system/application/models/ep_model.php
  */
-class EPController extends Controller
+class EPController extends ApiController
 {
 
     /**
@@ -142,7 +143,7 @@ class EPController extends Controller
 
                 'perfil_ep'             => $_SESSION['perfil_ep'],
                 'calificacion'          => $_SESSION['calificacion'],
-                'version'               => '3.0.3', // Objeto::obtenerObjeto(953)['descripcion'],
+                'version'               => '3.0.5', // Objeto::obtenerObjeto(953)['descripcion'],
                 'clubs'                 => $_SESSION['clubs'],
             );
             return response()->json($out, 200);
@@ -302,6 +303,66 @@ class EPController extends Controller
                 'message' => 'Error',
             );
             return response()->json($retval, $retval['code']);
+        }
+    }
+
+    /**
+     * [agendaEps description]
+     *
+     * @param  [type] $idEntrenador [description]
+     * @param  [type] $idUn         [description]
+     *
+     * @return [type]               [description]
+     */
+    public function agendaEps($idEntrenador, $idUn)
+    {
+        session_write_close();
+        $idEmpleado = Empleado::obtenIdEmpleado($idEntrenador);
+
+        $datos      = EP::clase($idEmpleado, $idUn);
+        $inbodys    = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
+        $arrayMerge = array_merge($datos, $inbodys);
+        if (is_array($arrayMerge)) {
+
+            return $this->successResponse($arrayMerge, 'Agenda ');
+        } else {
+            return $this->errorResponse('No se encontraron datos', 400);
+
+        }
+    }
+
+    /**
+     * [agendaEps description]
+     *
+     * @param  [type] $idEntrenador [description]
+     * @param  [type] $idUn         [description]
+     *
+     * @return [type]               [description]
+     */
+    public function asignaEntrenador($idEmpleado, $idUn, $idAgenda)
+    {
+        session_write_close();
+        if ($idEmpleado == 0) {
+            return $this->errorResponse('Selecciona un Entrenador', 400);
+        }
+
+        $inbody   = AgendaInbody::findOrFail($idAgenda);
+        $fechaAux = explode(' ', $inbody->fechaSolicitud);
+        $fecha    = $fechaAux[0];
+        $hora     = $fechaAux[1];
+        $datos    = EP::clase($idEmpleado, $idUn, $fecha, $hora);
+        $inbodys  = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn, $inbody->fechaSolicitud);
+
+        $arrayMerge = array_merge($datos, $inbodys);
+        if (is_array($arrayMerge) && count($arrayMerge) > 0) {
+
+            return $this->errorResponse('El horario ya esta ocupado', 400);
+        } else {
+            $inbody->idEmpleado = $idEmpleado;
+            $inbody->save();
+            $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
+
+            return $this->successResponse($inbodys, 'Asignado correctamente');
         }
     }
 
@@ -500,7 +561,7 @@ class EPController extends Controller
 
                 $datos['producto']                = $generales['idProducto'];
                 $datos['persona']                 = $jsonData['idCliente'];
-                $datos['origen']                  = 'WS_EVT_INS-' . str_replace(' ', '_', strtoupper($jsonData['tipo']) . $desc_extra);
+                $datos['origen']                  = 'APP_WS_EVT_INS-' . str_replace(' ', '_', strtoupper($jsonData['tipo']) . $desc_extra);
                 $datos['numeroCuenta']            = $cuenta;
                 $datos['cuentaProducto']          = $cuentaProducto;
                 $datos['msi']                     = $jsonData['formaPago'];

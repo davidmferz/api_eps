@@ -4494,7 +4494,7 @@ WHERE e.idEvento IN (".$idEvento.")
      *
      * @return [type]             [description]
      */
-    public function precioPrimerSemana($idProducto, $idUn)
+    public static function precioPrimerSemana($idProducto, $idUn)
     {
         settype($idProducto, 'integer');
         settype($idUn, 'integer');
