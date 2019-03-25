@@ -1224,5 +1224,5 @@ class EPController extends ApiController
     
     public function hola() {
         return 'hola';
-    }
+    } 
 }
