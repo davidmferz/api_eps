@@ -42,7 +42,7 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['post', 'options'], 'calificacion/{idEventoInscripcion?}', 'EPController@calificacion');
         Route::match(['get', 'options'], 'getEntrenadores/{idUn}', 'EPController@getEntrenadores');
         
-        
+        Route::match(['get', 'options'], 'hola', 'EPController@hola');
         
     });
 });

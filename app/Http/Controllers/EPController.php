@@ -1160,4 +1160,8 @@ class EPController extends Controller
             return response()->json($retval, $retval['code']);
         }
     }
+    
+    public function hola() {
+        return 'hola';
+    }
 }
