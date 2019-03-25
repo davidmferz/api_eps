@@ -1221,4 +1221,8 @@ class EPController extends ApiController
             return response()->json($retval, $retval['code']);
         }
     }
+    
+    public function hola() {
+        return 'hola';
+    } 
 }
