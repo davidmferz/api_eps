@@ -152,6 +152,37 @@ class EPController extends ApiController
         }
     }
 
+    public function getPlanesDeTrabajoEmpleados(Request $request)
+    {
+        session_write_close();
+        $entrenadores = $request->input('entrenadores');
+        if (count($entrenadores) > 0) {
+            $send = [];
+            foreach ($entrenadores as $key => $value) {
+                $plan         = EP::renovaciones($value);
+                $meta         = EP::meta_venta($value);
+                $send[$value] = [
+                    'plan' => $plan != 0 ? $plan:[],
+                    'meta' => $meta,
+                ];
+            }
+            $retval = array(
+                'data'    => $send,
+                'code'    => 200,
+                'message' => 'OK',
+            );
+
+        } else {
+            $retval = array(
+                'data'    => [],
+                'code'    => 200,
+                'message' => 'OK',
+            );
+        }
+        return response()->json($retval, $retval['code']);
+
+    }
+
     /**
      * [plantrabajo description]
      * @return [type] [description]
