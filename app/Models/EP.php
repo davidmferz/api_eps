@@ -1037,10 +1037,11 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
         $query = DB::connection('crm')->select($sql);
         $query = array_map(function ($x) {return (array) $x;}, $query);
 
-
-
+        $idPersonasEncontradas=[];
 
         foreach ($query as $key => $value) {
+           $idPersonasEncontradas[]=$value['idPersona'];
+
             $mesesMenos = 3;
 
             $primera = array_search(intval($value['idPuesto']), $pustNat);
@@ -1072,7 +1073,11 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
                 ];
                 $mesesMenos--;
             }
+
+
         }
+        //dd($retval);
+        $sqlIdPersona=implode(',',$idPersonasEncontradas);
 
 
 
@@ -1109,7 +1114,8 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
         if (count($query) > 0) {
 
 
-            foreach ($query as $value) {
+            foreach ($query as $key => $value) {
+             
                 //$retval[$value['idPersona']][$value['mes']]['meta'] = $value['meta'];
                 if ($value['renovacion'] == '1') {
                     $retval[$value['idPersona']][$value['mes']]['total']['renovacion']  = $value['total'];
@@ -1121,11 +1127,12 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
             }
         }
         /*
-         * Convertir el arreglo a como lo necesitamos
-         */
+        * Convertir el arreglo a como lo necesitamos
+        */
         $retval2 = [];
         if (count($retval) > 0) {
             foreach ($retval as $key => $value) {
+              
                 foreach ($meses as $numMes => $valueMes) {
                     $retval2[$key][]= [
                         'mes'    => $valueMes,
@@ -1434,6 +1441,63 @@ LIMIT 1";
 
         return $affected_rows;
     }
+
+
+
+    public static function renovaciones_array($idPersonas)
+    {
+
+        $sqlPersona= implode(',',$idPersonas);
+        $sql       = "SELECT
+                ep.idEventoPartcipante AS idEventoParticipante,
+                c.nombre AS Actual,
+                per.idPersona,
+                concat_ws(' ',per.nombre,per.paterno,per.materno) AS nombre,
+                m.fechaRegistro AS fechaActual,
+                (
+                    select tm.nombre
+                    from crm.producto p
+                    JOIN crm.categoria tm on p.idCategoria = tm.idCategoria
+                    where p.idProducto = ep.idProductoVenta
+                ) AS nuevo,
+                ep.fechaVenta AS fechaNuevo,
+                ep.precioCotizado AS importe,
+                IF(m.idtipoestatusmovimiento = " . MOVIMIENTO_EXCEPCION_PAGO . ",false,true) AS renovacion,false
+            FROM eventoparticipante AS ep
+            JOIN persona AS per ON ep.idPersona = per.idPersona
+            JOIN eventoinvolucrado AS einv ON ep.idEventoInscripcion = einv.idEventoInscripcion
+                AND einv.tipo = 'Vendedor'
+                AND einv.idPersona IN (" . $sqlPersona . ")
+            JOIN eventomovimiento AS em ON em.idEventoInscripcion = ep.idEventoInscripcion
+            JOIN movimiento AS m ON em.idMovimiento = m.idMovimiento
+                AND m.idtipoestatusmovimiento IN (" . MOVIMIENTO_PAGADO . "," . MOVIMIENTO_EXCEPCION_PAGO . ")
+            JOIN eventoinscripcion AS ei ON ei.idEventoInscripcion = ep.idEventoInscripcion
+            JOIN eventoun AS eu ON ei.idEventoUn = eu.idEventoUn
+            JOIN evento AS e ON eu.idEvento = e.idEvento
+            JOIN producto AS p ON e.idProducto = p.idProducto
+            JOIN categoria AS c ON c.idCategoria = p.idCategoria
+            WHERE m.fechaRegistro > date_sub(now(), interval 6 WEEK)
+            AND ei.fechaEliminacion = 0
+            AND eu.fechaEliminacion = 0
+            AND e.fechaEliminacion = 0
+            AND p.fechaEliminacion = 0
+            AND c.fechaEliminacion = 0
+            AND ep.fechaVenta IS NULL OR ep.fechaVenta >= '" . date('Y-m') . "-01'";
+        $retval = DB::connection('crm')->select($sql);
+        if (count($retval) > 0) {
+
+            foreach ($retval as &$ret_actual) {
+                foreach ($ret_actual as &$valor) {
+                    $valor = utf8_encode($valor);
+                }
+            }
+        } else {
+            $retval = 0;
+        }
+
+        return $retval;
+    }
+
 
     public static function renovaciones($idPersona = 0)
     {

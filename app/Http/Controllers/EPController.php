@@ -161,13 +161,16 @@ class EPController extends ApiController
 
 
             $meta=EP::meta_venta_array($entrenadores);
+            $plan         = EP::renovaciones_array($entrenadores);
             foreach ($entrenadores as $key => $value) {
-                $plan         = EP::renovaciones($value);
-                //$meta         = EP::meta_venta($value);
-                $send[$value] = [
-                    'plan' => $plan != 0 ? $plan:[],
-                    'meta' => $meta[$value],
-                ];
+                if(isset($meta[$value])){
+
+                    //$meta         = EP::meta_venta($value);
+                    $send[$value] = [
+                        'plan' => $plan != 0 ? $plan:[],
+                        'meta' => $meta[$value],
+                    ];
+                }
             }
             $retval = array(
                 'data'    => $send,
