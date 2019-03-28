@@ -2,11 +2,12 @@
 
 namespace API_EPS\Models;
 
+use Carbon\Carbon;
 use API_EPS\Models\Objeto;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class EP extends Model
 {
@@ -997,6 +998,150 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
         return $res;
     }
 
+ /**
+     * [meta_venta description]
+     *
+     * @param  [type] $idPersona [description]
+     *
+     * @return [type]            [description]
+     */
+    public static function meta_venta_array($idPersonas)
+    {
+        $hoy=Carbon::now();
+        $mes4=$hoy->format('Y-m');
+        $mes3=$hoy->subMonths(1)->format('Y-m');
+        $mes2=$hoy->subMonths(1)->format('Y-m');
+        $mes1=$hoy->subMonths(1)->format('Y-m');
+
+        $meses=[
+            0=>$mes1,
+            1=>$mes2,
+            2=>$mes3,
+            3=>$mes4,
+        ];
+        $retval     = array();
+        $pustNat    = [86, 134, 194, 551, 806, 100085, 100101];
+        $pust       = [551, 100085];
+        $sqlIdPersona=implode(',',$idPersonas);
+
+
+        $sql        = "SELECT p.idPersona,pu.idPuesto
+        FROM crm.persona p
+        JOIN crm.empleado e ON e.idPersona = p.idPersona
+            AND e.fechaEliminacion = '0000-00-00 00:00:00'
+        JOIN crm.empleadopuesto ep ON ep.idEmpleado = e.idEmpleado
+            AND ep.fechaEliminacion = '0000-00-00 00:00:00'
+        JOIN crm.puesto pu ON pu.idPuesto = ep.idPuesto
+            AND pu.fechaEliminacion = '0000-00-00 00:00:00'
+        WHERE p.idPersona in (".$sqlIdPersona.")";
+        $query = DB::connection('crm')->select($sql);
+        $query = array_map(function ($x) {return (array) $x;}, $query);
+
+
+
+
+        foreach ($query as $key => $value) {
+            $mesesMenos = 3;
+
+            $primera = array_search(intval($value['idPuesto']), $pustNat);
+            if ($primera !== false && $primera > 0) {
+                $segunda = array_search(intval($value['idPuesto']), $pust);
+                if ($segunda !== false && $segunda > 0) {
+                    $met = 10000;
+                } else {
+                    $met = 15000;
+                }
+            } else {
+                $met = 35000;
+            }
+
+
+
+            while ($mesesMenos >= 0) {
+
+                $retval[$value['idPersona']][$meses[$mesesMenos]] = [
+                    'total'  => array(
+                        'nuevo'      => 0,
+                        'renovacion' => 0,
+                    ),
+                    'ventas' => array(
+                        'nuevo'      => 0,
+                        'renovacion' => 0,
+                    ),
+                    'meta'   => $met,
+                ];
+                $mesesMenos--;
+            }
+        }
+
+
+
+
+        $idPuesto = [];
+        if (count($query) > 0) {
+            $idPuesto = $query[0];
+        }
+
+
+
+        $sql = "SELECT einv.idPersona,
+                DATE_FORMAT(m.fechaActualizacion,'%Y-%m') AS mes,
+                IF(ISNULL(ep.idProductoVenta),0,1) AS renovacion,
+                SUM(ROUND(m.importe/(1+(m.iva/100)),2)) AS total,
+                COUNT(ep.idProductoVenta) AS count_ren,
+                COUNT(ep.idEventoPartcipante) AS count_tot
+                FROM crm.eventoinvolucrado einv
+                INNER JOIN crm.eventoinscripcion eins ON einv.idEventoInscripcion = eins.idEventoInscripcion
+                    AND eins.fechaEliminacion = '0000-00-00 00:00:00'
+                INNER JOIN crm.eventoparticipante ep ON ep.idEventoInscripcion = eins.idEventoInscripcion
+                INNER JOIN crm.eventomovimiento em ON eins.idEventoInscripcion = em.idEventoInscripcion
+                INNER JOIN crm.facturamovimiento fm ON em.idMovimiento = fm.idMovimiento
+                INNER JOIN crm.movimiento m ON em.idMovimiento = m.idMovimiento
+                INNER JOIN crm.factura f ON fm.idFactura = f.idFactura
+                WHERE einv.fechaEliminacion = '0000-00-00 00:00:00'
+                AND einv.idPersona in (".$sqlIdPersona.")".
+                "AND einv.tipo = 'Entrenador'
+                AND m.fechaRegistro BETWEEN DATE_SUB(NOW(),INTERVAL 3 MONTH) AND NOW()
+                GROUP BY idPersona,mes, renovacion
+        ";
+        $query = DB::connection('crm')->select($sql);
+        $query = array_map(function ($x) {return (array) $x;}, $query);
+        if (count($query) > 0) {
+
+
+            foreach ($query as $value) {
+                //$retval[$value['idPersona']][$value['mes']]['meta'] = $value['meta'];
+                if ($value['renovacion'] == '1') {
+                    $retval[$value['idPersona']][$value['mes']]['total']['renovacion']  = $value['total'];
+                    $retval[$value['idPersona']][$value['mes']]['ventas']['renovacion'] = $value['count_ren'];
+                } else {
+                    $retval[$value['idPersona']][$value['mes']]['total']['nuevo']  = $value['total'];
+                    $retval[$value['idPersona']][$value['mes']]['ventas']['nuevo'] = $value['count_tot'] - $value['count_ren'];
+                }
+            }
+        }
+        /*
+         * Convertir el arreglo a como lo necesitamos
+         */
+        $retval2 = [];
+        if (count($retval) > 0) {
+            foreach ($retval as $key => $value) {
+                foreach ($meses as $numMes => $valueMes) {
+                    $retval2[$key][]= [
+                        'mes'    => $valueMes,
+                        'total'  => $retval[$key][$valueMes]['total'],
+                        'ventas' => $retval[$key][$valueMes]['ventas'],
+                        'meta'   => $retval[$key][$valueMes]['meta'],
+                    ];
+                }
+
+            }
+        }
+        return $retval2;
+    }
+
+
+
     /**
      * [meta_venta description]
      *
@@ -1328,6 +1473,7 @@ LIMIT 1";
             AND p.fechaEliminacion = 0
             AND c.fechaEliminacion = 0
             AND ep.fechaVenta IS NULL OR ep.fechaVenta >= '" . date('Y-m') . "-01'";
+            dd($sql);
         $retval = DB::connection('crm')->select($sql);
         if (count($retval) > 0) {
 
