@@ -1115,7 +1115,7 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
 
 
             foreach ($query as $key => $value) {
-             
+
                 //$retval[$value['idPersona']][$value['mes']]['meta'] = $value['meta'];
                 if ($value['renovacion'] == '1') {
                     $retval[$value['idPersona']][$value['mes']]['total']['renovacion']  = $value['total'];
@@ -1132,7 +1132,7 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
         $retval2 = [];
         if (count($retval) > 0) {
             foreach ($retval as $key => $value) {
-              
+
                 foreach ($meses as $numMes => $valueMes) {
                     $retval2[$key][]= [
                         'mes'    => $valueMes,
@@ -1449,20 +1449,8 @@ LIMIT 1";
 
         $sqlPersona= implode(',',$idPersonas);
         $sql       = "SELECT
-                ep.idEventoPartcipante AS idEventoParticipante,
-                c.nombre AS Actual,
-                per.idPersona,
-                concat_ws(' ',per.nombre,per.paterno,per.materno) AS nombre,
-                m.fechaRegistro AS fechaActual,
-                (
-                    select tm.nombre
-                    from crm.producto p
-                    JOIN crm.categoria tm on p.idCategoria = tm.idCategoria
-                    where p.idProducto = ep.idProductoVenta
-                ) AS nuevo,
-                ep.fechaVenta AS fechaNuevo,
-                ep.precioCotizado AS importe,
-                IF(m.idtipoestatusmovimiento = " . MOVIMIENTO_EXCEPCION_PAGO . ",false,true) AS renovacion,false
+                einv.idPersona as empl,
+                SUM(ep.precioCotizado )AS importe
             FROM eventoparticipante AS ep
             JOIN persona AS per ON ep.idPersona = per.idPersona
             JOIN eventoinvolucrado AS einv ON ep.idEventoInscripcion = einv.idEventoInscripcion
@@ -1482,20 +1470,21 @@ LIMIT 1";
             AND e.fechaEliminacion = 0
             AND p.fechaEliminacion = 0
             AND c.fechaEliminacion = 0
-            AND ep.fechaVenta IS NULL OR ep.fechaVenta >= '" . date('Y-m') . "-01'";
-        $retval = DB::connection('crm')->select($sql);
-        if (count($retval) > 0) {
 
-            foreach ($retval as &$ret_actual) {
-                foreach ($ret_actual as &$valor) {
-                    $valor = utf8_encode($valor);
-                }
+            AND ep.precioCotizado > 0
+            AND ep.fechaVenta IS NULL OR ep.fechaVenta >= '" . date('Y-m') . "-01'
+            GROUP BY einv.idPersona";
+        $retval = DB::connection('crm')->select($sql);
+        $send=[];
+        if (count($retval) > 0) {
+            foreach ($retval as $ret_actual) {
+              $send[$ret_actual->empl]['sum']=$ret_actual->importe;
             }
         } else {
-            $retval = 0;
+            $send = [];
         }
 
-        return $retval;
+        return $send;
     }
 
 
