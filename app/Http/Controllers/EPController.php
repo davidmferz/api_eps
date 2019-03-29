@@ -159,18 +159,16 @@ class EPController extends ApiController
         if (count($entrenadores) > 0) {
             $send = [];
 
-
-            $meta=EP::meta_venta_array($entrenadores);
-            $plan         = EP::renovaciones_array($entrenadores);
+            $meta = EP::meta_venta_array($entrenadores);
+            $plan = EP::renovaciones_array($entrenadores);
             foreach ($entrenadores as $key => $value) {
-                if(isset($meta[$value])){
 
-                    //$meta         = EP::meta_venta($value);
-                    $send[$value] = [
-                        'plan' => $plan != 0 ? $plan:[],
-                        'meta' => $meta[$value],
-                    ];
-                }
+               // isset($plan[$value]) ? dd($plan[$value]) : [];
+                //$meta         = EP::meta_venta($value);
+                $send[$value] = [
+                    'plan' => isset($plan[$value]) ? $plan[$value] : [],
+                    'meta' => isset($meta[$value]) ? $meta[$value] : [],
+                ];
             }
             $retval = array(
                 'data'    => $send,
@@ -1258,8 +1256,9 @@ class EPController extends ApiController
             return response()->json($retval, $retval['code']);
         }
     }
-    
-    public function hola() {
+
+    public function hola()
+    {
         return 'hola';
-    } 
+    }
 }
