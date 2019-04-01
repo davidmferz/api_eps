@@ -1658,19 +1658,7 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
 
     public static function perfil($idPersona, $perfil = null)
     {
-        $upd_arr = [
-            'perfil_ep'             => $perfil,
-            'idPersona'             => $idPersona,
-            'idTipoEstatusEmpleado' => ESTATUS_EMPLEADO_ACTIVO,
-            'fechaEliminacion'      => 0,
-        ];
-
-        if (!is_null($perfil)) {
-            $update = DB::connection('crm')->table(TBL_EMPLEADO)->update($upd_arr);
-            if (!$update) {
-                throw new \RuntimeException('idPersona incorrecto');
-            }
-        }
+      
         $res = DB::connection('crm')->table(TBL_EMPLEADO)
             ->select('idEmpleado', 'idPersona', 'perfil_ep')
             ->where('idPersona', $idPersona)

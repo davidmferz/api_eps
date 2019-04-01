@@ -47,6 +47,8 @@ Route::group(['prefix' => 'v1/'], function () {
 
         Route::match(['get', 'options'], 'hola', 'EPController@hola');
 
+        Route::match(['post', 'options'], 'editarPerfil/{idPersona}', 'EPController@editarPerfil');
+
         Route::match(['post', 'options'], 'getPlanesDeTrabajoEmpleados', 'EPController@getPlanesDeTrabajoEmpleados');
 
     });

@@ -163,7 +163,7 @@ class EPController extends ApiController
             $plan = EP::renovaciones_array($entrenadores);
             foreach ($entrenadores as $key => $value) {
 
-               // isset($plan[$value]) ? dd($plan[$value]) : [];
+                // isset($plan[$value]) ? dd($plan[$value]) : [];
                 //$meta         = EP::meta_venta($value);
                 $send[$value] = [
                     'plan' => isset($plan[$value]) ? $plan[$value] : [],
@@ -1127,6 +1127,23 @@ class EPController extends ApiController
         );
         return response()->json($retval, $retval['code']);
     }
+    public function editarPerfil(Request $request, $idPersona)
+    {
+
+        $perfil_ep = $request->input('perfil_ep');
+        $empleado  = Empleado::where('idPersona', $idPersona)
+            ->where('idTipoEstatusEmpleado', ESTATUS_EMPLEADO_ACTIVO)
+            ->where('fechaEliminacion', 0)->first();
+        $empleado->perfil_ep = $perfil_ep;
+        $empleado->save();
+        $retval = array(
+            'status'  => 'success',
+            'data'    => $empleado,
+            'code'    => 200,
+            'message' => 'Actualizado',
+        );
+        return response()->json($retval, $retval['code']);
+    }
 
     public function perfil($idPersona)
     {
@@ -1165,7 +1182,7 @@ class EPController extends ApiController
             }
             $retval = array(
                 'status'  => 'success',
-                'data'    => EP::perfil($idPersona, $retval['perfil']),
+                'data'    => EP::perfil($idPersona),
                 'code'    => $code,
                 'message' => $message,
             );
