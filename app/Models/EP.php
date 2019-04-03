@@ -609,7 +609,7 @@ GROUP BY pago";
             INNER JOIN eventoinscripcion ei ON ei.idEventoUn=eu.idEventoUn
                 AND ei.eliminado=0
             INNER JOIN persona p_c ON p_c.idPersona=ei.idPersona
-            inner JOIN socio so ON so.idPersona=p_c.idPersona AND so.eliminado=0
+            LEFT JOIN socio so ON so.idPersona=p_c.idPersona AND so.eliminado=0
             left JOIN membresiareactivacion as memre ON memre.idUnicoMembresia=so.idUnicoMembresia AND memre.fechaEliminacion ='0000-00-00 00:00:00' AND if(DATEDIFF(NOW(),memre.fechaRegistro )>{$intervaloDias},0,1) = 1
             INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
                 AND ef.eliminado=0
