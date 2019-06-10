@@ -930,7 +930,7 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
             INNER JOIN empleadopuesto ep ON ep.idEmpleado=e.idEmpleado
                 AND ep.fechaEliminacion='0000-00-00 00:00:00'
             INNER JOIN un u ON u.idUn=ep.idUn
-            INNER JOIN operador o ON u.idOperador=o.idOperador
+            INNER JOIN operador o ON e.idOperador=o.idOperador
             INNER JOIN puesto pu ON pu.idPuesto=ep.idPuesto
             WHERE m.idTipoMail=37
                 AND m.mail = '{$email}'
