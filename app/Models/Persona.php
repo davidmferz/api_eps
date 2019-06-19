@@ -2,26 +2,41 @@
 
 namespace API_EPS\Models;
 
-use Carbon\Carbon;
-use API_EPS\Models\CatRutinas;
-use API_EPS\Models\MenuActividad;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use API_EPS\Models\Permiso;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Persona extends Model
 {
     use SoftDeletes;
     protected $connection = 'crm';
-    protected $table = 'crm.persona';
+    protected $table      = 'crm.persona';
     protected $primaryKey = 'idPersona';
 
     const CREATED_AT = 'fechaRegistro';
     const UPDATED_AT = 'fechaActualizacion';
     const DELETED_AT = 'fechaEliminacion';
+
+    public function scopeDatosPersona($query, $idPersona, $idSocio)
+    {
+        $where = [
+            'persona.idPersona'                => $idPersona,
+            'socio.idSocio'                    => $idSocio,
+            'socio.idTipoEstatusSocio'         => 81,
+            'socio.eliminado'                  => 0,
+            'membresia.idTipoEstatusMembresia' => 27,
+            'membresia.eliminado'              => 0,
+        ];
+        return $query->select('un.nombre as club', 'un.idUn', 'persona.nombre', 'persona.paterno', 'persona.materno', 'membresia.idMembresia')
+            ->join('crm.socio', 'socio.idPersona', '=', 'persona.idPersona')
+            ->join('crm.membresia', 'socio.idUnicoMembresia', '=', 'membresia.idUnicoMembresia')
+            ->join('crm.Un', 'un.idUn', '=', 'membresia.idUn')
+            ->where($where)->get();
+        /*
+    ->first()
+    ->toArray();*/
+    }
 
     /**
      * Bloquea telefonos de las campañas del  call center
@@ -33,15 +48,15 @@ class Persona extends Model
     public function actualizaBloqueoCallCenter($idPersona, $bloqueCallCenter)
     {
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
-        $data = array( 'bloqueoCallCenter' => $bloqueCallCenter);
+        $data = array('bloqueoCallCenter' => $bloqueCallCenter);
         $this->db->where('idPersona', $idPersona);
         $this->db->update(TBL_PERSONA, $data);
 
@@ -63,7 +78,7 @@ class Persona extends Model
      *
      * @return boolean
      */
-    public function actualizaCredencial($idPersona, $numCredencial, $tipo, $unico=0)
+    public function actualizaCredencial($idPersona, $numCredencial, $tipo, $unico = 0)
     {
         settype($idPersona, 'integer');
         settype($tipo, 'integer');
@@ -84,7 +99,7 @@ class Persona extends Model
             $fila = $query->row_array();
             $this->db->where('idPersona', $fila['idPersona']);
             $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
-            $datos = array ('credencial' => ++$numCredencial);
+            $datos = array('credencial' => ++$numCredencial);
             $this->db->update($tabla, $datos);
             $this->permisos_model->log('Se actualizo el numero de impresion de credencial', LOG_PERSONA, $unico);
             return true;
@@ -93,13 +108,12 @@ class Persona extends Model
         }
     }
 
-
     public function casoKidz($idPersona)
     {
         settype($idPersona, 'integer');
         $res = false;
 
-        if ($idPersona>0) {
+        if ($idPersona > 0) {
             $this->db->select('idPersona');
             $this->db->from('personacasokidz');
             $this->db->where('idPersona', $idPersona);
@@ -111,8 +125,7 @@ class Persona extends Model
         }
 
         return $res;
-     }
-
+    }
 
     /**
      * Obtiene el numero de credenciales impresas a la fecha
@@ -124,7 +137,7 @@ class Persona extends Model
      *
      * @return boolean
      */
-    public function credencial($idPersona, $tipo=0)
+    public function credencial($idPersona, $tipo = 0)
     {
         settype($idPersona, 'integer');
         settype($tipo, 'integer');
@@ -141,7 +154,7 @@ class Persona extends Model
         $query = $this->db->get();
 
         if ($query->num_rows() > 0) {
-            $fila      = $query->row_array();
+            $fila       = $query->row_array();
             $credencial = $fila['credencial'];
             return $credencial;
         } else {
@@ -156,9 +169,9 @@ class Persona extends Model
      *
      * @return array
      */
-    public function bitacoraFoto($opciones, $totales=0, $posicion=0, $registros=25)
+    public function bitacoraFoto($opciones, $totales = 0, $posicion = 0, $registros = 25)
     {
-        if (isset ($opciones['idPersona'])) {
+        if (isset($opciones['idPersona'])) {
             settype($opciones['idPersona'], 'integer');
         } else {
             return 0;
@@ -169,12 +182,12 @@ class Persona extends Model
         }
 
         $this->db->select('l.idLog, l.descripcion,p.nombre, p.paterno, p.materno, l.fecha');
-        $this->db->from(TBL_LOG.' l');
-        $this->db->join(TBL_PERSONA .' p', 'p.idPersona = l.idPersona');
+        $this->db->from(TBL_LOG . ' l');
+        $this->db->join(TBL_PERSONA . ' p', 'p.idPersona = l.idPersona');
         $where = array('l.idLogCategoria' => LOG_FOTO);
         $this->db->where($where);
-        $this->db->like('l.descripcion','foto', 'both');
-        $this->db->like('l.descripcion',$opciones['idPersona'], 'both');
+        $this->db->like('l.descripcion', 'foto', 'both');
+        $this->db->like('l.descripcion', $opciones['idPersona'], 'both');
         if ($totales == 0) {
             $this->db->limit($registros, $posicion);
         }
@@ -205,12 +218,12 @@ class Persona extends Model
         $sql = "SELECT idDomicilio
             FROM domicilio d
             LEFT JOIN socio s on s.idPersona=d.idPersona
-            WHERE s.idUnicoMembresia=".$idUnicoMembresia." and s.idTipoRolCliente=1
+            WHERE s.idUnicoMembresia=" . $idUnicoMembresia . " and s.idTipoRolCliente=1
             AND s.fechaEliminacion='0000-00-00 00:00:00' and d.fechaeliminacion='0000-00-00 00:00:00'
             AND d.bancario=1";
-        $query=$this->db->query($sql);
+        $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             $data = 1;
         } else {
             $data = 0;
@@ -218,7 +231,6 @@ class Persona extends Model
 
         return $data;
     }
-
 
     /**
      * Identifica si se debe bloquear la edicion de una persona
@@ -233,7 +245,7 @@ class Persona extends Model
     {
         settype($idPersona, 'integer');
 
-        if ($idPersona<=0) {
+        if ($idPersona <= 0) {
             return false;
         }
 
@@ -267,15 +279,14 @@ class Persona extends Model
                 SELECT COUNT(*) AS total FROM responsablemenor WHERE idPersonaResponsable=$idPersona
             ) a";
         $query = $this->db->query($sql);
-        $row = $query->row();
+        $row   = $query->row();
 
-        if ($row->total>0) {
+        if ($row->total > 0) {
             return true;
         } else {
             return false;
         }
     }
-
 
     /**
      *
@@ -289,83 +300,83 @@ class Persona extends Model
      *
      * @return array
      */
-    public function busquedaMultiple($opciones, $totales=0, $numeroRegistros=25, $posicion=0)
+    public function busquedaMultiple($opciones, $totales = 0, $numeroRegistros = 25, $posicion = 0)
     {
         settype($totales, 'integer');
         settype($numeroRegistros, 'integer');
         settype($pagina, 'integer');
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('socio_model');
 
-        $this->permisos_model->log('Busqueda de personas en sistema '.json_encode_sw($opciones), LOG_PERSONA);
+        $this->permisos_model->log('Busqueda de personas en sistema ' . json_encode_sw($opciones), LOG_PERSONA);
         $idEmpresaGrupo = $ci->un_model->obtenerEmpresaGrupo($this->session->userdata('idUn'));
-        $idUsuario = $this->session->userdata('idUsuario');
+        $idUsuario      = $this->session->userdata('idUsuario');
 
-        $w_nombre = '';
+        $w_nombre    = '';
         $w_nombre_ft = 'persona';
 
         if (isset($opciones['nombre'])) {
             $opciones['nombre'] = trim($opciones['nombre']);
             $opciones['nombre'] = $this->db->escape_like_str($opciones['nombre']);
-            $opciones['nombre'] = htmlspecialchars( $opciones['nombre'] );
+            $opciones['nombre'] = htmlspecialchars($opciones['nombre']);
 
-            $opciones['nombre'] = str_replace('*','%',$opciones['nombre']);
+            $opciones['nombre'] = str_replace('*', '%', $opciones['nombre']);
             if ($opciones['nombre'] != '') {
                 $w_nombre_ft = '(
                     SELECT p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                        AND p1.fechaEliminacion=\'0000-00-00 00:00:00\' AND p1.idEmpresaGrupo='.$idEmpresaGrupo.'
-                    WHERE MATCH(nombreCompleto) AGAINST (\''.str_replace(' ','%',$opciones['nombre']).'\' IN BOOLEAN MODE)
+                        AND p1.fechaEliminacion=\'0000-00-00 00:00:00\' AND p1.idEmpresaGrupo=' . $idEmpresaGrupo . '
+                    WHERE MATCH(nombreCompleto) AGAINST (\'' . str_replace(' ', '%', $opciones['nombre']) . '\' IN BOOLEAN MODE)
                 )';
 
-                $w_nombre = " AND CONCAT_WS(' ', p.nombre, p.paterno,p.materno) LIKE '%".$opciones['nombre']."%' ";
+                $w_nombre = " AND CONCAT_WS(' ', p.nombre, p.paterno,p.materno) LIKE '%" . $opciones['nombre'] . "%' ";
             }
 
             //if ($totales==0) {
-                $sql = "INSERT INTO zzzduplicados (idUsuario, texto, fechaRegistro)
-                    VALUES ($idUsuario, CONCAT('Busqueda (nombre): ', '".$opciones['nombre']."'), NOW())";
-                $this->db->query($sql);
+            $sql = "INSERT INTO zzzduplicados (idUsuario, texto, fechaRegistro)
+                    VALUES ($idUsuario, CONCAT('Busqueda (nombre): ', '" . $opciones['nombre'] . "'), NOW())";
+            $this->db->query($sql);
             //}
         }
         $w_persona = '';
         if (isset($opciones['persona'])) {
             settype($opciones['persona'], 'integer');
             if ($opciones['persona'] > 0) {
-                $w_persona = ' AND p.idPersona='.$opciones['persona'].' ';
+                $w_persona = ' AND p.idPersona=' . $opciones['persona'] . ' ';
 
                 //if ($totales==0 && $opciones["persona"]=='') {
-                    $sql = "INSERT INTO zzzduplicados (idUsuario, texto, fechaRegistro)
-                        VALUES ($idUsuario, CONCAT('Busqueda (idPersona): ', '".$opciones['persona']."'), NOW())";
-                    $this->db->query($sql);
+                $sql = "INSERT INTO zzzduplicados (idUsuario, texto, fechaRegistro)
+                        VALUES ($idUsuario, CONCAT('Busqueda (idPersona): ', '" . $opciones['persona'] . "'), NOW())";
+                $this->db->query($sql);
                 //}
             }
         }
 
-        $soloSocio = 0;
-        $w_membresia = '';
+        $soloSocio     = 0;
+        $w_membresia   = '';
         $num_membresia = 0;
         if (isset($opciones['membresia'])) {
             settype($opciones['membresia'], 'integer');
             $num_membresia = $opciones['membresia'];
             if ($opciones['membresia'] > 0) {
-                $w_membresia = ' AND a.membresia='.$opciones['membresia'].' ';
-                $soloSocio = 1;
+                $w_membresia = ' AND a.membresia=' . $opciones['membresia'] . ' ';
+                $soloSocio   = 1;
             }
 
             /*if ($totales==0) {
-                $sql = "INSERT INTO zzzduplicados (idUsuario, texto, fechaRegistro)
-                    VALUES ($idUsuario, CONCAT('Busqueda (Membresia): ', '".$opciones["membresia"]."'), NOW())";
-                $this->db->query($sql);
-            }*/
+        $sql = "INSERT INTO zzzduplicados (idUsuario, texto, fechaRegistro)
+        VALUES ($idUsuario, CONCAT('Busqueda (Membresia): ', '".$opciones["membresia"]."'), NOW())";
+        $this->db->query($sql);
+        }*/
         }
 
         if (isset($opciones['soloSocio'])) {
             settype($opciones['soloSocio'], 'integer');
             if ($opciones['soloSocio'] > 0) {
                 $w_membresia = ' AND a.membresia<=0 ';
-                $soloSocio = 1;
+                $soloSocio   = 1;
             }
         }
 
@@ -373,7 +384,7 @@ class Persona extends Model
         if (isset($opciones['sexo'])) {
             settype($opciones['sexo'], 'integer');
             if ($opciones['sexo'] > 0) {
-                $w_sexo = ' AND p.idTipoSexo='.$opciones['sexo'].' ';
+                $w_sexo = ' AND p.idTipoSexo=' . $opciones['sexo'] . ' ';
             }
         }
 
@@ -381,31 +392,31 @@ class Persona extends Model
         if (isset($opciones['noSocio'])) {
             settype($opciones['noSocio'], 'integer');
             if ($opciones['noSocio'] == 1) {
-                 $w_membresia = ' AND (a.membresia IS NULL OR a.membresia=0) ';
-                 $noSocio = 1;
+                $w_membresia = ' AND (a.membresia IS NULL OR a.membresia=0) ';
+                $noSocio     = 1;
             }
         }
 
-        if ($this->session->userdata('idUn') == 1 ) {
-             $w_concesionario = '';
+        if ($this->session->userdata('idUn') == 1) {
+            $w_concesionario = '';
         } else {
-            if( isset($opciones['w_concesionario']) ){
+            if (isset($opciones['w_concesionario'])) {
                 $w_concesionario = ' AND p.concesionario IN (1,3) ';
-            }else{
+            } else {
                 $w_concesionario = ' AND p.concesionario=0 ';
             }
         }
 
         $limit = '';
         if ($totales == 0) {
-            if( $numeroRegistros>0 ){
+            if ($numeroRegistros > 0) {
                 $limit = " LIMIT $posicion, $numeroRegistros";
             }
         }
 
         $data = array();
 
-        if ($w_membresia=='' && $w_nombre=='' && $w_persona=='' && $w_sexo=='' && $w_concesionario=='') {
+        if ($w_membresia == '' && $w_nombre == '' && $w_persona == '' && $w_sexo == '' && $w_concesionario == '') {
             if ($totales == 1) {
                 return 0;
             } else {
@@ -413,7 +424,7 @@ class Persona extends Model
             }
         }
 
-        if ($w_membresia=='' && $w_nombre=='' && $w_persona=='' && $w_sexo=='' && $w_concesionario==' AND p.concesionario=0 ') {
+        if ($w_membresia == '' && $w_nombre == '' && $w_persona == '' && $w_sexo == '' && $w_concesionario == ' AND p.concesionario=0 ') {
             if ($totales == 1) {
                 return 0;
             } else {
@@ -421,25 +432,25 @@ class Persona extends Model
             }
         }
 
-        $w_bloqueoMail  = 'AND p.bloqueo=0';
+        $w_bloqueoMail = 'AND p.bloqueo=0';
         if (isset($opciones['w_concesionario'])) {
-            $w_bloqueoMail  = "";
+            $w_bloqueoMail = "";
         }
 
         $sql = "SELECT persona, membresia, club, unico, nombre, paterno, materno, tipo, idTipo, edad, fechaNacimiento, idTipoPersona FROM (";
-        if($soloSocio == 0) {
+        if ($soloSocio == 0) {
             $sql .= " (SELECT p.idPersona AS persona, '' AS membresia, '' AS club, '' AS unico, p.nombre, p.paterno, p.materno,
                 'Persona' AS tipo, '9' AS idTipo,
                 p.edad AS edad,
                 p.fechaNacimiento, p.idTipoPersona
                 FROM $w_nombre_ft p
                 LEFT JOIN socio s ON p.idPersona=s.idPersona AND s.eliminado = 0
-                LEFT JOIN empleado i ON p.idPersona=i.idPersona AND i.idTipoEstatusEmpleado=".ESTATUS_EMPLEADO_ACTIVO."
+                LEFT JOIN empleado i ON p.idPersona=i.idPersona AND i.idTipoEstatusEmpleado=" . ESTATUS_EMPLEADO_ACTIVO . "
                 WHERE p.fechaEliminacion='0000-00-00 00-00-00' AND (s.idSocio = 0 OR s.idSocio IS NULL)
                     AND (i.idEmpleado = 0 OR i.idEmpleado IS NULL) AND p.idEmpresaGrupo=$idEmpresaGrupo
                 $w_bloqueoMail $w_nombre $w_persona $w_sexo $w_concesionario)";
         }
-        if($noSocio == 0) {
+        if ($noSocio == 0) {
             if (strstr($sql, '(SELECT')) {
                 $sql .= " UNION";
             }
@@ -449,13 +460,13 @@ class Persona extends Model
                 INNER JOIN $w_nombre_ft p ON p.idPersona=s.idPersona AND p.fechaEliminacion='0000-00-00 00:00:00'
                     AND p.idEmpresaGrupo=$idEmpresaGrupo $w_bloqueoMail
                 INNER JOIN membresia m ON m.idUnicoMembresia=s.idUnicoMembresia ";
-            if ($num_membresia>0) {
-                $sql .= " AND m.idMembresia=".$num_membresia;
+            if ($num_membresia > 0) {
+                $sql .= " AND m.idMembresia=" . $num_membresia;
             }
             $sql .= " INNER JOIN un u ON u.idUn=m.idUn
                 WHERE s.eliminado = 0 AND m.eliminado = 0
                 $w_nombre $w_persona $w_sexo $w_concesionario)  ";
-            if ($num_membresia>0) {
+            if ($num_membresia > 0) {
                 $sql .= " UNION (SELECT p.idPersona AS persona, m.idMembresia AS membresia, u.nombre AS club,
                         m.idUnicoMembresia AS unico, p.nombre, p.paterno, p.materno,
                         'Socio' AS tipo, '0' AS idTipo, p.edad AS edad, p.fechaNacimiento, p.idTipoPersona
@@ -471,7 +482,7 @@ class Persona extends Model
             }
         }
 
-        if($soloSocio == 0) {
+        if ($soloSocio == 0) {
             if (strstr($sql, '(SELECT')) {
                 $sql .= ' UNION';
             }
@@ -480,7 +491,7 @@ class Persona extends Model
                 FROM empleado i
                 INNER JOIN persona p ON p.idPersona=i.idPersona AND p.fechaEliminacion='0000-00-00 00:00:00'
                     AND p.idEmpresaGrupo=$idEmpresaGrupo $w_bloqueoMail
-                WHERE i.idTipoEstatusEmpleado= ".ESTATUS_EMPLEADO_ACTIVO."
+                WHERE i.idTipoEstatusEmpleado= " . ESTATUS_EMPLEADO_ACTIVO . "
                 $w_nombre $w_persona $w_sexo $w_concesionario)";
         }
         $sql .= ") a WHERE 1=1 $w_membresia ";
@@ -488,8 +499,8 @@ class Persona extends Model
         $w_minEdad = '';
         if (isset($opciones['minEdad'])) {
             settype($opciones['minEdad'], 'integer');
-            if ($opciones['minEdad']>=0) {
-                $w_minEdad = ' AND (a.edad>='.$opciones['minEdad'].' OR a.idTipoPersona=45) ';
+            if ($opciones['minEdad'] >= 0) {
+                $w_minEdad = ' AND (a.edad>=' . $opciones['minEdad'] . ' OR a.idTipoPersona=45) ';
             }
         } else {
             $opciones['minEdad'] = 0;
@@ -498,23 +509,23 @@ class Persona extends Model
         $w_maxEdad = '';
         if (isset($opciones['maxEdad'])) {
             settype($opciones['maxEdad'], 'integer');
-            if($opciones['minEdad']==0) {
-                if($opciones['maxEdad']==0) {
-                    $w_maxEdad = ' AND (a.edad<='.$opciones['maxEdad'].' OR a.idTipoPersona=45) ';
+            if ($opciones['minEdad'] == 0) {
+                if ($opciones['maxEdad'] == 0) {
+                    $w_maxEdad = ' AND (a.edad<=' . $opciones['maxEdad'] . ' OR a.idTipoPersona=45) ';
                 } else {
-                    $w_maxEdad = ' AND (a.edad<='.$opciones['maxEdad'].' OR a.idTipoPersona=45) ';
+                    $w_maxEdad = ' AND (a.edad<=' . $opciones['maxEdad'] . ' OR a.idTipoPersona=45) ';
                 }
             } else {
-                if($opciones['maxEdad']>0) {
-                    $w_maxEdad = ' AND (a.edad<='.$opciones['maxEdad'].' OR a.idTipoPersona=45) ';
+                if ($opciones['maxEdad'] > 0) {
+                    $w_maxEdad = ' AND (a.edad<=' . $opciones['maxEdad'] . ' OR a.idTipoPersona=45) ';
                 }
             }
         } else {
             $opciones['maxEdad'] = 0;
         }
 
-        if ($opciones['minEdad'] == 0 && $opciones['maxEdad']==0) {
-            $w_maxEdad = ' AND (a.edad>='.$opciones['maxEdad'].' OR a.idTipoPersona=45) ';
+        if ($opciones['minEdad'] == 0 && $opciones['maxEdad'] == 0) {
+            $w_maxEdad = ' AND (a.edad>=' . $opciones['maxEdad'] . ' OR a.idTipoPersona=45) ';
             $w_minEdad = '';
         }
 
@@ -524,11 +535,11 @@ class Persona extends Model
                 $sql .= " AND fechaNacimiento <> '0000-00-00' ";
             }
         }
-        $sql .= " ORDER BY nombre, paterno, materno, materno ".$limit;
+        $sql .= " ORDER BY nombre, paterno, materno, materno " . $limit;
 
         $query = $this->db->query($sql);
         //echo $this->db->last_query();
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             if ($totales == 1) {
                 return $query->num_rows;
             }
@@ -559,13 +570,13 @@ class Persona extends Model
             return 'Persona invalida';
         }
 
-        $okPersona = false;
+        $okPersona    = false;
         $datosPersona = $this->datosGenerales($persona);
         if ($datosPersona != null) {
             if ($datosPersona['tipo'] == 44) {
-                if(is_name_valid(utf8_encode($datosPersona['nombre']))==true &&
-                   is_name_valid(utf8_encode($datosPersona['paterno']))==true &&
-                   is_name_valid(utf8_encode($datosPersona['materno']))==true)  {
+                if (is_name_valid(utf8_encode($datosPersona['nombre'])) == true &&
+                    is_name_valid(utf8_encode($datosPersona['paterno'])) == true &&
+                    is_name_valid(utf8_encode($datosPersona['materno'])) == true) {
                     $okPersona = true;
                 } else {
                     $okPersona = false;
@@ -588,7 +599,7 @@ class Persona extends Model
             return 'Datos de persona incompletos';
         }
 
-        $total = 0;
+        $total      = 0;
         $okTelefono = false;
         $this->db->select('telefono, lada, idTipoTelefono');
         $this->db->from(TBL_TELEFONO);
@@ -608,9 +619,9 @@ class Persona extends Model
             return 'Falta registrar numero de telefono';
         }
 
-        if($contacto != 0) {
+        if ($contacto != 0) {
             $okMail = false;
-            $total = 0;
+            $total  = 0;
             $this->db->select('mail, idTipoMail');
             $this->db->from(TBL_MAIL);
             $this->db->where('eliminado', 0);
@@ -630,7 +641,7 @@ class Persona extends Model
             }
 
             $okDomicilio = false;
-            $total = 0;
+            $total       = 0;
             $this->db->select('idTipoDomicilio, calle, numero, colonia, idEstado,idMunicipio, cp, fiscal, RFC, nombreFiscal');
             $this->db->from(TBL_DOMICILIO);
             $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -640,17 +651,17 @@ class Persona extends Model
                 $total++;
                 $domicilios = $query->result_array();
                 foreach ($domicilios as $fila) {
-                    if($datosPersona['tipo']==44 && $fila['fiscal']==0){
+                    if ($datosPersona['tipo'] == 44 && $fila['fiscal'] == 0) {
                         if ($fila['calle'] != '' && $fila['colonia'] != '' && $fila['idEstado'] > 0
-                             && $fila['idMunicipio'] > 0 && $fila['cp'] != '' && $fila['idTipoDomicilio'] > 0
+                            && $fila['idMunicipio'] > 0 && $fila['cp'] != '' && $fila['idTipoDomicilio'] > 0
                         ) {
                             $okDomicilio = true;
                         }
                     }
-                    if(($datosPersona['tipo']==44 && $fila['fiscal']==1) || $datosPersona['tipo']==45 ){
+                    if (($datosPersona['tipo'] == 44 && $fila['fiscal'] == 1) || $datosPersona['tipo'] == 45) {
                         if ($fila['calle'] != '' && $fila['colonia'] != '' && $fila['idEstado'] > 0
-                             && $fila['idMunicipio'] > 0 && $fila['cp'] != '' && $fila['idTipoDomicilio'] > 0 && $fila['fiscal']==1
-                             && $fila['RFC']!='' && $fila['nombreFiscal']!='') {
+                            && $fila['idMunicipio'] > 0 && $fila['cp'] != '' && $fila['idTipoDomicilio'] > 0 && $fila['fiscal'] == 1
+                            && $fila['RFC'] != '' && $fila['nombreFiscal'] != '') {
                             $okDomicilio = true;
                         }
                     }
@@ -672,7 +683,7 @@ class Persona extends Model
     public function datosCompletosContacto($persona)
     {
         $okContacto = false;
-        $total = 0;
+        $total      = 0;
         $this->db->select('idTipoContacto, idPersonaContacto');
         $this->db->from(TLB_CONTACTO);
         $this->db->where('idPersona', $persona);
@@ -686,7 +697,7 @@ class Persona extends Model
                     $okContacto = true;
                 }
             }
-            return  'Ok';
+            return 'Ok';
         }
         if ($okContacto == false) {
             return 'Falta registrar algun contacto';
@@ -703,16 +714,16 @@ class Persona extends Model
      *
      * @return array
      */
-    public function datosDomicilio($persona, $id=0, $idTipoDomicilio = 0)
+    public function datosDomicilio($persona, $id = 0, $idTipoDomicilio = 0)
     {
         settype($persona, 'integer');
         settype($id, 'integer');
 
-        if ($persona==0) {
+        if ($persona == 0) {
             return null;
         }
 
-        $this->db->select('idTipoDomicilio AS tipoDomicilio, calle, numero, colonia, idEstado AS estado, idMunicipio AS municipio, cp, referencia, fiscal, RFC, nombreFiscal');//, bancario
+        $this->db->select('idTipoDomicilio AS tipoDomicilio, calle, numero, colonia, idEstado AS estado, idMunicipio AS municipio, cp, referencia, fiscal, RFC, nombreFiscal'); //, bancario
         $this->db->from(TBL_DOMICILIO);
         $this->db->where('idPersona', $persona);
 
@@ -733,7 +744,6 @@ class Persona extends Model
         }
     }
 
-
     /**
      * Regresa una array con los datos generales de la persona solicitada
      *
@@ -746,7 +756,7 @@ class Persona extends Model
     public static function datosGenerales($persona)
     {
         settype($persona, 'integer');
-        if ($persona==0) {
+        if ($persona == 0) {
             return null;
         }
 
@@ -768,16 +778,16 @@ LEFT JOIN socio s ON s.idPersona=p.idPersona AND s.eliminado=0
 WHERE p.idPersona={$persona} AND p.bloqueo=0
 GROUP BY p.idPersona";
         $query = DB::connection('crm')->select($sql);
-        
+
         if (count($query) > 0) {
-            $query = array_map(function($x){return (array)$x;},$query);
+            $query = array_map(function ($x) {return (array) $x;}, $query);
             $fila = $query[0];
             return $fila;
         } else {
             return null;
         }
     }
-    
+
     /**
      * Genera una array con los datos generales de la cuenta de mail solicitada
      *
@@ -793,11 +803,11 @@ GROUP BY p.idPersona";
         settype($persona, 'integer');
         settype($id, 'integer');
 
-        if ($persona==0) {
+        if ($persona == 0) {
             return null;
         }
 
-        if ($id==0) {
+        if ($id == 0) {
             return null;
         }
 
@@ -814,7 +824,6 @@ GROUP BY p.idPersona";
         }
     }
 
-
     /**
      * Verifica que una persona tenga registrados sus datos minimos
      *
@@ -828,7 +837,7 @@ GROUP BY p.idPersona";
     {
         settype($persona, 'integer');
 
-        if ($persona==0) {
+        if ($persona == 0) {
             return false;
         }
 
@@ -846,7 +855,7 @@ GROUP BY p.idPersona";
             return false;
         }
 
-        $total = 0;
+        $total      = 0;
         $okTelefono = false;
         $this->db->select('telefono');
         $this->db->from(TBL_TELEFONO);
@@ -864,7 +873,7 @@ GROUP BY p.idPersona";
         }
 
         $okMail = false;
-        $total = 0;
+        $total  = 0;
         $this->db->select('mail');
         $this->db->from(TBL_MAIL);
         $this->db->where('eliminado', 0);
@@ -880,7 +889,7 @@ GROUP BY p.idPersona";
             }
         }
 
-        if ($total ==0 ) {
+        if ($total == 0) {
             return false;
         }
 
@@ -890,7 +899,6 @@ GROUP BY p.idPersona";
 
         return true;
     }
-
 
     /**
      * Genera una array con los datos generales del telefono solicitado
@@ -907,11 +915,11 @@ GROUP BY p.idPersona";
         settype($persona, 'integer');
         settype($id, 'integer');
 
-        if ($persona==0) {
+        if ($persona == 0) {
             return null;
         }
 
-        if ($id==0) {
+        if ($id == 0) {
             return null;
         }
 
@@ -939,14 +947,14 @@ GROUP BY p.idPersona";
     {
         settype($idUnicoMembresia, 'integer');
 
-        $sql="SELECT p.nombre,p.paterno,p.materno, p.fechanacimiento
+        $sql = "SELECT p.nombre,p.paterno,p.materno, p.fechanacimiento
             FROM socio s
             INNER JOIN persona p on s.idpersona=p.idpersona
             INNER JOIN membresia m on s.idUnicoMembresia=m.idUnicoMembresia
-            WHERE s.idunicomembresia=".$idUnicoMembresia." LIMIT 1";
-        $query=$this->db->query($sql);
+            WHERE s.idunicomembresia=" . $idUnicoMembresia . " LIMIT 1";
+        $query = $this->db->query($sql);
 
-        if ($query->num_rows==1) {
+        if ($query->num_rows == 1) {
             $data = $query->row_array();
         }
 
@@ -966,8 +974,8 @@ GROUP BY p.idPersona";
     {
         settype($idPersona, 'integer');
 
-        if ($idPersona>1) {
-            exec('rm -rf /respaldos/www/sportsworld/siac_ci/imagenes/personas/'.$idPersona.'.*');
+        if ($idPersona > 1) {
+            exec('rm -rf /respaldos/www/sportsworld/siac_ci/imagenes/personas/' . $idPersona . '.*');
 
             $sql = "SELECT d.rutaDocumento
                 FROM documentopersona dp
@@ -977,13 +985,13 @@ GROUP BY p.idPersona";
                 WHERE dp.idPersona=$idPersona";
             $query = $this->db->query($sql);
 
-            if ($query->num_rows>0) {
+            if ($query->num_rows > 0) {
                 $documentos = $query->result_array();
                 foreach ($documentos as $fila) {
                     if ($fila->rutaDocumento != '') {
                         if (file_exists($fila->rutaDocumento)) {
-                            exec('rm -rf '.$fila->rutaDocumento);
-                            echo 'rm -rf '.$fila->rutaDocumento.'<br>';
+                            exec('rm -rf ' . $fila->rutaDocumento);
+                            echo 'rm -rf ' . $fila->rutaDocumento . '<br>';
                         }
                     }
                 }
@@ -1136,7 +1144,6 @@ GROUP BY p.idPersona";
         return false;
     }
 
-
     /**
      * [detalleMenor description]
      *
@@ -1179,7 +1186,6 @@ GROUP BY p.idPersona";
         return $r;
     }
 
-
     /**
      * Regresa el numero de dias transcurridos desde la ultima actulizacion de la persona
      *
@@ -1193,13 +1199,13 @@ GROUP BY p.idPersona";
     {
         settype($idPersona, 'integer');
 
-        if ($idPersona<=0) {
+        if ($idPersona <= 0) {
             return 0;
         }
 
         $sql = "SELECT DATEDIFF(DATE(NOW()), fechaActualizacion) AS dias
             FROM persona
-            WHERE idPersona=".$idPersona;
+            WHERE idPersona=" . $idPersona;
         $query = $this->db->query($sql);
 
         if ($query->num_rows > 0) {
@@ -1209,8 +1215,6 @@ GROUP BY p.idPersona";
 
         return 0;
     }
-
-
 
     /**
      * Valida si la cuenta de correo electronico se encuentra previamente registra en la base de mails
@@ -1234,29 +1238,28 @@ GROUP BY p.idPersona";
         return false;
     }
 
-
-    private function limpiarTexto($String){
-        $String = str_replace(array('á','à','â','ã','ª','ä'),"a",$String);
-        $String = str_replace(array('Á','À','Â','Ã','Ä'),"A",$String);
-        $String = str_replace(array('Í','Ì','Î','Ï'),"I",$String);
-        $String = str_replace(array('í','ì','î','ï'),"i",$String);
-        $String = str_replace(array('é','è','ê','ë'),"e",$String);
-        $String = str_replace(array('É','È','Ê','Ë'),"E",$String);
-        $String = str_replace(array('ó','ò','ô','õ','ö','º'),"o",$String);
-        $String = str_replace(array('Ó','Ò','Ô','Õ','Ö'),"O",$String);
-        $String = str_replace(array('ú','ù','û','ü'),"u",$String);
-        $String = str_replace(array('Ú','Ù','Û','Ü'),"U",$String);
-        $String = str_replace(array('[','^','´','`','¨','~',']'),"",$String);
-        $String = str_replace("ç","c",$String);
-        $String = str_replace("Ç","C",$String);
-        $String = str_replace("ñ","n",$String);
-        $String = str_replace("Ñ","N",$String);
-        $String = str_replace("Ý","Y",$String);
-        $String = str_replace("ý","y",$String);
+    private function limpiarTexto($String)
+    {
+        $String = str_replace(array('á', 'à', 'â', 'ã', 'ª', 'ä'), "a", $String);
+        $String = str_replace(array('Á', 'À', 'Â', 'Ã', 'Ä'), "A", $String);
+        $String = str_replace(array('Í', 'Ì', 'Î', 'Ï'), "I", $String);
+        $String = str_replace(array('í', 'ì', 'î', 'ï'), "i", $String);
+        $String = str_replace(array('é', 'è', 'ê', 'ë'), "e", $String);
+        $String = str_replace(array('É', 'È', 'Ê', 'Ë'), "E", $String);
+        $String = str_replace(array('ó', 'ò', 'ô', 'õ', 'ö', 'º'), "o", $String);
+        $String = str_replace(array('Ó', 'Ò', 'Ô', 'Õ', 'Ö'), "O", $String);
+        $String = str_replace(array('ú', 'ù', 'û', 'ü'), "u", $String);
+        $String = str_replace(array('Ú', 'Ù', 'Û', 'Ü'), "U", $String);
+        $String = str_replace(array('[', '^', '´', '`', '¨', '~', ']'), "", $String);
+        $String = str_replace("ç", "c", $String);
+        $String = str_replace("Ç", "C", $String);
+        $String = str_replace("ñ", "n", $String);
+        $String = str_replace("Ñ", "N", $String);
+        $String = str_replace("Ý", "Y", $String);
+        $String = str_replace("ý", "y", $String);
 
         return $String;
     }
-
 
     /**
      * Valida si el nombre indicado ya se encuentra previamente registrado en la base de datos
@@ -1267,7 +1270,7 @@ GROUP BY p.idPersona";
      *
      * @return boolean
      */
-    public function duplicadoNombre($nombre, $paterno, $materno, $omitir=0, $sexo=0)
+    public function duplicadoNombre($nombre, $paterno, $materno, $omitir = 0, $sexo = 0)
     {
         settype($omitir, 'integer');
         settype($sexo, 'integer');
@@ -1279,14 +1282,14 @@ GROUP BY p.idPersona";
             return $salida;
         }
 
-        $nombre = $this->limpiarTexto($nombre);
+        $nombre  = $this->limpiarTexto($nombre);
         $paterno = $this->limpiarTexto($paterno);
         $materno = $this->limpiarTexto($materno);
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('un_model');
         $idEmpresaGrupo = $ci->un_model->obtenerEmpresaGrupo($this->session->userdata('idUn'));
-        $idUsuario = $this->session->userdata('idUsuario');
+        $idUsuario      = $this->session->userdata('idUsuario');
 
         $sql = "SET @nombre_pd_$idUsuario = '$nombre';";
         $this->db->query($sql);
@@ -1341,22 +1344,22 @@ GROUP BY p.idPersona";
         $sql = "SET @name_pd_$idUsuario = REPLACE(@name_pd_$idUsuario, '  ', ' ');";
         $this->db->query($sql);
 
-        $sql = "SELECT @name_pd_$idUsuario AS nombre";
+        $sql   = "SELECT @name_pd_$idUsuario AS nombre";
         $query = $this->db->query($sql);
-        $fila = $query->row_array();
+        $fila  = $query->row_array();
 
         $pre_nombre = $fila["nombre"];
-        $arrNombre = explode(' ', $pre_nombre);
+        $arrNombre  = explode(' ', $pre_nombre);
 
         $total = count($arrNombre);
 
         $expresion = '';
-        for ($i=0; $i<$total; $i++) {
-            if (strlen($arrNombre[$i])>4) {
-                if ($expresion!='') {
-                    $expresion .=  ' ';
+        for ($i = 0; $i < $total; $i++) {
+            if (strlen($arrNombre[$i]) > 4) {
+                if ($expresion != '') {
+                    $expresion .= ' ';
                 }
-                $expresion .= substr($arrNombre[$i], 0, 4).'*';
+                $expresion .= substr($arrNombre[$i], 0, 4) . '*';
             }
         }
 
@@ -1366,16 +1369,16 @@ GROUP BY p.idPersona";
         $this->db->query($sql);
 
         $sql_omitir = '';
-        if ($omitir>0) {
-            $sql_omitir = ' AND p.idPersona<>'.$omitir;
+        if ($omitir > 0) {
+            $sql_omitir = ' AND p.idPersona<>' . $omitir;
         }
 
         $w_sexo = '';
-        if ($sexo>0) {
+        if ($sexo > 0) {
             $w_sexo = " AND p.idTIpoSexo IN (0, $sexo) ";
         }
 
-        if ($idUsuario!=1514) {
+        if ($idUsuario != 1514) {
             $sql = "INSERT INTO zzzduplicados (idUsuario, texto, fechaRegistro)
                 VALUES ($idUsuario, CONCAT_WS(' ', '$nombre', '$paterno', '$materno'), NOW())";
             $this->db->query($sql);
@@ -1407,13 +1410,13 @@ GROUP BY p.idPersona";
 
         /*
         $sql = "CREATE TEMPORARY TABLE personalevenshtein_pre_$idUsuario ENGINE=MEMORY
-            SELECT p.idPersona, REPLACE(l.nombreCompleto, ' ', '') AS nombreCompleto,
-                LENGTH(REPLACE(l.nombreCompleto, ' ', '')) AS longitud
-            FROM personalevenshtein l
-            INNER JOIN persona p ON p.idPersona=l.idPersona AND p.bloqueo=0 AND p.idEmpresaGrupo=$idEmpresaGrupo
-                AND p.fechaEliminacion='0000-00-00 00:00:00'
-            WHERE l.longitud BETWEEN @minimo_pd_$idUsuario AND @maximo_pd_$idUsuario $w_sexo
-                AND MATCH(nombreCompleto) AGAINST ('$expresion' IN BOOLEAN MODE) $sql_omitir;";
+        SELECT p.idPersona, REPLACE(l.nombreCompleto, ' ', '') AS nombreCompleto,
+        LENGTH(REPLACE(l.nombreCompleto, ' ', '')) AS longitud
+        FROM personalevenshtein l
+        INNER JOIN persona p ON p.idPersona=l.idPersona AND p.bloqueo=0 AND p.idEmpresaGrupo=$idEmpresaGrupo
+        AND p.fechaEliminacion='0000-00-00 00:00:00'
+        WHERE l.longitud BETWEEN @minimo_pd_$idUsuario AND @maximo_pd_$idUsuario $w_sexo
+        AND MATCH(nombreCompleto) AGAINST ('$expresion' IN BOOLEAN MODE) $sql_omitir;";
         $this->db->query($sql);
 
         $totReg = $this->db->affected_rows();
@@ -1422,35 +1425,35 @@ GROUP BY p.idPersona";
         $this->db->query($sql);
 
         $sql = "CREATE TEMPORARY TABLE tmp_busperdupli_$idUsuario ENGINE=MEMORY
-            SELECT pl.idPersona, LEVENSHTEIN(pl.nombreCompleto, @name_pd_$idUsuario) AS dif
-            FROM personalevenshtein_pre_$idUsuario pl
-            HAVING (LENGTH(@name_pd_$idUsuario)<=12 AND dif <2) OR (LENGTH(@name_pd_$idUsuario)>12 AND dif <=3);";
+        SELECT pl.idPersona, LEVENSHTEIN(pl.nombreCompleto, @name_pd_$idUsuario) AS dif
+        FROM personalevenshtein_pre_$idUsuario pl
+        HAVING (LENGTH(@name_pd_$idUsuario)<=12 AND dif <2) OR (LENGTH(@name_pd_$idUsuario)>12 AND dif <=3);";
         $this->db->query($sql);
 
         $sql = "SELECT t.idPersona, UPPER(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) AS nombre,
-                m.idMembresia AS membresia, u.nombre AS club,
-                CONCAT(TRIM(tel.lada), TRIM(tel.telefono)) AS telefono,
-                ma.mail, ma2.mail AS mailEmpleado, pv.idPersonaVendedor,
-                IF(pv.fechaActualizacion IS NULL, 1000, DATEDIFF(DATE(NOW()), pv.fechaActualizacion)) AS dias,
-                t.dif
-            FROM tmp_busperdupli_$idUsuario t
-            INNER JOIN persona p ON p.idPersona=t.idPersona
-            LEFT JOIN socio s ON s.idPersona=t.idPersona AND s.fechaEliminacion='0000-00-00 00:00:00'
-                AND s.idTipoEstatusSocio<>82
-            LEFT JOIN membresia m ON m.idUnicoMembresia=s.idUnicoMembresia
-            LEFT JOIN un u ON u.idUn=m.idUn
-            LEFT JOIN telefono tel on tel.idPersona=t.idPersona AND tel.fechaEliminacion='0000-00-00 00:00:00'
-            LEFT JOIN mail ma ON ma.idPersona=t.idPersona AND ma.fechaEliminacion='0000-00-00 00:00:00'
-            LEFT JOIN prospectovendedor pv ON pv.idPersona=t.idPersona AND pv.faltaVender=1
-                AND pv.fechaEliminacion='0000-00-00 00:00:00'
-            LEFT JOIN empleado e ON e.idPersona=pv.idPersonaVendedor AND e.idTipoEstatusEmpleado=196
-            LEFT JOIN mail ma2 ON ma2.idPersona=e.idPersona AND ma2.idTipoMail=37
-                AND ma2.fechaEliminacion='0000-00-00 00:00:00'
-            GROUP BY t.idPersona;";
+        m.idMembresia AS membresia, u.nombre AS club,
+        CONCAT(TRIM(tel.lada), TRIM(tel.telefono)) AS telefono,
+        ma.mail, ma2.mail AS mailEmpleado, pv.idPersonaVendedor,
+        IF(pv.fechaActualizacion IS NULL, 1000, DATEDIFF(DATE(NOW()), pv.fechaActualizacion)) AS dias,
+        t.dif
+        FROM tmp_busperdupli_$idUsuario t
+        INNER JOIN persona p ON p.idPersona=t.idPersona
+        LEFT JOIN socio s ON s.idPersona=t.idPersona AND s.fechaEliminacion='0000-00-00 00:00:00'
+        AND s.idTipoEstatusSocio<>82
+        LEFT JOIN membresia m ON m.idUnicoMembresia=s.idUnicoMembresia
+        LEFT JOIN un u ON u.idUn=m.idUn
+        LEFT JOIN telefono tel on tel.idPersona=t.idPersona AND tel.fechaEliminacion='0000-00-00 00:00:00'
+        LEFT JOIN mail ma ON ma.idPersona=t.idPersona AND ma.fechaEliminacion='0000-00-00 00:00:00'
+        LEFT JOIN prospectovendedor pv ON pv.idPersona=t.idPersona AND pv.faltaVender=1
+        AND pv.fechaEliminacion='0000-00-00 00:00:00'
+        LEFT JOIN empleado e ON e.idPersona=pv.idPersonaVendedor AND e.idTipoEstatusEmpleado=196
+        LEFT JOIN mail ma2 ON ma2.idPersona=e.idPersona AND ma2.idTipoMail=37
+        AND ma2.fechaEliminacion='0000-00-00 00:00:00'
+        GROUP BY t.idPersona;";
         $query = $this->db->query($sql);
-        */
+         */
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         }
 
@@ -1458,7 +1461,6 @@ GROUP BY p.idPersona";
 
         return $salida;
     }
-
 
     /**
      * Regresa la edad de la persona indicada
@@ -1478,11 +1480,11 @@ GROUP BY p.idPersona";
 
         $sql = 'SELECT edad
             FROM persona
-            WHERE idPersona='.$persona.' AND fechaNacimiento <> "0000-00-00" ';
+            WHERE idPersona=' . $persona . ' AND fechaNacimiento <> "0000-00-00" ';
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
-            $query = array_map(function($x){return (array)$x;},$query);
+            $query = array_map(function ($x) {return (array) $x;}, $query);
             $fila = $query[0];
             return $fila['edad'];
         }
@@ -1516,16 +1518,16 @@ GROUP BY p.idPersona";
         }
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
-        $datos = array (
-            'fechaEliminacion' => date("Y-m-d H:i:s")
+        $datos = array(
+            'fechaEliminacion' => date("Y-m-d H:i:s"),
         );
 
         $this->db->where('idContacto', $id);
@@ -1534,8 +1536,8 @@ GROUP BY p.idPersona";
 
         $this->permisos_model->log('Se elimino contacto de persona', LOG_PERSONA, $idUnicoMembresia, $idPersona);
 
-        $prospecto = array (
-            'fechaActualizacion' => date("Y-m-d H:i:s")
+        $prospecto = array(
+            'fechaActualizacion' => date("Y-m-d H:i:s"),
         );
         $this->db->where('idPersona', $idPersona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -1571,16 +1573,16 @@ GROUP BY p.idPersona";
         }
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
-        $datos = array (
-            'fechaEliminacion' => date("Y-m-d H:i:s")
+        $datos = array(
+            'fechaEliminacion' => date("Y-m-d H:i:s"),
         );
 
         $this->db->where('idDomicilio', $id);
@@ -1589,8 +1591,8 @@ GROUP BY p.idPersona";
 
         $this->permisos_model->log('Elimino domicilio de persona', LOG_PERSONA, $idUnicoMembresia, $idPersona);
 
-        $prospecto = array (
-            'fechaActualizacion' => date("Y-m-d H:i:s")
+        $prospecto = array(
+            'fechaActualizacion' => date("Y-m-d H:i:s"),
         );
         $this->db->where('idPersona', $idPersona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -1599,7 +1601,6 @@ GROUP BY p.idPersona";
 
         return true;
     }
-
 
     /**
      * Elimina el registro de una cuenta de correo electronico
@@ -1627,16 +1628,16 @@ GROUP BY p.idPersona";
         }
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
-        $datos = array (
-            'fechaEliminacion' => date("Y-m-d H:i:s")
+        $datos = array(
+            'fechaEliminacion' => date("Y-m-d H:i:s"),
         );
 
         $this->db->where('idMail', $id);
@@ -1645,8 +1646,8 @@ GROUP BY p.idPersona";
 
         $this->permisos_model->log('Elimino mail de persona', LOG_PERSONA, $idUnicoMembresia, $idPersona);
 
-        $prospecto = array (
-            'fechaActualizacion' => date("Y-m-d H:i:s")
+        $prospecto = array(
+            'fechaActualizacion' => date("Y-m-d H:i:s"),
         );
         $this->db->where('idPersona', $idPersona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -1672,15 +1673,15 @@ GROUP BY p.idPersona";
             return false;
         }
 
-        $datos = array (
-            'fechaEliminacion' => date("Y-m-d H:i:s")
+        $datos = array(
+            'fechaEliminacion' => date("Y-m-d H:i:s"),
         );
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
-        $idPersona = 0;
+        $idPersona            = 0;
         $idPersonaResponsable = 0;
         $this->db->select('idPersonaMenor, idPersonaResponsable');
         $this->db->from('responsablemenor');
@@ -1688,19 +1689,19 @@ GROUP BY p.idPersona";
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
         if ($query->num_rows > 0) {
-            $fila = $query->row_array();
-            $idPersona = (int)$fila['idPersonaMenor'];
-            $idPersonaResponsable = (int)$fila['idPersonaResponsable'];
+            $fila                 = $query->row_array();
+            $idPersona            = (int) $fila['idPersonaMenor'];
+            $idPersonaResponsable = (int) $fila['idPersonaResponsable'];
         }
 
-        if ($idPersona>0) {
+        if ($idPersona > 0) {
             $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
 
-            if ($idSocio>0) {
+            if ($idSocio > 0) {
                 $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
             }
 
-            if ($idUnicoMembresia>0 && $idPersonaResponsable>0) {
+            if ($idUnicoMembresia > 0 && $idPersonaResponsable > 0) {
                 $this->db->where('idUnicoMembresia', $idUnicoMembresia);
                 $this->db->where('idPersonaResponsable', $idPersonaResponsable);
                 $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -1713,7 +1714,7 @@ GROUP BY p.idPersona";
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->update('responsablemenor', $datos);
 
-        $this->permisos_model->log('Se elimino Responsable del menor ('.$nombre.')', LOG_PERSONA, $idUnicoMembresia, $idPersona);
+        $this->permisos_model->log('Se elimino Responsable del menor (' . $nombre . ')', LOG_PERSONA, $idUnicoMembresia, $idPersona);
 
         return true;
     }
@@ -1744,16 +1745,16 @@ GROUP BY p.idPersona";
         }
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
-        $datos = array (
-            'fechaEliminacion' => date("Y-m-d H:i:s")
+        $datos = array(
+            'fechaEliminacion' => date("Y-m-d H:i:s"),
         );
 
         $this->db->where('idTelefono', $id);
@@ -1762,8 +1763,8 @@ GROUP BY p.idPersona";
 
         $this->permisos_model->log('Elimino telefono de persona', LOG_PERSONA, $idUnicoMembresia, $idPersona);
 
-        $prospecto = array (
-            'fechaActualizacion' => date("Y-m-d H:i:s")
+        $prospecto = array(
+            'fechaActualizacion' => date("Y-m-d H:i:s"),
         );
         $this->db->where('idPersona', $idPersona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -1785,9 +1786,9 @@ GROUP BY p.idPersona";
     public function empleadosPuestoUn($un, $puesto)
     {
         $this->db->select('p.nombre, p.paterno, p.materno, e.idPersona AS personaID');
-        $this->db->from(TBL_EMPLEADO.' e');
-        $this->db->join(TBL_PERSONA.' p', 'p.idPersona=e.idPersona', 'INNER');
-        $this->db->join(TBL_EMPLEADOPUESTO.' ep', 'ep.idEmpleado=e.idEmpleado');
+        $this->db->from(TBL_EMPLEADO . ' e');
+        $this->db->join(TBL_PERSONA . ' p', 'p.idPersona=e.idPersona', 'INNER');
+        $this->db->join(TBL_EMPLEADOPUESTO . ' ep', 'ep.idEmpleado=e.idEmpleado');
         $this->db->where('e.idTipoEstatusEmpleado', 196);
         $this->db->where('e.fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->where('ep.fechaEliminacion', '0000-00-00 00:00:00');
@@ -1813,8 +1814,8 @@ GROUP BY p.idPersona";
     public function empleadosUn($idPersona)
     {
         $this->db->select('ep.idUn');
-        $this->db->from(TBL_EMPLEADO.' e');
-        $this->db->join(TBL_EMPLEADOPUESTO.' ep', 'ep.idEmpleado=e.idEmpleado', 'INNER');
+        $this->db->from(TBL_EMPLEADO . ' e');
+        $this->db->join(TBL_EMPLEADOPUESTO . ' ep', 'ep.idEmpleado=e.idEmpleado', 'INNER');
         $this->db->where('e.idPersona', $idPersona);
         $this->db->where('e.idTipoEstatusEmpleado', 196);
         $this->db->where('e.fechaEliminacion', '0000-00-00 00:00:00');
@@ -1828,7 +1829,7 @@ GROUP BY p.idPersona";
         }
     }
 
-     /**
+    /**
      * Regresa el puesto por identificador de persona
      *
      * @param integer $idPersona Identificador de persona
@@ -1840,8 +1841,8 @@ GROUP BY p.idPersona";
     public function empleadoArea($idPersona)
     {
         $this->db->select('a.descripcion,e.idEmpleado');
-        $this->db->from(TBL_EMPLEADO.' e');
-        $this->db->join(TBL_AREA.' a', 'a.idArea = e.idArea');
+        $this->db->from(TBL_EMPLEADO . ' e');
+        $this->db->join(TBL_AREA . ' a', 'a.idArea = e.idArea');
         $this->db->where('e.idPersona', $idPersona);
         $this->db->where('e.fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
@@ -1852,7 +1853,7 @@ GROUP BY p.idPersona";
             }
         }
         if (isset($fila)) {
-             return $fila;
+            return $fila;
         } else {
             return null;
         }
@@ -1869,17 +1870,17 @@ GROUP BY p.idPersona";
     {
         settype($idPersona, 'integer');
 
-        if($idPersona == 0){
+        if ($idPersona == 0) {
             return 0;
         }
         $sql = "SELECT c.respuesta as estatura
-            FROM  ".TBL_RESPUESTA." c
+            FROM  " . TBL_RESPUESTA . " c
             WHERE c.idPersona = $idPersona and c.fechaEliminacion = '0000-00-00 00:00:00'
-                AND c.idPregunta = ".ESTATURA."
+                AND c.idPregunta = " . ESTATURA . "
             ORDER BY 1 DESC LIMIT 1";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             $fila = $query->row_array();
             return $fila["estatura"];
         }
@@ -1913,18 +1914,18 @@ GROUP BY p.idPersona";
             return 0;
         }
 
-        $datos = array (
+        $datos = array(
             'idPersona'         => $persona,
             'idTipoContacto'    => $tipo,
-            'idPersonaContacto' => $contacto
+            'idPersonaContacto' => $contacto,
         );
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($persona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
@@ -1946,8 +1947,8 @@ GROUP BY p.idPersona";
             $this->permisos_model->log('Modifico contacto de persona', LOG_PERSONA, $idUnicoMembresia, $persona);
         }
 
-        $prospecto = array (
-            'fechaActualizacion' => date("Y-m-d H:i:s")
+        $prospecto = array(
+            'fechaActualizacion' => date("Y-m-d H:i:s"),
         );
         $this->db->where('idPersona', $persona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -1967,16 +1968,16 @@ GROUP BY p.idPersona";
     {
         settype($idPersona, 'integer');
 
-        if ($idPersona>0) {
+        if ($idPersona > 0) {
             $edad = $this->edad($idPersona);
 
-            if ($edad<16) {
+            if ($edad < 16) {
                 $idUnicoMembresia = 0;
-                $ci =& get_instance();
+                $ci               = &get_instance();
                 $ci->load->model('socio_model');
 
                 $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
-                if ($idSocio>0) {
+                if ($idSocio > 0) {
                     $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
                 }
 
@@ -1993,7 +1994,7 @@ GROUP BY p.idPersona";
                     $this->db->update('menordetalle', $datos);
 
                     $total = $this->db->affected_rows();
-                    if ($total>0) {
+                    if ($total > 0) {
                         $this->permisos_model->log('Actualizo informacion sobre menor de edad', LOG_PERSONA, $idUnicoMembresia);
                     }
                 } else {
@@ -2001,7 +2002,7 @@ GROUP BY p.idPersona";
                     $this->db->insert_id();
 
                     $total = $this->db->affected_rows();
-                    if ($total>0) {
+                    if ($total > 0) {
                         $this->permisos_model->log('Ingreso informacion sobre menor de edad', LOG_PERSONA, $idUnicoMembresia);
                     }
                 }
@@ -2027,7 +2028,8 @@ GROUP BY p.idPersona";
      *
      * @return integer
      */
-    public function guardarDomicilio($id, $persona, $tipoDomicilio, $calle, $numero, $colonia, $cp, $estado, $municipio, $referencia='', $fiscal, $RFC, $nombreFiscal)//, $bancario
+    public function guardarDomicilio($id, $persona, $tipoDomicilio, $calle, $numero, $colonia, $cp, $estado, $municipio, $referencia = '', $fiscal, $RFC, $nombreFiscal) //, $bancario
+
     {
         settype($persona, 'integer');
         settype($id, 'integer');
@@ -2036,27 +2038,27 @@ GROUP BY p.idPersona";
         settype($municipio, 'integer');
         settype($fiscal, 'integer');
 
-         if ($persona == 0) {
+        if ($persona == 0) {
             return (-1);
         }
 
-        if($fiscal=='1') {
-            $datos = array ('fiscal'  => '0');
+        if ($fiscal == '1') {
+            $datos = array('fiscal' => '0');
             $this->db->where('idPersona', $persona);
             $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
             $this->db->update(TBL_DOMICILIO, $datos);
         }
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($persona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
-        $datos = array (
+        $datos = array(
             'idTipoDomicilio' => $tipoDomicilio,
             'calle'           => trim($calle),
             'numero'          => trim($numero),
@@ -2067,7 +2069,7 @@ GROUP BY p.idPersona";
             'referencia'      => trim($referencia),
             'fiscal'          => $fiscal,
             'RFC'             => ($RFC),
-            'nombreFiscal'    => $nombreFiscal
+            'nombreFiscal'    => $nombreFiscal,
         );
 
         if ($id > 0) {
@@ -2090,8 +2092,8 @@ GROUP BY p.idPersona";
             $this->permisos_model->log('Modifico datos del domicilio', LOG_PERSONA, $idUnicoMembresia, $persona);
         }
 
-        $prospecto = array (
-            'fechaActualizacion' => date("Y-m-d H:i:s")
+        $prospecto = array(
+            'fechaActualizacion' => date("Y-m-d H:i:s"),
         );
         $this->db->where('idPersona', $persona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -2100,7 +2102,6 @@ GROUP BY p.idPersona";
 
         return $domicilio;
     }
-
 
     /**
      * Inserta o actualiza los datos una cuenta de correo electronico
@@ -2115,33 +2116,32 @@ GROUP BY p.idPersona";
      *
      * @return boolean
      */
-    public function 
+    public function
 
-    guardarMail($id, $persona, $tipoMail, $mail, $bloqueo)
-    {
+    guardarMail($id, $persona, $tipoMail, $mail, $bloqueo) {
         settype($persona, 'integer');
         settype($id, 'integer');
         settype($tipoMail, 'integer');
         settype($bloqueo, 'integer');
 
         $mail = trim($mail);
-        if($mail == "") {
+        if ($mail == "") {
             return (-1);
         }
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($persona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
-        $datos = array (
+        $datos = array(
             'idTipoMail'  => $tipoMail,
             'mail'        => trim($mail),
-            'bloqueoMail' => $bloqueo
+            'bloqueoMail' => $bloqueo,
         );
 
         if ($id > 0) {
@@ -2164,8 +2164,8 @@ GROUP BY p.idPersona";
             $this->permisos_model->log('Modifico cuenta de mail', LOG_PERSONA, $idUnicoMembresia, $persona);
         }
 
-        $prospecto = array (
-            'fechaActualizacion' => date("Y-m-d H:i:s")
+        $prospecto = array(
+            'fechaActualizacion' => date("Y-m-d H:i:s"),
         );
         $this->db->where('idPersona', $persona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -2187,19 +2187,19 @@ GROUP BY p.idPersona";
         settype($idPersona, 'integer');
         settype($tipoMail, 'integer');
 
-        $datos = array (
-            'idPersona' => $idPersona,
-            'idTipoMail'=> $tipoMail,
-            'mail'      => $email,
-            'bloqueomail'=>0
+        $datos = array(
+            'idPersona'   => $idPersona,
+            'idTipoMail'  => $tipoMail,
+            'mail'        => $email,
+            'bloqueomail' => 0,
         );
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
@@ -2208,7 +2208,7 @@ GROUP BY p.idPersona";
         $where = array(
             'idPersona'  => $idPersona,
             'idTipoMail' => $tipoMail,
-            'eliminado'  => 0
+            'eliminado'  => 0,
         );
         $this->db->where($where);
         $query = $this->db->get();
@@ -2219,7 +2219,7 @@ GROUP BY p.idPersona";
         } else {
             $this->db->insert(TBL_MAIL, $datos);
         }
-        $this->permisos_model->log(utf8_decode('Se registro mail empleado a ('.$idPersona.')('.date('Y-m-d').') '), LOG_PERSONA, $idUnicoMembresia);
+        $this->permisos_model->log(utf8_decode('Se registro mail empleado a (' . $idPersona . ')(' . date('Y-m-d') . ') '), LOG_PERSONA, $idUnicoMembresia);
         $cambio = $this->db->affected_rows();
         if ($cambio == 0) {
             return false;
@@ -2249,11 +2249,11 @@ GROUP BY p.idPersona";
         $datos = array();
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($persona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
@@ -2309,7 +2309,7 @@ GROUP BY p.idPersona";
             $datos['producto'] = $info['producto'];
         }
         if (isset($info['tour'])) {
-            $datos['tour'] = 1;
+            $datos['tour']      = 1;
             $datos['fechaTour'] = date('Y-m-d H:i:s');
         }
         if (isset($info['escolaridad'])) {
@@ -2326,7 +2326,7 @@ GROUP BY p.idPersona";
             return false;
         }
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('un_model');
 
         $datos['idEmpresaGrupo'] = $ci->un_model->obtenerEmpresaGrupo($this->session->userdata('idUn'));
@@ -2336,7 +2336,7 @@ GROUP BY p.idPersona";
             $this->db->update(TBL_PERSONA, $datos);
 
             $total = $this->db->affected_rows();
-            if ($total>0) {
+            if ($total > 0) {
                 $this->permisos_model->log('Modifica datos generales de persona', LOG_PERSONA, $idUnicoMembresia, $persona);
             }
         } else {
@@ -2345,14 +2345,13 @@ GROUP BY p.idPersona";
             $persona = $this->db->insert_id();
 
             $total = $this->db->affected_rows();
-            if ($total>0) {
+            if ($total > 0) {
                 $this->permisos_model->log('Inserto una nueva persona', LOG_PERSONA, 0, $persona);
             }
         }
 
-
         if (isset($info['casoKidz'])) {
-            if ($info['casoKidz']==1) {
+            if ($info['casoKidz'] == 1) {
                 $this->asignaKidz($persona);
             } else {
                 $this->eliminaKidz($persona);
@@ -2361,9 +2360,8 @@ GROUP BY p.idPersona";
             $this->eliminaKidz($persona);
         }
 
-
-        $prospecto = array (
-            'fechaActualizacion' => date('Y-m-d H:i:s')
+        $prospecto = array(
+            'fechaActualizacion' => date('Y-m-d H:i:s'),
         );
         $this->db->where('idPersona', $persona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -2373,8 +2371,7 @@ GROUP BY p.idPersona";
         return $persona;
     }
 
-
-    public function asignaKidz($idPersona) 
+    public function asignaKidz($idPersona)
     {
         $this->db->where('idPersona', $idPersona);
         $this->db->delete('personacasokidz');
@@ -2383,19 +2380,18 @@ GROUP BY p.idPersona";
         $this->db->insert('personacasokidz', $info);
 
         $total = $this->db->affected_rows();
-        if ($total>0) {
+        if ($total > 0) {
             $this->permisos_model->log('Asigna validacion kidz', LOG_PERSONA, 0, $idPersona);
         }
     }
 
-
-    public function eliminaKidz($idPersona) 
+    public function eliminaKidz($idPersona)
     {
         $this->db->where('idPersona', $idPersona);
         $this->db->delete('personacasokidz');
 
         $total = $this->db->affected_rows();
-        if ($total>0) {
+        if ($total > 0) {
             $this->permisos_model->log('Elimina validacion kidz', LOG_PERSONA, 0, $idPersona);
         }
     }
@@ -2421,19 +2417,19 @@ GROUP BY p.idPersona";
         settype($tipoTelefono, 'integer');
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($persona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
-        $datos = array (
+        $datos = array(
             'idTipoTelefono' => $tipoTelefono,
             'telefono'       => trim($telefono),
             'extension'      => trim($extension),
-            'lada'           => trim($lada)
+            'lada'           => trim($lada),
         );
 
         if ($id > 0) {
@@ -2456,8 +2452,8 @@ GROUP BY p.idPersona";
             $this->permisos_model->log('Modifica numero de telefono', LOG_PERSONA, $idUnicoMembresia);
         }
 
-        $prospecto = array (
-            'fechaActualizacion' => date("Y-m-d H:i:s")
+        $prospecto = array(
+            'fechaActualizacion' => date("Y-m-d H:i:s"),
         );
         $this->db->where('idPersona', $persona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -2477,24 +2473,24 @@ GROUP BY p.idPersona";
      *
      * @return [type]                [description]
      */
-    public function insertaContacto($idPersona, $tipoContacto, $contacto, $op=0)
+    public function insertaContacto($idPersona, $tipoContacto, $contacto, $op = 0)
     {
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
 
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
         $nombre = $this->nombre($idPersona);
 
         if ($op == 0) {
-            $datos = array (
-                'idPersona'   => $idPersona,
-                'idTipoContacto'=> $tipoContacto,
-                'idPersonaContacto' => $contacto
+            $datos = array(
+                'idPersona'         => $idPersona,
+                'idTipoContacto'    => $tipoContacto,
+                'idPersonaContacto' => $contacto,
             );
             $this->db->insert(TBL_CONTACTO, $datos);
             $total = $this->db->affected_rows();
@@ -2513,7 +2509,7 @@ GROUP BY p.idPersona";
             if ($query->num_rows() > 0) {
                 $fila = $query->row_array();
                 $this->db->where('idContacto', $fila['idContacto']);
-                $dato = array('idTipoContacto'=> $tipoContacto);
+                $dato = array('idTipoContacto' => $tipoContacto);
                 $this->db->update(TBL_CONTACTO, $dato);
             } else {
                 return false;
@@ -2527,8 +2523,8 @@ GROUP BY p.idPersona";
             }
         }
 
-        $prospecto = array (
-            'fechaActualizacion' => date("Y-m-d H:i:s")
+        $prospecto = array(
+            'fechaActualizacion' => date("Y-m-d H:i:s"),
         );
         $this->db->where('idPersona', $idPersona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
@@ -2546,19 +2542,19 @@ GROUP BY p.idPersona";
      */
     public function insertaFoto($idPersona, $jpg)
     {
-        $datos = array (
+        $datos = array(
             'idPersona' => $idPersona,
             'imagen'    => $jpg,
-            'tipo'      => 'img-jpg'
+            'tipo'      => 'img-jpg',
         );
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
 
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
         $nombre = $this->nombre($idPersona);
@@ -2570,44 +2566,44 @@ GROUP BY p.idPersona";
 
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
-            $id = $fila['idPersona'];
+            $id   = $fila['idPersona'];
             $this->db->where('idPersona', $id);
             $this->db->update(TBL_TMPACCESOFOTO, $datos);
 
-            $this->permisos_model->log('Se actualiza Foto ('.$nombre.')', LOG_PERSONA, $idUnicoMembresia);
+            $this->permisos_model->log('Se actualiza Foto (' . $nombre . ')', LOG_PERSONA, $idUnicoMembresia);
         } else {
             $this->db->insert(TBL_TMPACCESOFOTO, $datos);
             $id = $this->db->insert_id();
 
-            $this->permisos_model->log('Se ingresa Foto ('.$nombre.')', LOG_PERSONA, $idUnicoMembresia);
+            $this->permisos_model->log('Se ingresa Foto (' . $nombre . ')', LOG_PERSONA, $idUnicoMembresia);
         }
         return true;
     }
 
     /**
-      * Inserta los valores cuando se registra el valor de la huella
-      *
-      * @param integer $idPersona identifica a la persona
-      * @param string  $huella     cadena que tiene el contenido de la huella
-      *
-      * @author Santa Garcia
-      *
-      * @return void
-      */
-    public function insertaHuella($idPersona,$huella)
+     * Inserta los valores cuando se registra el valor de la huella
+     *
+     * @param integer $idPersona identifica a la persona
+     * @param string  $huella     cadena que tiene el contenido de la huella
+     *
+     * @author Santa Garcia
+     *
+     * @return void
+     */
+    public function insertaHuella($idPersona, $huella)
     {
-        $datos = array (
-            'idPersona' => $idPersona,
-            'biometrico' => $huella
+        $datos = array(
+            'idPersona'  => $idPersona,
+            'biometrico' => $huella,
         );
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
 
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
         $nombre = $this->nombre($idPersona);
@@ -2619,18 +2615,18 @@ GROUP BY p.idPersona";
         $query = $this->db->get();
 
         if ($query->num_rows > 0) {
-            $fila = $query->row_array();
-            $sql = "UPDATE ".TBL_HUELLA." SET biometrico = $huella WHERE idPersona = ".$idPersona." AND fechaEliminacion='0000-00-00 00:00:00'";
-            $query = $this->db->query($sql);
+            $fila   = $query->row_array();
+            $sql    = "UPDATE " . TBL_HUELLA . " SET biometrico = $huella WHERE idPersona = " . $idPersona . " AND fechaEliminacion='0000-00-00 00:00:00'";
+            $query  = $this->db->query($sql);
             $cambio = $this->db->affected_rows();
 
-            $this->permisos_model->log('Se actualiza Huella  ('.$nombre.') huella ('.$huella.')', LOG_PERSONA, $idUnicoMembresia);
+            $this->permisos_model->log('Se actualiza Huella  (' . $nombre . ') huella (' . $huella . ')', LOG_PERSONA, $idUnicoMembresia);
         } else {
-            $sql = "INSERT INTO ".TBL_HUELLA." (idPersona, biometrico) VALUE ($idPersona, $huella)";
-            $query = $this->db->query($sql);
+            $sql    = "INSERT INTO " . TBL_HUELLA . " (idPersona, biometrico) VALUE ($idPersona, $huella)";
+            $query  = $this->db->query($sql);
             $cambio = $this->db->affected_rows();
 
-            $this->permisos_model->log('Se ingresa Huella  ('.$nombre.') huella ('.$huella.')', LOG_PERSONA, $idUnicoMembresia);
+            $this->permisos_model->log('Se ingresa Huella  (' . $nombre . ') huella (' . $huella . ')', LOG_PERSONA, $idUnicoMembresia);
         }
 
         if ($cambio == 0) {
@@ -2651,24 +2647,24 @@ GROUP BY p.idPersona";
      */
     public function insertaIdFoto($idPersona)
     {
-        $datos = array (
-            'idPersona' => $idPersona
+        $datos = array(
+            'idPersona' => $idPersona,
         );
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
 
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
         $nombre = $this->nombre($idPersona);
 
         $this->db->select('idFoto');
         $this->db->from(TBL_FOTO);
-        $where = array('idPersona'=>$idPersona);
+        $where = array('idPersona' => $idPersona);
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows > 0) {
@@ -2677,12 +2673,12 @@ GROUP BY p.idPersona";
             $this->db->update(TBL_FOTO, $datos);
             $cambio = $this->db->affected_rows();
 
-            $this->permisos_model->log('Se actualiza Foto ('.$nombre.')', LOG_FOTO, $idUnicoMembresia);
+            $this->permisos_model->log('Se actualiza Foto (' . $nombre . ')', LOG_FOTO, $idUnicoMembresia);
         } else {
             $this->db->insert(TBL_FOTO, $datos);
             $cambio = $this->db->affected_rows();
 
-            $this->permisos_model->log('Se ingresa Foto ('.$nombre.')', LOG_FOTO, $idUnicoMembresia);
+            $this->permisos_model->log('Se ingresa Foto (' . $nombre . ')', LOG_FOTO, $idUnicoMembresia);
         }
 
         if ($cambio == 0) {
@@ -2700,17 +2696,17 @@ GROUP BY p.idPersona";
     public function insertaPersonaFoto($idPersona)
     {
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
 
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
         $nombre = $this->nombre($idPersona);
 
-        $datos = array ('idPersona' => $idPersona);
+        $datos = array('idPersona' => $idPersona);
 
         $this->db->select('idPersona');
         $this->db->from(TBL_FOTO);
@@ -2721,7 +2717,7 @@ GROUP BY p.idPersona";
             $this->db->insert(TBL_FOTO, $datos);
             $id = $this->db->insert_id();
 
-            $this->permisos_model->log('Se ingresa Foto ('.$nombre.')', LOG_PERSONA, $idUnicoMembresia);
+            $this->permisos_model->log('Se ingresa Foto (' . $nombre . ')', LOG_PERSONA, $idUnicoMembresia);
         }
         return true;
     }
@@ -2742,43 +2738,43 @@ GROUP BY p.idPersona";
         settype($idResponsable, 'integer');
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
 
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
         $nombre = $this->nombre($idPersonaResponsable);
 
         $w_u = '';
-        if ($idUnicoMembresia>0) {
-            $w_u = ' OR rm.idUnicoMembresia='.$idUnicoMembresia;
+        if ($idUnicoMembresia > 0) {
+            $w_u = ' OR rm.idUnicoMembresia=' . $idUnicoMembresia;
         }
 
         $sql = "SELECT COUNT(*) AS total FROM responsablemenor rm
             WHERE (rm.idPersonaMenor=$idPersona $w_u)
                 AND rm.fechaEliminacion='0000-00-00 00:00:00'
                 AND rm.idPersonaResponsable=$idPersonaResponsable";
-        $q_t = $this->db->query($sql);
+        $q_t  = $this->db->query($sql);
         $fila = $q_t->row_array();
 
         if ($fila['total'] == 0) {
-            $datos = array (
+            $datos = array(
                 'idPersonaMenor'       => $idPersona,
                 'idPersonaResponsable' => $idPersonaResponsable,
                 'idUnicoMembresia'     => $idUnicoMembresia,
-                'idTipoContacto'       => $tipoContacto
+                'idTipoContacto'       => $tipoContacto,
             );
 
-            if ($idResponsable==0) {
+            if ($idResponsable == 0) {
                 $this->db->insert('responsablemenor', $datos);
                 $total = $this->db->affected_rows();
                 if ($total == 0) {
                     return false;
                 } else {
-                    $this->permisos_model->log('Se agrego Responsable del menor ('.$nombre.')', LOG_PERSONA, $idUnicoMembresia);
+                    $this->permisos_model->log('Se agrego Responsable del menor (' . $nombre . ')', LOG_PERSONA, $idUnicoMembresia);
                     return true;
                 }
             } else {
@@ -2798,7 +2794,7 @@ GROUP BY p.idPersona";
                 if ($total == 0) {
                     return false;
                 } else {
-                    $this->permisos_model->log('Se actualizo Responsable del menor ('.$nombre.')', LOG_PERSONA, $idUnicoMembresia);
+                    $this->permisos_model->log('Se actualizo Responsable del menor (' . $nombre . ')', LOG_PERSONA, $idUnicoMembresia);
                     return true;
                 }
             }
@@ -2816,10 +2812,10 @@ GROUP BY p.idPersona";
      */
     public function insertaTipoConcesionario($idPersona, $tipoConcesionario, $producto)
     {
-        $datos = array (
-            'idPersona'     => $idPersona,
-            'concesionario' => $tipoConcesionario,
-            'idCuentaProducto'  => $producto
+        $datos = array(
+            'idPersona'        => $idPersona,
+            'concesionario'    => $tipoConcesionario,
+            'idCuentaProducto' => $producto,
         );
 
         $this->db->select('idPersonaConcesionario, concesionario');
@@ -2827,24 +2823,24 @@ GROUP BY p.idPersona";
         $this->db->where('idPersona', $idPersona);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
-        $tipo = '';
+        $tipo  = '';
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $this->db->where('idPersonaConcesionario', $fila->idPersonaConcesionario);
-                $dato = array ('fechaEliminacion'  => date("Y-m-d H:i:s"));
+                $dato = array('fechaEliminacion' => date("Y-m-d H:i:s"));
                 $this->db->update(TBL_PERSONACONCESIONARIO, $dato);
             }
         }
-        if($tipoConcesionario == 3){
-            $dato1 = array (
-                'idPersona'     => $idPersona,
-                'concesionario' => 1,
-                'idCuentaProducto'  => $producto
+        if ($tipoConcesionario == 3) {
+            $dato1 = array(
+                'idPersona'        => $idPersona,
+                'concesionario'    => 1,
+                'idCuentaProducto' => $producto,
             );
-            $dato2 = array (
-                'idPersona'     => $idPersona,
-                'concesionario' => 2,
-                'idCuentaProducto'  => $producto
+            $dato2 = array(
+                'idPersona'        => $idPersona,
+                'concesionario'    => 2,
+                'idCuentaProducto' => $producto,
             );
             $this->db->insert(TBL_PERSONACONCESIONARIO, $dato1);
             $this->db->insert(TBL_PERSONACONCESIONARIO, $dato2);
@@ -2869,38 +2865,38 @@ GROUP BY p.idPersona";
      *
      * @return array
      */
-    public static function listaPersonas($nombre = "", $numeroRegistros = 25, $edadMinima=0, $edadMaxima=0)
+    public static function listaPersonas($nombre = "", $numeroRegistros = 25, $edadMinima = 0, $edadMaxima = 0)
     {
         settype($numeroRegistros, 'integer');
         settype($edadMinima, 'integer');
         settype($edadMaxima, 'integer');
-        $membresia = (int)trim($nombre);
-        $w_mem = '';
-        $tipoJoin = 'LEFT';
-        if ($membresia>0) {
-            $w_mem = ' AND m.idMembresia='.$membresia;
+        $membresia = (int) trim($nombre);
+        $w_mem     = '';
+        $tipoJoin  = 'LEFT';
+        if ($membresia > 0) {
+            $w_mem    = ' AND m.idMembresia=' . $membresia;
             $tipoJoin = 'INNER';
         }
-        
+
         $idEmpresaGrupo = 1;
         if (isset($_SESSION['idEmpresaGrupo'])) {
-            $idEmpresaGrupo = (int)$_SESSION['idEmpresaGrupo'];
-            if ($idEmpresaGrupo==0) {
-                $idEmpresaGrupo=1;
+            $idEmpresaGrupo = (int) $_SESSION['idEmpresaGrupo'];
+            if ($idEmpresaGrupo == 0) {
+                $idEmpresaGrupo = 1;
             }
         }
-        
+
         $w_min = '';
         if ($edadMinima > 0) {
-            $w_min = ' AND p.edad>='.$edadMinima;
+            $w_min = ' AND p.edad>=' . $edadMinima;
         }
         $w_max = '';
         if ($edadMaxima > 0) {
-            $w_max = ' AND p.edad<='.$edadMaxima;
+            $w_max = ' AND p.edad<=' . $edadMaxima;
         }
 
         $sql = '';
-        if ($membresia>0) {
+        if ($membresia > 0) {
             $sql = "SELECT p.idPersona,
                     UPPER(TRIM(p.nombre)) AS nombre,
                     UPPER(TRIM(p.paterno)) AS paterno,
@@ -2918,7 +2914,7 @@ GROUP BY p.idPersona";
                 ORDER BY p.nombre, p.paterno, p.materno
                 LIMIT {$numeroRegistros} ";
         } else {
-            $nom = trim($nombre);
+            $nom    = trim($nombre);
             $nombre = DB::connection('crm')->raw(trim($nombre));
 
             $sql = "CREATE TEMPORARY TABLE tmp_lista_raza
@@ -2929,8 +2925,8 @@ GROUP BY p.idPersona";
                    AND p1.fechaEliminacion='0000-00-00 00:00:00'
                 WHERE MATCH(nombreCompleto) AGAINST ('{$nombre}' IN BOOLEAN MODE)";
             $query = DB::connection('crm')->select($sql);
-            
-            $sql = "CREATE INDEX idx_tmp_lista_raza ON tmp_lista_raza (idPersona)";
+
+            $sql   = "CREATE INDEX idx_tmp_lista_raza ON tmp_lista_raza (idPersona)";
             $query = DB::connection('crm')->select($sql);
 
             $sql = "
@@ -2950,32 +2946,31 @@ WHERE CONCAT_WS(' ', p.nombre, p.paterno, p.materno) LIKE '%$nom%' $w_min $w_max
 ORDER BY 7, p.nombre, p.paterno, p.materno
 LIMIT $numeroRegistros";
 
-
         }
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
             $res = array();
-            $r = [];
-            $a = array_map(function($x){return (array)$x;},$query);
+            $r   = [];
+            $a   = array_map(function ($x) {return (array) $x;}, $query);
             foreach ($a as $row) {
-                $r['idPersona'] = $row['idPersona'];
-                $r['nombre'] = $row['nombre'];
-                $r['paterno'] = $row['paterno'];
-                $r['materno'] = $row['materno'];
+                $r['idPersona']   = $row['idPersona'];
+                $r['nombre']      = $row['nombre'];
+                $r['paterno']     = $row['paterno'];
+                $r['materno']     = $row['materno'];
                 $r['idMembresia'] = $row['idMembresia'];
-                $r['clave'] = $row['clave'];
+                $r['clave']       = $row['clave'];
                 if (strlen($r['clave']) >= 5) {
                     $r['clave'] = substr($r['clave'], 2);
                 }
                 $res[] = $r;
             }
-            return  $res;
+            return $res;
         } else {
             return null;
         }
     }
-    
+
     /**
      * Genera una array con la lista de contactos por persona
      *
@@ -2988,7 +2983,7 @@ LIMIT $numeroRegistros";
     public function listaContactos($persona)
     {
         settype($persona, 'integer');
-        if ($persona==0) {
+        if ($persona == 0) {
             return null;
         }
 
@@ -2997,7 +2992,7 @@ LIMIT $numeroRegistros";
             FROM contacto c
             INNER JOIN tipocontacto tc on tc.idTipoContacto = c.idTipoContacto
             INNER JOIN persona p on p.idPersona = c.idPersonaContacto
-            WHERE c.idPersona= '.$persona.' AND c.fechaEliminacion="0000-00-00 00:00:00"';
+            WHERE c.idPersona= ' . $persona . ' AND c.fechaEliminacion="0000-00-00 00:00:00"';
         $query = $this->db->query($sql);
 
         if ($query->num_rows > 0) {
@@ -3008,17 +3003,17 @@ LIMIT $numeroRegistros";
     }
 
     /**
-      * Obetner lista huellas personas bloqueadas
-      *
-      * @author Santa Garcia
-      *
-      * @return void
-      */
+     * Obetner lista huellas personas bloqueadas
+     *
+     * @author Santa Garcia
+     *
+     * @return void
+     */
     public function listaHuellasBloqueadas()
     {
         $this->db->select('h.idPersona,h.biometrico');
-        $this->db->from(TBL_PERSONABLOQUEO.' p');
-        $this->db->join(TBL_HUELLA.' h','h.idPersona = p.idPersona');
+        $this->db->from(TBL_PERSONABLOQUEO . ' p');
+        $this->db->join(TBL_HUELLA . ' h', 'h.idPersona = p.idPersona');
         $this->db->where('h.fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->where('p.fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
@@ -3040,31 +3035,31 @@ LIMIT $numeroRegistros";
     {
         settype($idPersona, 'integer');
 
-        if ($idPersona==0) {
+        if ($idPersona == 0) {
             return null;
         }
 
-        $w_membresia = '';
+        $w_membresia      = '';
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
 
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
 
-            if ($idUnicoMembresia>0) {
-                $w_membresia = ' OR c.idUnicoMembresia='.$idUnicoMembresia;
+            if ($idUnicoMembresia > 0) {
+                $w_membresia = ' OR c.idUnicoMembresia=' . $idUnicoMembresia;
             }
         }
 
         $sql = 'SELECT c.idResponsableMenor, CONCAT(p.nombre,\' \',p.paterno,\' \',p.materno) AS nombre,
             tc.descripcion AS tipo, c.idPersonaResponsable, c.idTipoContacto
             FROM responsablemenor c
-            INNER JOIN '.TBL_TIPOCONTACTO.' tc on tc.idTipoContacto = c.idTipoContacto
-            INNER JOIN '.TBL_PERSONA.' p on p.idPersona = c.idPersonaResponsable
-            WHERE (c.idPersonaMenor='.$idPersona.' '.$w_membresia.') AND c.fechaEliminacion="0000-00-00 00:00:00" ';
+            INNER JOIN ' . TBL_TIPOCONTACTO . ' tc on tc.idTipoContacto = c.idTipoContacto
+            INNER JOIN ' . TBL_PERSONA . ' p on p.idPersona = c.idPersonaResponsable
+            WHERE (c.idPersonaMenor=' . $idPersona . ' ' . $w_membresia . ') AND c.fechaEliminacion="0000-00-00 00:00:00" ';
         $query = $this->db->query($sql);
 
         if ($query->num_rows > 0) {
@@ -3087,18 +3082,18 @@ LIMIT $numeroRegistros";
     {
         settype($persona, 'integer');
 
-        if ($persona==0) {
+        if ($persona == 0) {
             return null;
         }
 
         $this->db->select(
-            'd.cp, d.idDomicilio, td.descripcion AS tipoDomicilio, d.calle, d.numero, d.colonia, '.
+            'd.cp, d.idDomicilio, td.descripcion AS tipoDomicilio, d.calle, d.numero, d.colonia, ' .
             'e.descripcion AS estado, m.descripcion AS municipio, d.RFC, d.nombreFiscal, d.fiscal'
         );
-        $this->db->from(TBL_DOMICILIO.' d');
-        $this->db->join(TBL_TIPODOMICILIO.' td', 'td.idTipoDomicilio = d.idTipoDomicilio');
-        $this->db->join(TBL_ESTADO.' e', 'e.idEstado = d.idEstado', 'left');
-        $this->db->join(TBL_MUNICIPIO.' m', 'm.idMunicipio = d.idMunicipio', 'left');
+        $this->db->from(TBL_DOMICILIO . ' d');
+        $this->db->join(TBL_TIPODOMICILIO . ' td', 'td.idTipoDomicilio = d.idTipoDomicilio');
+        $this->db->join(TBL_ESTADO . ' e', 'e.idEstado = d.idEstado', 'left');
+        $this->db->join(TBL_MUNICIPIO . ' m', 'm.idMunicipio = d.idMunicipio', 'left');
         $this->db->where('d.fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->where('d.idPersona', $persona);
 
@@ -3110,7 +3105,6 @@ LIMIT $numeroRegistros";
         }
     }
 
-
     /**
      * Genera una array con los datos generales de las cuentas de correo electronico registradas para una persona
      *
@@ -3120,18 +3114,18 @@ LIMIT $numeroRegistros";
      *
      * @return array
      */
-    public function listaMails($persona, $tipo=0)
+    public function listaMails($persona, $tipo = 0)
     {
         settype($persona, 'integer');
-        if ($persona==0) {
+        if ($persona == 0) {
             return null;
         }
         $this->db->select('m.idMail, tm.descripcion AS tipoMail, m.mail, m.bloqueoMail AS bloqueo');
-        $this->db->from(TBL_MAIL.' m');
-        $this->db->join(TBL_TIPOMAIL.' tm', 'tm.idTipoMail = m.idTipoMail');
+        $this->db->from(TBL_MAIL . ' m');
+        $this->db->join(TBL_TIPOMAIL . ' tm', 'tm.idTipoMail = m.idTipoMail');
         $this->db->where('m.eliminado', 0);
         $this->db->where('m.idPersona', $persona);
-        if ($tipo>0) {
+        if ($tipo > 0) {
             $this->db->where('m.idTipoMail', $tipo);
         }
         $query = $this->db->get();
@@ -3143,7 +3137,6 @@ LIMIT $numeroRegistros";
         }
     }
 
-
     /**
      * Genera una array con los datos generales de los numeros telefonicos registrados para una persona
      *
@@ -3153,20 +3146,20 @@ LIMIT $numeroRegistros";
      *
      * @return array
      */
-    public function listaTelefonos($persona, $tipo=0)
+    public function listaTelefonos($persona, $tipo = 0)
     {
         settype($persona, 'integer');
         settype($tipo, 'integer');
-        if ($persona==0) {
+        if ($persona == 0) {
             return null;
         }
 
         $this->db->select('t.idTelefono, tt.descripcion AS tipoTelefono, t.lada, t.telefono, t.extension ');
-        $this->db->from(TBL_TELEFONO.' t');
-        $this->db->join(TBL_TIPOTELEFONO.' tt', 'tt.idTipoTelefono = t.idTipoTelefono');
+        $this->db->from(TBL_TELEFONO . ' t');
+        $this->db->join(TBL_TIPOTELEFONO . ' tt', 'tt.idTipoTelefono = t.idTipoTelefono');
         $this->db->where('t.eliminado', 0);
         $this->db->where('t.idPersona', $persona);
-        if ($tipo>0) {
+        if ($tipo > 0) {
             $this->db->where('t.idTipoTelefono', $tipo);
         }
         $query = $this->db->get();
@@ -3189,8 +3182,8 @@ LIMIT $numeroRegistros";
         settype($tipoMail, 'integer');
 
         $this->db->select('m.mail');
-        $this->db->from(TBL_MAIL.' m');
-        $this->db->join(TBL_USUARIOS .' u', 'u.idPersona = m.idPersona and u.estatus=1 and u.fechaEliminacion="0000-00-00 00:00:00"');
+        $this->db->from(TBL_MAIL . ' m');
+        $this->db->join(TBL_USUARIOS . ' u', 'u.idPersona = m.idPersona and u.estatus=1 and u.fechaEliminacion="0000-00-00 00:00:00"');
         $this->db->where('u.NombreUsuario', $usuario);
         $this->db->where('m.idTipoMail', MAIL_TIPO_EMPLEADO);
         $this->db->where('m.fechaEliminacion', '0000-00-00 00:00:00');
@@ -3217,8 +3210,8 @@ LIMIT $numeroRegistros";
         settype($idPersona, 'integer');
 
         $this->db->select('m.mail');
-        $this->db->from(TBL_MAIL.' m');
-        $this->db->join(TBL_PERSONA .' p', 'p.idPersona = m.idPersona and p.fechaEliminacion="0000-00-00 00:00:00"');
+        $this->db->from(TBL_MAIL . ' m');
+        $this->db->join(TBL_PERSONA . ' p', 'p.idPersona = m.idPersona and p.fechaEliminacion="0000-00-00 00:00:00"');
         $this->db->where('m.idTipoMail', $idTipoMail);
         $this->db->where('m.idPersona', $idPersona);
         $this->db->where('m.fechaEliminacion', '0000-00-00 00:00:00');
@@ -3245,7 +3238,7 @@ LIMIT $numeroRegistros";
     public function nombre($persona)
     {
         settype($persona, 'integer');
-        if ($persona==0) {
+        if ($persona == 0) {
             return null;
         }
 
@@ -3255,7 +3248,7 @@ LIMIT $numeroRegistros";
         $query = $this->db->get();
         if ($query->num_rows > 0) {
             $fila = $query->row_array();
-            return trim($fila["nombre"].' '.$fila["paterno"].' '.$fila["materno"]);
+            return trim($fila["nombre"] . ' ' . $fila["paterno"] . ' ' . $fila["materno"]);
         } else {
             return null;
         }
@@ -3274,12 +3267,12 @@ LIMIT $numeroRegistros";
     {
         settype($tipo, 'integer');
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('tipocliente_model');
 
         $descripcion = $ci->tipocliente_model->nombreRolCliente($tipo);
 
-        return  $descripcion;
+        return $descripcion;
     }
 
     /**
@@ -3293,16 +3286,16 @@ LIMIT $numeroRegistros";
     {
         settype($idPersona, 'integer');
 
-        if($idPersona == 0){
+        if ($idPersona == 0) {
             return 0;
         }
         $sql = "select c.respuesta as peso
-            from  ".TBL_RESPUESTA." c
+            from  " . TBL_RESPUESTA . " c
             WHERE c.idPersona = $idPersona and c.fechaEliminacion = '0000-00-00 00:00:00'
-            and c.idPregunta = ".PESO." order by 1 desc limit 1;";
+            and c.idPregunta = " . PESO . " order by 1 desc limit 1;";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             $fila = $query->row_array();
             return $fila["peso"];
         }
@@ -3352,13 +3345,13 @@ LIMIT $numeroRegistros";
     public function ocupacion($persona)
     {
         settype($persona, 'integer');
-        if ($persona==0) {
+        if ($persona == 0) {
             return null;
         }
 
         $this->db->select('tp.descripcion');
-        $this->db->from(TBL_PERSONA.' p');
-        $this->db->join(TBL_TIPOPROFESION .' tp', 'tp.idTipoProfesion = p.idTipoProfesion and tp.activo = 1');
+        $this->db->from(TBL_PERSONA . ' p');
+        $this->db->join(TBL_TIPOPROFESION . ' tp', 'tp.idTipoProfesion = p.idTipoProfesion and tp.activo = 1');
         $this->db->where('p.idPersona', $persona);
         $this->db->where('p.fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
@@ -3379,27 +3372,27 @@ LIMIT $numeroRegistros";
      *
      * @return array
      */
-    public function obtenDatosFiscales ($idPersona)
+    public function obtenDatosFiscales($idPersona)
     {
         settype($idPersona, 'integer');
         $datos = array();
 
-        if (! $idPersona) {
+        if (!$idPersona) {
             return $datos;
         }
         $this->db->where("d.fiscal", 1);
         $this->db->where("d.fechaEliminacion", "0000-00-00 00:00:00");
         $this->db->where("d.idPersona", $idPersona);
-        $this->db->join(TBL_TIPODOMICILIO." td", "d.idTipoDomicilio = td.idTipoDomicilio AND td.activo = 1", "left");
-        $this->db->join(TBL_ESTADO." e", "d.idEstado = e.idEstado", "left");
-        $this->db->join(TBL_MUNICIPIO." m", "d.idMunicipio = m.idMunicipio", "left");
-        $this->db->join(TBL_MAIL, "d.idPersona = mail.idPersona AND mail.fechaEliminacion = '0000-00-00 00:00:00' AND mail.idTipoMail = ".TIPO_MAIL_FISCAL." AND mail.bloqueoMail = 0", "left");
+        $this->db->join(TBL_TIPODOMICILIO . " td", "d.idTipoDomicilio = td.idTipoDomicilio AND td.activo = 1", "left");
+        $this->db->join(TBL_ESTADO . " e", "d.idEstado = e.idEstado", "left");
+        $this->db->join(TBL_MUNICIPIO . " m", "d.idMunicipio = m.idMunicipio", "left");
+        $this->db->join(TBL_MAIL, "d.idPersona = mail.idPersona AND mail.fechaEliminacion = '0000-00-00 00:00:00' AND mail.idTipoMail = " . TIPO_MAIL_FISCAL . " AND mail.bloqueoMail = 0", "left");
 
         $query = $this->db->select(
             "d.idDomicilio, d.nombreFiscal AS razonSocial, mail.idMail,
               mail.mail, d.RFC, m.idMunicipio, m.descripcion AS municipio,
               e.idEstado, e.descripcion AS estado, d.calle, d.numero, d.colonia, d.cp"
-        )->get(TBL_DOMICILIO." d");
+        )->get(TBL_DOMICILIO . " d");
 
         if ($query->num_rows) {
             $datos = $query->row_array();
@@ -3418,9 +3411,9 @@ LIMIT $numeroRegistros";
 
         $sql = "SELECT p.edad
                 FROM crm.persona p
-                WHERE p.idPersona IN (".$idPersona.");";
+                WHERE p.idPersona IN (" . $idPersona . ");";
         $query = $this->db->query($sql);
-        $row = $query->row();
+        $row   = $query->row();
 
         return $row->edad;
     }
@@ -3434,7 +3427,7 @@ LIMIT $numeroRegistros";
      *
      * @return array
      */
-    public function obtenTiposMail ($validaActivo = true)
+    public function obtenTiposMail($validaActivo = true)
     {
         settype($activo, 'integer');
 
@@ -3465,7 +3458,7 @@ LIMIT $numeroRegistros";
      *
      * @return array
      */
-    public function obtenUsuarioWeb ($idPersona)
+    public function obtenUsuarioWeb($idPersona)
     {
         settype($idPersona, 'integer');
 
@@ -3473,22 +3466,22 @@ LIMIT $numeroRegistros";
             'error'        => 1,
             'mensaje'      => 'Error faltan datos',
             'idUsuarioWeb' => 0,
-            'usuario'      => ''
+            'usuario'      => '',
         );
-        if ( ! $idPersona) {
+        if (!$idPersona) {
             return $datos;
         }
         $datos['error']   = 0;
         $datos['mensaje'] = '';
 
-        $where  = array(
+        $where = array(
             'fechaEliminacion' => '0000-00-00 00:00:00',
-            'idPersona'        => $idPersona
+            'idPersona'        => $idPersona,
         );
         $query = $this->db->select('idUsuarioWeb, usuario', false)->get_where(TBL_USUARIOWEB, $where, 1);
 
         if ($query->num_rows > 0) {
-            $row = $query->row_array();
+            $row                   = $query->row_array();
             $datos['idUsuarioWeb'] = $row['idUsuarioWeb'];
             $datos['usuario']      = $row['usuario'];
         }
@@ -3502,7 +3495,7 @@ LIMIT $numeroRegistros";
      * @param  integer $idContacto [description]
      * @return [type]              [description]
      */
-    public function obtenerContacto($idPersona, $idContacto=0)
+    public function obtenerContacto($idPersona, $idContacto = 0)
     {
         settype($persona, 'integer');
 
@@ -3541,7 +3534,7 @@ LIMIT $numeroRegistros";
     public function obtenRFCDeBase($idPersona)
     {
         $this->db->select('RFC');
-        $where=array('idPersona'=>$idPersona, 'fiscal' => '1', 'fechaEliminacion' => '0000-00-00 00:00:00');
+        $where = array('idPersona' => $idPersona, 'fiscal' => '1', 'fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $this->db->from(TBL_DOMICILIO);
         $this->db->limit(1);
@@ -3566,22 +3559,22 @@ LIMIT $numeroRegistros";
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
 
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return 0;
         }
     }
 
-	/**
-      * Obetner huella persona
-      *
-      * @param integer $idPersona identifica a la persona
-      *
-      * @author Santa Garcia
-      *
-      * @return void
-      */
+    /**
+     * Obetner huella persona
+     *
+     * @param integer $idPersona identifica a la persona
+     *
+     * @author Santa Garcia
+     *
+     * @return void
+     */
     public function obtenerHuella($idPersona)
     {
         settype($idPersona, 'integer');
@@ -3638,20 +3631,20 @@ LIMIT $numeroRegistros";
 
         $r = array();
 
-        if ($idPersona==0) {
+        if ($idPersona == 0) {
             return $r;
         }
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
 
         $w_unico = '';
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
-            if ($idUnicoMembresia>0) {
-                $w_unico = ' OR rm.idUnicoMembresia='.$idUnicoMembresia;
+            if ($idUnicoMembresia > 0) {
+                $w_unico = ' OR rm.idUnicoMembresia=' . $idUnicoMembresia;
             }
         }
 
@@ -3661,25 +3654,25 @@ LIMIT $numeroRegistros";
                 FROM contacto c
                 INNER JOIN persona p ON p.idPersona=c.idPersonaContacto
                 INNER JOIN tipocontacto tc ON tc.idTipoContacto=c.idTipoContacto
-                WHERE c.idPersona=".$idPersona." AND c.fechaEliminacion='0000-00-00 00:00:00'
+                WHERE c.idPersona=" . $idPersona . " AND c.fechaEliminacion='0000-00-00 00:00:00'
                 UNION ALL
                 SELECT rm.idPersonaResponsable AS idPersona, tc.descripcion AS tipo,
                     UPPER(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) AS nombre
                 FROM responsablemenor rm
                 INNER JOIN persona p ON p.idPersona=rm.idPersonaResponsable
                 INNER JOIN tipocontacto tc ON tc.idTipoContacto=rm.idTipoContacto
-                WHERE (rm.idPersonaMenor=".$idPersona." ".$w_unico.") AND rm.fechaEliminacion='0000-00-00 00:00:00'
+                WHERE (rm.idPersonaMenor=" . $idPersona . " " . $w_unico . ") AND rm.fechaEliminacion='0000-00-00 00:00:00'
             ) a
             GROUP BY a.idPersona
             ORDER BY a.nombre";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
                 $temp['idPersona'] = $fila->idPersona;
                 $temp['tipo']      = $fila->tipo;
                 $temp['nombre']    = $fila->nombre;
-                $r[] = $temp;
+                $r[]               = $temp;
             }
         }
 
@@ -3701,15 +3694,15 @@ LIMIT $numeroRegistros";
         if ($persona == 0) {
             return false;
         }
-        
-        $query = DB::connection('crm')->table(TBL_PERSONA.' as p')
-        ->select('ts.descripcion')
-        ->join(TBL_TIPOSEXO .' as ts', 'ts.idTipoSexo','p.idTipoSexo')
-        ->where('p.idPersona', $persona);
-        
+
+        $query = DB::connection('crm')->table(TBL_PERSONA . ' as p')
+            ->select('ts.descripcion')
+            ->join(TBL_TIPOSEXO . ' as ts', 'ts.idTipoSexo', 'p.idTipoSexo')
+            ->where('p.idPersona', $persona);
+
         if ($query->count() > 0) {
             $query = $query->get()->toArray();
-            $fila = $query[0];
+            $fila  = $query[0];
             return $fila->descripcion;
         } else {
             return 0;
@@ -3725,8 +3718,8 @@ LIMIT $numeroRegistros";
      */
     public function strToHex($string)
     {
-        $hex='';
-        for ($i=0; $i < strlen($string); $i++) {
+        $hex = '';
+        for ($i = 0; $i < strlen($string); $i++) {
             $hex .= dechex(ord($string[$i]));
         }
         return $hex;
@@ -3743,7 +3736,7 @@ LIMIT $numeroRegistros";
     {
         settype($idPersona, 'integer');
 
-        if ($idPersona==0) {
+        if ($idPersona == 0) {
             return 0;
         }
 
@@ -3773,14 +3766,14 @@ LIMIT $numeroRegistros";
     {
         settype($persona, 'integer');
 
-        if ($persona==0) {
+        if ($persona == 0) {
             return "";
         }
 
         $this->db->select('tp.descripcion, p.idTipoTituloPersona, p.idTipoSexo as sexo, p.idTipoEstadoCivil');
-        $this->db->from(TBL_PERSONA.' p');
-        $this->db->join(TBL_TIPOTITULOPERSONA .' tp', 'tp.idTipoTituloPersona = p.idTipoTituloPersona');
-        $this->db->join(TBL_TIPOSEXO .' ts', 'ts.idTipoSexo = p.idTipoSexo');
+        $this->db->from(TBL_PERSONA . ' p');
+        $this->db->join(TBL_TIPOTITULOPERSONA . ' tp', 'tp.idTipoTituloPersona = p.idTipoTituloPersona');
+        $this->db->join(TBL_TIPOSEXO . ' ts', 'ts.idTipoSexo = p.idTipoSexo');
         $this->db->where('p.idPersona', $persona);
         $this->db->where('ts.activo', 1);
         $this->db->where('p.fechaEliminacion', '0000-00-00 00:00:00');
@@ -3795,8 +3788,7 @@ LIMIT $numeroRegistros";
                         } else {
                             return "Sra.";
                         }
-                    }
-                    elseif ($fila->sexo == 13) {
+                    } elseif ($fila->sexo == 13) {
                         return "Sr.";
                     } else {
                         return "";
@@ -3818,9 +3810,9 @@ LIMIT $numeroRegistros";
      *
      * @return array
      */
-    public function validaDatosActualizados ($idUnicoMembresia)
+    public function validaDatosActualizados($idUnicoMembresia)
     {
-        $CI =& get_instance();
+        $CI = &get_instance();
         $CI->load->model('socio_model');
         $CI->load->model('membresia_model');
 
@@ -3829,14 +3821,14 @@ LIMIT $numeroRegistros";
         $datos = array(
             'mensaje'      => 'Error faltan datos',
             'error'        => 1,
-            'actualizados' => false
+            'actualizados' => false,
         );
-        if ( ! $idUnicoMembresia) {
+        if (!$idUnicoMembresia) {
             return $datos;
         }
         $datos['mensaje'] = '';
         $datos['error']   = 0;
-        $configExtras     = $CI->membresia_model->obtenExtrasConfiguracion (TIPO_EXTRA_FECHAACTUALIZACIONDATOS);
+        $configExtras     = $CI->membresia_model->obtenExtrasConfiguracion(TIPO_EXTRA_FECHAACTUALIZACIONDATOS);
         $anioMesVigencia  = date('Ym');
 
         if ($configExtras['error'] == 0) {
@@ -3850,25 +3842,25 @@ LIMIT $numeroRegistros";
             }
             if ($sociosPersona) {
                 $personas = implode(',', $sociosPersona);
-                $sql = "
+                $sql      = "
                     SELECT
                     IF(
-                        EXTRACT(YEAR_MONTH FROM IFNULL(MAX(p.fechaRegistro),'0000-00-00')) = '".$anioMesVigencia."' OR
-                        EXTRACT(YEAR_MONTH FROM IFNULL(MAX(p.fechaActualizacion),'0000-00-00')) = '".$anioMesVigencia."' OR
-                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaRegistro) FROM ".TBL_MAIL." m WHERE m.idPersona IN(".$personas.") AND m.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '".$anioMesVigencia."' OR
-                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaRegistro) FROM ".TBL_TELEFONO." t WHERE t.idPersona IN(".$personas.") AND t.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '".$anioMesVigencia."' OR
-                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaRegistro) FROM ".TBL_CONTACTO." c WHERE c.idPersona IN(".$personas.") AND c.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '".$anioMesVigencia."' OR
-                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaRegistro) FROM ".TBL_DOMICILIO." d WHERE d.idPersona IN(".$personas.") AND d.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '".$anioMesVigencia."' OR
-                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaActualizacion) FROM ".TBL_MAIL." m WHERE m.idPersona IN(".$personas.") AND m.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '".$anioMesVigencia."' OR
-                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaActualizacion) FROM ".TBL_TELEFONO." t WHERE t.idPersona IN(".$personas.") AND t.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '".$anioMesVigencia."' OR
-                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaActulizacion) FROM ".TBL_CONTACTO." c WHERE c.idPersona IN(".$personas.") AND c.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '".$anioMesVigencia."' OR
-                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaActualizacion) FROM ".TBL_DOMICILIO." d WHERE d.idPersona IN(".$personas.") AND d.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '".$anioMesVigencia."',
+                        EXTRACT(YEAR_MONTH FROM IFNULL(MAX(p.fechaRegistro),'0000-00-00')) = '" . $anioMesVigencia . "' OR
+                        EXTRACT(YEAR_MONTH FROM IFNULL(MAX(p.fechaActualizacion),'0000-00-00')) = '" . $anioMesVigencia . "' OR
+                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaRegistro) FROM " . TBL_MAIL . " m WHERE m.idPersona IN(" . $personas . ") AND m.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '" . $anioMesVigencia . "' OR
+                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaRegistro) FROM " . TBL_TELEFONO . " t WHERE t.idPersona IN(" . $personas . ") AND t.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '" . $anioMesVigencia . "' OR
+                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaRegistro) FROM " . TBL_CONTACTO . " c WHERE c.idPersona IN(" . $personas . ") AND c.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '" . $anioMesVigencia . "' OR
+                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaRegistro) FROM " . TBL_DOMICILIO . " d WHERE d.idPersona IN(" . $personas . ") AND d.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '" . $anioMesVigencia . "' OR
+                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaActualizacion) FROM " . TBL_MAIL . " m WHERE m.idPersona IN(" . $personas . ") AND m.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '" . $anioMesVigencia . "' OR
+                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaActualizacion) FROM " . TBL_TELEFONO . " t WHERE t.idPersona IN(" . $personas . ") AND t.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '" . $anioMesVigencia . "' OR
+                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaActulizacion) FROM " . TBL_CONTACTO . " c WHERE c.idPersona IN(" . $personas . ") AND c.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '" . $anioMesVigencia . "' OR
+                        EXTRACT(YEAR_MONTH FROM IFNULL((SELECT MAX(fechaActualizacion) FROM " . TBL_DOMICILIO . " d WHERE d.idPersona IN(" . $personas . ") AND d.fechaEliminacion = '0000-00-00 00:00:00'),'0000-00-00')) = '" . $anioMesVigencia . "',
                         1 , 0
                       ) AS actualizados
                     FROM
-                    ".TBL_PERSONA." p
+                    " . TBL_PERSONA . " p
                     WHERE p.fechaEliminacion = '0000-00-00 00:00:00'
-                    AND p.idPersona IN(".$personas.")";
+                    AND p.idPersona IN(" . $personas . ")";
 
                 $datos['actualizados'] = $this->db->query($sql)->row()->actualizados;
             }
@@ -3885,14 +3877,14 @@ LIMIT $numeroRegistros";
      */
     public function validaHuella($idPersona)
     {
-        $datos = array ('validacion' => 0);
+        $datos = array('validacion' => 0);
 
         $idUnicoMembresia = 0;
-        $ci =& get_instance();
+        $ci               = &get_instance();
         $ci->load->model('socio_model');
 
         $idSocio = $ci->socio_model->obtenIdSocio($idPersona);
-        if ($idSocio>0) {
+        if ($idSocio > 0) {
             $idUnicoMembresia = $ci->socio_model->obtenUnicoMembresia($idSocio);
         }
 
@@ -3903,7 +3895,7 @@ LIMIT $numeroRegistros";
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
-            $id = $fila['idPersona'];
+            $id   = $fila['idPersona'];
             $this->db->where('idPersona', $id);
             $this->db->update(TBL_HUELLA, $datos);
 
@@ -3925,7 +3917,7 @@ LIMIT $numeroRegistros";
      *
      * @return string
      */
-    public function validaMailRepetidoEmpleado ($mail, $idPersona)
+    public function validaMailRepetidoEmpleado($mail, $idPersona)
     {
         settype($mail, 'string');
         settype($idPersona, 'integer');
@@ -3933,9 +3925,9 @@ LIMIT $numeroRegistros";
         $datos = array(
             'error'   => 1,
             'mensaje' => 'Error faltan datos',
-            'total'   => -1
+            'total'   => -1,
         );
-        if ( ! $mail or ! $idPersona) {
+        if (!$mail or !$idPersona) {
             return $datos;
         }
         $datos['error']   = 0;
@@ -3945,13 +3937,13 @@ LIMIT $numeroRegistros";
             'm.fechaEliminacion' => '0000-00-00 00:00:00',
             'm.mail'             => $mail,
             'm.idTipoMail'       => TIPO_MAIL_EMPLEADO,
-            'm.idPersona <>'     => $idPersona
+            'm.idPersona <>'     => $idPersona,
         );
-        $this->db->join(TBL_PERSONA.' p', "p.idPersona = m.idPersona", "INNER");
-        $this->db->join(TBL_EMPLEADO.' e', "e.idPersona = p.idPersona AND e.idTipoEstatusEmpleado = ".ESTATUS_EMPLEADO_ACTIVO, "INNER");
+        $this->db->join(TBL_PERSONA . ' p', "p.idPersona = m.idPersona", "INNER");
+        $this->db->join(TBL_EMPLEADO . ' e', "e.idPersona = p.idPersona AND e.idTipoEstatusEmpleado = " . ESTATUS_EMPLEADO_ACTIVO, "INNER");
         $query = $this->db->select(
             'COUNT(DISTINCT m.idMail)AS total', false
-        )->get_where(TBL_MAIL.' m', $where);
+        )->get_where(TBL_MAIL . ' m', $where);
 
         if ($query->num_rows()) {
             $datos['total'] = $query->row()->total;
@@ -3985,7 +3977,7 @@ LIMIT $numeroRegistros";
             'error'     => 1,
             'mensaje'   => 'Error faltan datos',
             'registros' => 0,
-            'personas'  => array()
+            'personas'  => array(),
         );
         $innerEmpleadoBloqueado = "";
 
@@ -4000,7 +3992,7 @@ LIMIT $numeroRegistros";
             } else {
                 return $datos;
             }
-        } elseif ( ! $fecha and ! $nombre and ! $paterno) {
+        } elseif (!$fecha and !$nombre and !$paterno) {
             return $datos;
         }
         if ($validaEmpleadoBloqueado) {
@@ -4012,9 +4004,9 @@ LIMIT $numeroRegistros";
         $datos['error']   = 0;
         $datos['mensaje'] = '';
 
-        $this->db->query("SET @nombre = '".$nombre."';");
-        $this->db->query("SET @paterno = '".$paterno."';");
-        $this->db->query("SET @materno = '".$materno."';");
+        $this->db->query("SET @nombre = '" . $nombre . "';");
+        $this->db->query("SET @paterno = '" . $paterno . "';");
+        $this->db->query("SET @materno = '" . $materno . "';");
 
         $this->db->query("SET @name = CONCAT(@nombre, @paterno, @materno);");
 
@@ -4062,13 +4054,12 @@ LIMIT $numeroRegistros";
         $this->db->query("SET @maximo = LENGTH(@name)+3;");
         $this->db->query("SET @minimo = LENGTH(@name)-3;");
 
-
         $query = $this->db->query("
             SELECT *, LEVENSHTEIN(pl.nombreCompleto, @name) AS dif
             FROM personalevenshtein pl
             INNER JOIN persona p ON p.idPersona=pl.idPersona AND p.fechaEliminacion='0000-00-00 00:00:00'
-            AND p.nombre LIKE @p_n AND p.paterno LIKE @p_p AND p.materno LIKE @p_m AND p.fechaNacimiento = '".$fechaNacimiento."'
-            ".$innerEmpleadoBloqueado."
+            AND p.nombre LIKE @p_n AND p.paterno LIKE @p_p AND p.materno LIKE @p_m AND p.fechaNacimiento = '" . $fechaNacimiento . "'
+            " . $innerEmpleadoBloqueado . "
             WHERE  pl.longitud BETWEEN @minimo AND @maximo
             HAVING dif <=4;"
         );
@@ -4089,17 +4080,17 @@ LIMIT $numeroRegistros";
      *
      * @return array
      */
-    public function validaSexo ($idPersona)
+    public function validaSexo($idPersona)
     {
         settype($idPersona, 'integer');
 
         $datos = array(
             'error'      => 1,
             'mensaje'    => 'Error falta identificador de persona',
-            'idTipoSexo' => 0
+            'idTipoSexo' => 0,
         );
 
-        if ( ! $idPersona) {
+        if (!$idPersona) {
             return $datos;
         }
         $datos['error']   = 0;
@@ -4137,7 +4128,7 @@ LIMIT $numeroRegistros";
 
         $this->db->select('idMail');
         $this->db->from(TBL_MAIL);
-        $where = array('mail' => $mail,'idTipoMail'=>$tipoMail, 'fechaEliminacion'=>'0000-00-00 00:00:00');
+        $where = array('mail' => $mail, 'idTipoMail' => $tipoMail, 'fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
 
@@ -4161,9 +4152,9 @@ LIMIT $numeroRegistros";
             FROM persona p
             INNER JOIN empleado e on e.idPersona = p.idPersona
                 and e.fechaEliminacion = '0000-00-00 00:00:00' and e.idTipoEstatusEmpleado = 196
-            WHERE (p.nombre like '%".strtoupper ($nombre)."%' and (REPLACE(p.paterno, ' ', '') like '%".strtoupper ($apellido)."' or REPLACE(p.materno, ' ', '') like '%".strtoupper ($apellido)."'))
+            WHERE (p.nombre like '%" . strtoupper($nombre) . "%' and (REPLACE(p.paterno, ' ', '') like '%" . strtoupper($apellido) . "' or REPLACE(p.materno, ' ', '') like '%" . strtoupper($apellido) . "'))
             and p.fechaEliminacion
-            = '0000-00-00 00:00:00' and p.idPersona =".$this->session->userdata('idPersona')." ";
+            = '0000-00-00 00:00:00' and p.idPersona =" . $this->session->userdata('idPersona') . " ";
         $query = $this->db->query($sql);
         if ($query->num_rows) {
             return $query->result_array();
@@ -4186,19 +4177,19 @@ LIMIT $numeroRegistros";
      */
     public function validacionDuplicidadPersona($nombre, $paterno, $materno, $fecha)
     {
-        $nombrecompleto = $nombre.' '.$paterno.' '.$materno;
+        $nombrecompleto = $nombre . ' ' . $paterno . ' ' . $materno;
         $nombreCompleto = strtoupper($nombrecompleto);
         $nombreCompleto = $this->db->escape_like_str($nombreCompleto);
-        $fecha = $this->db->escape_like_str($fecha);
+        $fecha          = $this->db->escape_like_str($fecha);
 
         $sql = "SELECT p.idpersona, CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno)),
-            LEVENSHTEIN(CONCAT_WS(' ', TRIM(nombre), TRIM(paterno), TRIM(materno)), '".$nombreCompleto."') AS diferencia
+            LEVENSHTEIN(CONCAT_WS(' ', TRIM(nombre), TRIM(paterno), TRIM(materno)), '" . $nombreCompleto . "') AS diferencia
             FROM persona p
-            WHERE fechaNacimiento='".$fecha."' AND fechaEliminacion='0000-00-00 00:00:00'
+            WHERE fechaNacimiento='" . $fecha . "' AND fechaEliminacion='0000-00-00 00:00:00'
             HAVING diferencia<=2";
-        $query=$this->db->query($sql);
+        $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             $data = 1;
         } else {
             $data = 0;
@@ -4220,26 +4211,26 @@ LIMIT $numeroRegistros";
         settype($idDomicilio, 'integer');
         settype($idPersona, 'integer');
 
-        if ($idDomicilio==0) {
-             $this->db->select('bancario');
-             $this->db->from(TBL_DOMICILIO);
-             $this->db->where('idPersona', $idPersona);
-             $this->db->where('bancario', '1');
-             $query = $this->db->get();
+        if ($idDomicilio == 0) {
+            $this->db->select('bancario');
+            $this->db->from(TBL_DOMICILIO);
+            $this->db->where('idPersona', $idPersona);
+            $this->db->where('bancario', '1');
+            $query = $this->db->get();
 
-             if ($query->num_rows > 0) {
-                $reg=1;
-             } else {
-                $reg=0;
-             }
+            if ($query->num_rows > 0) {
+                $reg = 1;
+            } else {
+                $reg = 0;
+            }
         } else {
-             $this->db->select('bancario');
-             $this->db->from(TBL_DOMICILIO);
-             $this->db->where('idPersona', $idPersona);
-             $this->db->where('bancario', '1');
-             $query = $this->db->get();
+            $this->db->select('bancario');
+            $this->db->from(TBL_DOMICILIO);
+            $this->db->where('idPersona', $idPersona);
+            $this->db->where('bancario', '1');
+            $query = $this->db->get();
 
-             if ($query->num_rows > 0) {
+            if ($query->num_rows > 0) {
                 $this->db->select('bancario');
                 $this->db->from(TBL_DOMICILIO);
                 $this->db->where('idDomicilio', $idDomicilio);
@@ -4247,13 +4238,13 @@ LIMIT $numeroRegistros";
                 $query = $this->db->get();
 
                 if ($query->num_rows > 0) {
-                    $reg=0;
+                    $reg = 0;
                 } else {
-                    $reg=1;
+                    $reg = 1;
                 }
-             } else {
-                $reg=0;
-             }
+            } else {
+                $reg = 0;
+            }
         }
         return $reg;
     }
@@ -4271,37 +4262,37 @@ LIMIT $numeroRegistros";
         settype($idDomicilio, 'integer');
         settype($idPersona, 'integer');
 
-        if ($idDomicilio==0) {
-             $this->db->select('fiscal');
-             $this->db->from(TBL_DOMICILIO);
-             $this->db->where('idPersona', $idPersona);
-             $this->db->where('fiscal', '1');
-             $query = $this->db->get();
-             if ($query->num_rows > 0) {
-                $reg=1;
-             } else {
-                $reg=0;
-             }
+        if ($idDomicilio == 0) {
+            $this->db->select('fiscal');
+            $this->db->from(TBL_DOMICILIO);
+            $this->db->where('idPersona', $idPersona);
+            $this->db->where('fiscal', '1');
+            $query = $this->db->get();
+            if ($query->num_rows > 0) {
+                $reg = 1;
+            } else {
+                $reg = 0;
+            }
         } else {
-             $this->db->select('fiscal');
-             $this->db->from(TBL_DOMICILIO);
-             $this->db->where('idPersona', $idPersona);
-             $this->db->where('fiscal', '1');
-             $query = $this->db->get();
-             if ($query->num_rows > 0) {
+            $this->db->select('fiscal');
+            $this->db->from(TBL_DOMICILIO);
+            $this->db->where('idPersona', $idPersona);
+            $this->db->where('fiscal', '1');
+            $query = $this->db->get();
+            if ($query->num_rows > 0) {
                 $this->db->select('fiscal');
                 $this->db->from(TBL_DOMICILIO);
                 $this->db->where('idDomicilio', $idDomicilio);
                 $this->db->where('fiscal', '1');
                 $query = $this->db->get();
                 if ($query->num_rows > 0) {
-                    $reg=0;
+                    $reg = 0;
                 } else {
-                    $reg=1;
+                    $reg = 1;
                 }
-             } else {
-                $reg=0;
-             }
+            } else {
+                $reg = 0;
+            }
         }
         return $reg;
     }
@@ -4313,14 +4304,14 @@ LIMIT $numeroRegistros";
      */
     public static function obtenerEstadoCivil($persona)
     {
-        $query = DB::connection('crm')->table(TBL_PERSONA.' as p')
-        ->select('p.idPersona', 'p.idTipoEstadoCivil', 'ec.descripcion')
-        ->join(TBL_TIPOESTADOCIVIL.' as ec','p.idTIpoEstadoCivil','ec.idTIpoEstadoCivil')
-        ->where('p.idPersona',$persona);
-        
+        $query = DB::connection('crm')->table(TBL_PERSONA . ' as p')
+            ->select('p.idPersona', 'p.idTipoEstadoCivil', 'ec.descripcion')
+            ->join(TBL_TIPOESTADOCIVIL . ' as ec', 'p.idTIpoEstadoCivil', 'ec.idTIpoEstadoCivil')
+            ->where('p.idPersona', $persona);
+
         $descripcion = '';
         if ($query->count() > 0) {
-            $result = ($query->get()->toArray())[0];
+            $result      = ($query->get()->toArray())[0];
             $descripcion = $result->descripcion;
         }
         return $descripcion;
@@ -4334,22 +4325,22 @@ LIMIT $numeroRegistros";
      *
      * @return [type]                [description]
      */
-    function crearArchivoDatosCredencial($datosArchivo,$pathMembresia)
+    public function crearArchivoDatosCredencial($datosArchivo, $pathMembresia)
     {
-        $aliasClub = str_replace('SW', '', $datosArchivo->clave);
-        $strArchivo= "Nombre: ".$datosArchivo->nombreCompleto
-                .",Club de origen: ".$aliasClub
-                .",Club de facturacion: ".$datosArchivo->clubFactura
-                .",Numero de membresia:".$datosArchivo->idMembresia
-                .",codigo de barras: A".$datosArchivo->idPersona;
+        $aliasClub  = str_replace('SW', '', $datosArchivo->clave);
+        $strArchivo = "Nombre: " . $datosArchivo->nombreCompleto
+        . ",Club de origen: " . $aliasClub
+        . ",Club de facturacion: " . $datosArchivo->clubFactura
+        . ",Numero de membresia:" . $datosArchivo->idMembresia
+        . ",codigo de barras: A" . $datosArchivo->idPersona;
 
-        $flagArchivo = 0;
-        $nombreArchivo = $pathMembresia.$datosArchivo->idPersona.".txt";
+        $flagArchivo   = 0;
+        $nombreArchivo = $pathMembresia . $datosArchivo->idPersona . ".txt";
         file_put_contents($nombreArchivo, $strArchivo);
-        if(file_exists($nombreArchivo)){
+        if (file_exists($nombreArchivo)) {
             $flagArchivo = 1;
         }
-         return $flagArchivo;
+        return $flagArchivo;
     }
 
     /**
@@ -4360,25 +4351,25 @@ LIMIT $numeroRegistros";
      *
      * @return [type]               [description]
      */
-    public function actualizaEnvioCredencial($idPersona,$idMovimiento)
+    public function actualizaEnvioCredencial($idPersona, $idMovimiento)
     {
-        if($this->existeCargoCredencial($idPersona,$idMovimiento) == 0){
-            $now = date('Y-m-d h:i:s');
+        if ($this->existeCargoCredencial($idPersona, $idMovimiento) == 0) {
+            $now         = date('Y-m-d h:i:s');
             $insertEnvio = [
-                'idMovimiento' => $idMovimiento,
-                'comentario' => 'envio datos credencial para persona id:'.$idPersona.' '.$now,
-                'enviado' => 1,
-                'fechaEnvio' => $now,
-                'fechaRegistro' => $now
+                'idMovimiento'  => $idMovimiento,
+                'comentario'    => 'envio datos credencial para persona id:' . $idPersona . ' ' . $now,
+                'enviado'       => 1,
+                'fechaEnvio'    => $now,
+                'fechaRegistro' => $now,
             ];
-            $this->db->insert('credencialEnvio',$insertEnvio);
-        }else{
+            $this->db->insert('credencialEnvio', $insertEnvio);
+        } else {
             $this->db->where([
-                'idPersona' => $idPersona,
-                'idMovimiento' => $idMovimiento
+                'idPersona'    => $idPersona,
+                'idMovimiento' => $idMovimiento,
             ]);
-            $this->db->update('credencialEnvio',[
-                'enviado' => 1
+            $this->db->update('credencialEnvio', [
+                'enviado' => 1,
             ]);
         }
 
@@ -4397,10 +4388,10 @@ LIMIT $numeroRegistros";
         settype($idPersona, 'integer');
         settype($idMovimiento, 'integer');
 
-       $query = $this->db->from('credencialEnvio')
-                ->where('idMovimiento',$idMovimiento)
-                ->where('enviado',0)
-                ->get();
+        $query = $this->db->from('credencialEnvio')
+            ->where('idMovimiento', $idMovimiento)
+            ->where('enviado', 0)
+            ->get();
         return $query->num_rows();
     }
 
@@ -4419,7 +4410,7 @@ LIMIT $numeroRegistros";
 
         $res = true;
 
-        if ($idPersona==0) {
+        if ($idPersona == 0) {
             return $res;
         }
 
@@ -4431,7 +4422,7 @@ LIMIT $numeroRegistros";
 
         if ($query->num_rows > 0) {
             $fila = $query->row_array();
-            if ($fila['validacion']==0) {
+            if ($fila['validacion'] == 0) {
                 $res = false;
             }
         }
@@ -4450,7 +4441,7 @@ LIMIT $numeroRegistros";
     {
         settype($persona, 'integer');
 
-        if ($persona==0) {
+        if ($persona == 0) {
             return false;
         }
 
@@ -4466,7 +4457,7 @@ LIMIT $numeroRegistros";
         return false;
     }
 
-     /**
+    /**
      * Verifica que no exista un mismo correo con el tipo web (36)
      *
      * @author Víctor Rodríguez <victor.leon@sportsworld.com.mx>
@@ -4475,67 +4466,64 @@ LIMIT $numeroRegistros";
      * @param   int    $idTipoMail   id tipo de mail
      * @return  bool                Verdadero o falso si existe
      */
-     public function verificaMailWeb($mail,$tipoMailEnvio,$idTipoMail=36)
-     {
-        if($tipoMailEnvio==$idTipoMail)
-        {
+    public function verificaMailWeb($mail, $tipoMailEnvio, $idTipoMail = 36)
+    {
+        if ($tipoMailEnvio == $idTipoMail) {
             $this->db->select('idMail');
             $this->db->from(TBL_MAIL);
             $this->db->where('mail', $mail);
             $this->db->where('idTipoMail', $idTipoMail);
-            $this->db->where('eliminado',0);
+            $this->db->where('eliminado', 0);
             $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
             $query = $this->db->get();
-            $sql=$this->db->last_query();
-            if($query->num_rows > 0)
-            {
+            $sql   = $this->db->last_query();
+            if ($query->num_rows > 0) {
                 return true;
             }
         }
         return false;
-     }
+    }
 
-
-     /**
+    /**
      * Guarda el codigo generado para su validación de mail
      *
      * @author Víctor Rodríguez <victor.leon@sportsworld.com.mx>
      * @param   string    $codigo    codigo
      * @param   string    $mail mail a guardar
-     * @param   int       $idPersona id de la persona para   
+     * @param   int       $idPersona id de la persona para
      * @return  bool                Verdadero o falso si existe
      */
 
-     public function guardaCodigoMail($codigo,$mail)
-     {
-        //busco si no existe ya la llave mail vs codigo   
+    public function guardaCodigoMail($codigo, $mail)
+    {
+        //busco si no existe ya la llave mail vs codigo
         $this->db->select('vigencia');
         $this->db->from(TBL_MAIL_CODIGO);
         $this->db->where('mail', $mail);
         //$this->db->where('codigo', $codigo);
-        $query = $this->db->get();
-        $sql=$this->db->last_query();
-        $fechaHoy=date('Y-m-d H:i:s');
-        $vigencia = strtotime ( '+15 day' , strtotime($fechaHoy));
-        $vigencia = date ( 'Y-m-d H:i:s' , $vigencia );
+        $query    = $this->db->get();
+        $sql      = $this->db->last_query();
+        $fechaHoy = date('Y-m-d H:i:s');
+        $vigencia = strtotime('+15 day', strtotime($fechaHoy));
+        $vigencia = date('Y-m-d H:i:s', $vigencia);
 
-        if($query->num_rows > 0) {
-            //existe y solo tenemos que actualizar el codigo y la fecha de vigencia  
-            $data=['codigo'=>$codigo, 'vigencia'=>$vigencia,'usado'=>0];
+        if ($query->num_rows > 0) {
+            //existe y solo tenemos que actualizar el codigo y la fecha de vigencia
+            $data = ['codigo' => $codigo, 'vigencia' => $vigencia, 'usado' => 0];
             $this->db->where('mail', $mail);
-            $exito=$this->db->update(TBL_MAIL_CODIGO, $data);
+            $exito = $this->db->update(TBL_MAIL_CODIGO, $data);
         } else {
             //no existe y tenemos que insertarlo
-            $data=['codigo'=>$codigo,'vigencia'=>$vigencia,'fechaCreacion'=>$fechaHoy,'mail'=>$mail];
-            $exito=$this->db->insert(TBL_MAIL_CODIGO,$data);
+            $data  = ['codigo' => $codigo, 'vigencia' => $vigencia, 'fechaCreacion' => $fechaHoy, 'mail' => $mail];
+            $exito = $this->db->insert(TBL_MAIL_CODIGO, $data);
         }
-        if($exito) {
+        if ($exito) {
             return true;
         }
         return false;
-     }
+    }
 
-     /**
+    /**
      * Valida que exista el código y este vigente
      *
      * @author Víctor Rodríguez <victor.leon@sportsworld.com.mx>
@@ -4544,9 +4532,9 @@ LIMIT $numeroRegistros";
      * @return  bool                Verdadero o falso si existe
      */
 
-     public function validaCodigoMail($codigo,$mail)
-     {
-        $fechaHoy=date('Y-m-d H:i:s');
+    public function validaCodigoMail($codigo, $mail)
+    {
+        $fechaHoy = date('Y-m-d H:i:s');
         //valido que la vigencia este en tiempo y que exista el mail
         $this->db->select('vigencia');
         $this->db->from(TBL_MAIL_CODIGO);
@@ -4554,78 +4542,73 @@ LIMIT $numeroRegistros";
         $this->db->where('codigo', $codigo);
         $this->db->where('usado', 0);
         $this->db->where('vigencia >=', $fechaHoy);
-        $query=$this->db->get();
+        $query = $this->db->get();
         //echo $this->db->last_query();
-        if($query->num_rows > 0)
-        {
+        if ($query->num_rows > 0) {
             //var_dump($query->row_array());
-            $data=['usado'=>1];
+            $data = ['usado' => 1];
             $this->db->where('mail', $mail);
             $this->db->where('codigo', $codigo);
             $this->db->where('usado', 0);
             $this->db->where('vigencia >=', $fechaHoy);
-            $this->db->update(TBL_MAIL_CODIGO,$data);
+            $this->db->update(TBL_MAIL_CODIGO, $data);
             //echo "si existe";
             return true;
-        }
-        else
-        {
+        } else {
             //echo "no existe";
             return false;
         }
-     }
+    }
 
-     public function datosCadenaPersona($idPersona)
-     {
-        $sql="select m.idUnicoMembresia, m.idMembresia, m.idUn, m.idProducto, d.cp, (SELECT count(*)
+    public function datosCadenaPersona($idPersona)
+    {
+        $sql = "select m.idUnicoMembresia, m.idMembresia, m.idUn, m.idProducto, d.cp, (SELECT count(*)
             FROM crm.socio s
-            WHERE s.idUnicoMembresia IN (m.idUnicoMembresia) 
+            WHERE s.idUnicoMembresia IN (m.idUnicoMembresia)
                 AND s.fechaEliminacion = '0000-00-00 00:00:00' AND s.idTipoEstatusSocio NOT IN (82,88)
             ) integrantes
-            from membresia m, domicilio d 
+            from membresia m, domicilio d
             where d.idPersona=m.idPersona
-            and m.idPersona=".$idPersona." order by m.fechaRegistro DESC";
+            and m.idPersona=" . $idPersona . " order by m.fechaRegistro DESC";
 
         $query = $this->db->query($sql);
-        $row = $query->row();
+        $row   = $query->row();
 
         return $row;
-     }
+    }
 
-     public function completaRegistroSocio($idUn,$idMembresia,$mail)
+    public function completaRegistroSocio($idUn, $idMembresia, $mail)
     {
-        $sqlMembresia="select idUnicoMembresia from crm.membresia where idUn=".$idUn." and idMembresia=".$idMembresia."  limit 1";
-        $resultMem=$this->db->query($sqlMembresia);
-        $sqlPersona="select idPersona from crm.mail where mail='".$mail."' limit 1";
-        $resultPersona=$this->db->query($sqlPersona);
+        $sqlMembresia  = "select idUnicoMembresia from crm.membresia where idUn=" . $idUn . " and idMembresia=" . $idMembresia . "  limit 1";
+        $resultMem     = $this->db->query($sqlMembresia);
+        $sqlPersona    = "select idPersona from crm.mail where mail='" . $mail . "' limit 1";
+        $resultPersona = $this->db->query($sqlPersona);
 
-        $idUnicoMembresia=$resultMem->row()->idUnicoMembresia;
+        $idUnicoMembresia = $resultMem->row()->idUnicoMembresia;
 
-        $idPersona=$resultPersona->row()->idPersona;
+        $idPersona = $resultPersona->row()->idPersona;
 
         //inserto en activacion si no existe registro
-        $sql="select folio
-            from  socios.activacion 
-            where idPersona=".$idPersona."
+        $sql = "select folio
+            from  socios.activacion
+            where idPersona=" . $idPersona . "
             and estatus=1 and fechaEliminacion = '0000-00-00 00:00:00'
             ";
-           // echo $sql;
+        // echo $sql;
         $query = $this->db->query($sql);
-        if($query->num_rows()>0)
-        {
-            $codigo=$query->row();
-            $folio=$codigo->folio;
+        if ($query->num_rows() > 0) {
+            $codigo = $query->row();
+            $folio  = $codigo->folio;
         }
-        
-        if($folio=='' || !$folio)
-        {
+
+        if ($folio == '' || !$folio) {
             $random = rand();
-            $string = sha1($idPersona.$random);
-            $codigo = substr($string,0,10);
-            $datos = array (
-            'folio'             => $codigo,
-            'idPersona'         => $idPersona,
-            'idUnicoMembresia'  => $idUnicoMembresia,
+            $string = sha1($idPersona . $random);
+            $codigo = substr($string, 0, 10);
+            $datos  = array(
+                'folio'            => $codigo,
+                'idPersona'        => $idPersona,
+                'idUnicoMembresia' => $idUnicoMembresia,
             );
             //var_dump($datos);
             $this->db->insert('socios.activacion', $datos);

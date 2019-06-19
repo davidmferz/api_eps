@@ -19,6 +19,17 @@ class Empleado extends Model
     const UPDATED_AT = 'fechaActualizacion';
     const DELETED_AT = 'fechaEliminacion';
 
+    public function scopeGetEmail($query, $idPersona)
+    {
+        return $query->select('mail.mail')
+            ->where('empleado.idPersona', $idPersona)
+            ->join('crm.mail', 'empleado.idPersona', '=', 'mail.idPersona')
+            ->where('mail.idTipoMail', 37)
+            ->where('mail.eliminado', 0)
+            ->first();
+
+    }
+
     /**
      * Actualiza las actividades deportivas de un empleado
      *
@@ -647,24 +658,15 @@ class Empleado extends Model
      *
      * @return string
      */
-    public function obtenDatosEmpleadoPuesto($idEmpleado = 0)
+    public function scopeDatosEmpleadoPuesto($query, $idEmpleado)
     {
-        if ($idEmpleado == 0) {
-            return 0;
-        }
-        settype($idEmpleado, 'integer');
 
-        $this->db->select('idEmpleadoPuesto, idUn, idPuesto, idPuestoSuperior');
-        $this->db->from(TBL_EMPLEADOPUESTO);
-        $where = array('idEmpleado' => $idEmpleado, 'fechaEliminacion' => '0000-00-00 00:00:00');
-        $this->db->where($where);
-        $query = $this->db->get();
-        if ($query->num_rows() > 0) {
-            $fila = $query->row_array();
-            return $fila;
-        } else {
-            return 0;
-        }
+        $where = array('empleadoPuesto.idEmpleado' => $idEmpleado, 'empleadoPuesto.fechaEliminacion' => '0000-00-00 00:00:00');
+        return $query->select('empleadoPuesto.idEmpleadoPuesto', 'empleadoPuesto.idUn', 'empleadoPuesto.idPuesto', 'empleadoPuesto.idPuestoSuperior')
+            ->join('empleadoPuesto', 'empleadoPuesto.idEmpleado', '=', 'empleado.idEmpleado')
+            ->where($where)
+            ->first()
+            ->toArray();
     }
 
     /**

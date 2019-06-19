@@ -3,6 +3,7 @@
 namespace API_EPS\Http\Controllers;
 
 use API_EPS\Http\Controllers\ApiController;
+use API_EPS\Mail\MailEntrenador;
 use API_EPS\Models\AgendaInbody;
 use API_EPS\Models\Anualidad;
 use API_EPS\Models\Categoria;
@@ -16,10 +17,13 @@ use API_EPS\Models\Movimiento;
 use API_EPS\Models\Persona;
 use API_EPS\Models\Producto;
 use API_EPS\Models\Socio;
+use API_EPS\Models\Token;
 use API_EPS\Models\Un;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Extraído desde el controller /crm/system/application/controllers/ep.php
@@ -27,6 +31,28 @@ use Illuminate\Support\Facades\Log;
  */
 class EPController extends ApiController
 {
+
+    public function datosPersona($idPersona, $idSocio, $token)
+    {
+        if (!Token::ValidaToken($token)) {
+            return $this->errorResponse('Token Invalido  ');
+
+        }
+        $idPersona = intval($idPersona);
+        $idSocio   = intval($idSocio);
+        if ($idSocio > 0 && $idPersona > 0) {
+            $result = Persona::DatosPersona($idPersona, $idSocio);
+            if (count($result) > 0) {
+
+                return $this->successResponse($result, 'Cliente encontrado  ');
+            } else {
+                return $this->errorResponse('Cliente no encontrado ');
+
+            }
+        } else {
+            return $this->errorResponse('error de datos ');
+        }
+    }
 
     /**
      * [agenda description]
@@ -69,13 +95,84 @@ class EPController extends ApiController
      *
      * @return [Json] $retval        [respuesta para FRONT]
      */
+    public function altaPost(Request $request)
+    {
+
+        $clases = $request->input('clases');
+        if (COUNT($clases) <= 0) {
+            return $this->errorResponse('Selecciona minimo una clase');
+
+        }
+        $send = [];
+        foreach ($clases as $key => $value) {
+
+            $idEmpleado    = ($value['empleado'] != null) ? $value['empleado'] : Empleado::obtenIdEmpleado($value['idPersona']);
+            $datosEmpleado = Empleado::DatosEmpleadoPuesto($idEmpleado);
+            $fechaClase    = explode(' ', $value['timestamp']);
+
+            $valida  = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
+            $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $datosEmpleado['idUn']);
+            if ($valida > 0 && COUNT($inbodys) > 0) {
+                $send[] = [
+                    'estatus'   => 'error',
+                    'mensaje'   => 'clase ocupada para la fecha ' . $fechaClase[0] . ' y hora ' . $fechaClase[1],
+                    'timestamp' => $value['timestamp'],
+                ];
+                continue;
+            }
+
+            $fecha   = substr($value['timestamp'], 0, 10);
+            $hora    = substr($value['timestamp'], 11, 8);
+            $idClase = Evento::insertaClase($value['idInscripcion'], $idEmpleado, $value['idPersona'], $fecha, $hora);
+            $retval  = array();
+            if ($idClase > 0) {
+                $send[] = [
+                    'estatus' => 'ok',
+                    'mensaje' => 'clase registrada',
+                    'idClase' => $idClase,
+                ];
+
+            } else {
+                $send[] = [
+                    'estatus' => 'error',
+                    'mensaje' => 'error para inscribir a la fecha ' . $fechaClase[0] . ' y hora ' . $fechaClase[1],
+                ];
+            }
+        }
+        return $this->successResponse($send, 'clases estatus inscripcion ');
+
+    }
+
+    /**
+     * [alta description]
+     *
+     * @param  [type] $idInscripcion [id de tabla EVENTOINSCRIPCION]
+     * @param  [type] $idEntrenador  [idPersona de la persona logueada]
+     * @param  [type] $timestamp     [fecha para la clase]
+     * @param  [type] $empleado      [idEmpleado 'para cuando un gerente hace una asignacion']
+     *
+     * @return [Json] $retval        [respuesta para FRONT]
+     */
     public function alta($idInscripcion, $idEntrenador, $timestamp, $empleado = null)
     {
-        $idEmpleado = ($empleado != null) ? $empleado : Empleado::obtenIdEmpleado($idEntrenador);
-        $fecha      = substr($timestamp, 0, 10);
-        $hora       = substr($timestamp, 11, 8);
-        $idClase    = Evento::insertaClase($idInscripcion, $idEmpleado, $idEntrenador, $fecha, $hora);
-        $retval     = array();
+        $idEmpleado    = ($empleado != null) ? $empleado : Empleado::obtenIdEmpleado($idEntrenador);
+        $datosEmpelado = Empleado::DatosEmpleadoPuesto($idEmpleado);
+        $fechaClase    = explode(' ', $timestamp);
+
+        $valida  = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
+        $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $datosEmpelado['idUn']);
+        if ($valida > 0 && COUNT($inbodys) > 0) {
+            $error['status']    = 400;
+            $error['message']   = 'La hora ya esta ocupada ';
+            $error['code']      = '1010';
+            $error['more_info'] = 'http://localhost/docs/error/1010';
+            return response()->json($error, $error['status']);
+        }
+
+        $fecha   = substr($timestamp, 0, 10);
+        $hora    = substr($timestamp, 11, 8);
+        $idClase = Evento::insertaClase($idInscripcion, $idEmpleado, $idEntrenador, $fecha, $hora);
+        $retval  = array();
         if ($idClase > 0) {
             $clase['idClase']  = $idClase;
             $retval['status']  = 'OK';
@@ -197,7 +294,8 @@ class EPController extends ApiController
         $idPersona = $idPersona === 0 ? $_SESSION['idPersona'] : $idPersona;
         session_write_close();
         try {
-            if ($_SERVER['REQUEST_METHOD'] == 'POST') { // por POST recibimos datos para guardar
+            if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+                // por POST recibimos datos para guardar
 
                 $request = json_decode(trim(file_get_contents('php://input')), true);
                 /*
@@ -374,13 +472,12 @@ class EPController extends ApiController
      *
      * @return [type]               [description]
      */
-    public function asignaEntrenador($idEmpleado, $idUn, $idAgenda)
+    public function asignaEntrenador($idEmpleado, $idUn, $idAgenda, $nombreCoordinador)
     {
         session_write_close();
         if ($idEmpleado == 0) {
             return $this->errorResponse('Selecciona un Entrenador', 400);
         }
-
         $inbody   = AgendaInbody::findOrFail($idAgenda);
         $fechaAux = explode(' ', $inbody->fechaSolicitud);
         $fecha    = $fechaAux[0];
@@ -395,9 +492,24 @@ class EPController extends ApiController
         } else {
             $inbody->idEmpleado = $idEmpleado;
             $inbody->save();
-            $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
+            //$inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
+            $datos  = AgendaInbody::getDatosMailAgendainbody(1077);
+            $correo = Empleado::GetEmail($datos->idPersona_empleado);
+            if ($correo != null) {
 
-            return $this->successResponse($inbodys, 'Asignado correctamente');
+                $fecha = new Carbon($inbody->fechaSolicitud);
+                //$correo                        = 'luis01cosio@gmail.com';
+                $datosMail                     = new \stdClass();
+                $datosMail->nombreEntrenador   = $datos->nombreEmpleado;
+                $datosMail->nombreCoordinador  = $nombreCoordinador;
+                $datosMail->fechaSolicitud_str = fechaStringES($fecha);
+                $datosMail->nombreClub         = $datos->nombreClub;
+                $datosMail->hora               = 'de ' . $fecha->format('H:i:s') . ' hasta ' . $fecha->addMinutes(30)->format('H:i:s');
+                $datosMail->nombreSocio        = $datos->nombreSocio;
+                Mail::to($correo->mail)->send(new MailEntrenador($datosMail));
+            }
+
+            return $this->successResponse($inbody, 'Asignado correctamente');
         }
     }
 
@@ -469,8 +581,9 @@ class EPController extends ApiController
             if ($demo == 1) {
                 $fechaClase = explode(' ', $jsonData['fecha']);
 
-                $valida = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
-                if ($valida > 0) {
+                $valida  = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
+                $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $jsonData['idUn']);
+                if ($valida > 0 && COUNT($inbodys) > 0) {
                     $error['status']    = 400;
                     $error['message']   = 'La hora ya esta ocupada ';
                     $error['code']      = '1010';
@@ -667,10 +780,12 @@ class EPController extends ApiController
                                     $descripcionTipoEvento = 'VENTA DE PROGRAMA DEPORTIVO DE';
                                     $idTipoComision        = TIPO_COMISION_PROGRAMADEPORTIVO;
                                     //$isSocio=Socio::where('fechaEliminacion','=','0000-00-00 00:00:00')->where('idPersona','=',$jsonData['idCliente'])->get()->toArray();
-                                    if ($jsonData['tipo'] != 'Socio') { #Externo
-                                    $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONEXTERNA);
-                                    } else { #Socio
-                                    $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONINTERNA);
+                                    if ($jsonData['tipo'] != 'Socio') {
+                                        #Externo
+                                        $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONEXTERNA);
+                                    } else {
+                                        #Socio
+                                        $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONINTERNA);
                                     }
                                 } elseif ($generales['tipoEvento'] == TIPO_EVENTO_CURSOVERANO) {
                                     $idTipoComision = TIPO_COMISION_CURSODEVERANO;
@@ -1278,4 +1393,72 @@ class EPController extends ApiController
     {
         return 'hola';
     }
+
+    /**
+     * Funcion para enviar correo electrónico posterior a la Agenda InBody Wellness
+     * @author Oscar Sanchez V. <oscar.villavicencio@sportsworld.com.mx>
+     * @version 1.0.0
+     * @api
+     * @param  string JSON
+     * @return string JSON
+     */
+    public function mailAgendaInbody($data)
+    {
+        $sql = "SELECT idPersona, fechaSolicitud, horario, idUn
+            FROM piso.agenda_inbody WHERE idAgenda = " . $data['idAgenda'];
+        $res                = DB::connection('aws')->select($sql);
+        $idPersona          = $res[0]->idPersona;
+        $fechaSolicitud_sql = $res[0]->fechaSolicitud;
+        $horario            = $res[0]->horario;
+        $idUn               = $res[0]->idUn;
+
+        $newLocale                 = setlocale(LC_TIME, 'Spanish');
+        $fechaSolicitud            = new Carbon;
+        $fechaSolicitud->timestamp = strtotime($fechaSolicitud_sql);
+        $fechaSolicitud_str        = ucfirst($fechaSolicitud->formatLocalized('%A %d de %B %Y'));
+
+        $fechaHasta            = new Carbon;
+        $fechaHasta->timestamp = strtotime($fechaSolicitud->format('Y-m-d') . ' ' . $horario);
+        $fechaHasta->addMinutes(AgendaInbody::MINUTOS_INBODY);
+
+        $horario_desde = $horario;
+        $horario_hasta = $fechaHasta->format('H:i:s');
+
+        $horario_str = 'De ' . $horario_desde . ' a ' . $horario_hasta . ' horas';
+
+        $sql_0 = "SELECT * FROM un WHERE idUn = {$idUn}";
+        $club  = DB::connection('crm')->select($sql_0);
+
+        $sql_1 = "SELECT
+            CONCAT(p.nombre,' ',p.paterno,' ',p.materno) nombre_socio,
+            ma.mail
+            FROM persona p
+            INNER JOIN mail ma ON ma.idPersona = p.idPersona
+            WHERE p.idPersona = {$idPersona}
+            ORDER BY FIND_IN_SET(ma.idTipoMail, '34,36,37,36,35,3')
+            LIMIT 1 ";
+        $persona = DB::connection('crm')->select($sql_1);
+
+        if (count($persona) > 0) {
+            $data['persona']            = $persona[0];
+            $data['fechaSolicitud_str'] = $fechaSolicitud_str;
+            $data['horario_str']        = $horario_str;
+            $data['club']               = $club[0];
+
+            $data['subject_socio'] = '¡Tu Wellness Test está agendado!';
+            \Mail::send('emails.wellness_confirm', ['data' => $data], function ($message) use ($data) {
+                $message->to($data['persona']->mail, $data['persona']->nombre_socio)->subject($data['subject_socio']);
+            });
+
+            // check for failures
+            if (Mail::failures()) {
+                throw new \Exception("Error en el envío de correo");
+            }
+        } else {
+            throw new \Exception("No se encontró email del socio");
+        }
+
+        return [];
+    }
+
 }

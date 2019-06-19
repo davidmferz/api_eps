@@ -79,6 +79,7 @@ class EP extends Model
             WHERE m.idTipoEstatusMovimiento IN (66, 70)
             ORDER BY nombreCliente
             ";
+            //dd($sql);
         $query = DB::connection('crm')->select($sql);
         if (count($query) > 0) {
             foreach ($query as $fila) {
@@ -912,6 +913,7 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
         $sql = "SELECT p.idPersona, CONCAT_WS(' ', p.nombre, p.paterno, p.materno) AS nombre,
             e.idEmpleado, e.idTipoEstatusEmpleado, u.idUn, u.nombre AS unNombre,
             e.imss as NumSeguroSocial,o.razonSocial,
+            p.RFC,p.CURP,
             pu.idPuesto, pu.descripcion AS puestoNombre, if(pu.idPuesto in (192, 194, 197, 217, 229, 417, 419, 444, 465, 466, 468, 470, 485, 499, 806,74, 75, 76, 82, 92, 100, 177, 410, 441, 447, 486, 509, 510, 567, 780, 100044, 100047),(
                 SELECT GROUP_CONCAT(CONCAT_WS(',',p2.idPersona,CONCAT_WS(' ',p2.nombre,p2.Paterno,p2.Materno), ep2.idPuesto, pu2.descripcion,e2.idEmpleado) SEPARATOR '|')
                 FROM crm.persona p2
@@ -936,6 +938,7 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
                 AND m.mail = '{$email}'
                 AND m.fechaEliminacion='0000-00-00 00:00:00'
             LIMIT 1";
+
         // AND e2.idoperador in (2,7)
         $query = DB::connection('crm')->select($sql);
         if (count($query) > 0) {
@@ -1658,7 +1661,7 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
 
     public static function perfil($idPersona, $perfil = null)
     {
-      
+
         $res = DB::connection('crm')->table(TBL_EMPLEADO)
             ->select('idEmpleado', 'idPersona', 'perfil_ep')
             ->where('idPersona', $idPersona)

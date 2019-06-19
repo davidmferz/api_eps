@@ -17,6 +17,9 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['post', 'options'], 'login', 'EPController@login');
         Route::match(['get', 'options'], 'agenda/{idEntrenador}/{idUn}', 'EPController@agenda');
         Route::match(['get', 'options'], 'alta/{idInscripcion}/{idEntrenador}/{timestamp}/{empleado?}', 'EPController@alta');
+        Route::match(['post', 'options'], 'altaPost', 'EPController@altaPost');
+        Route::match(['get', 'options'], 'datosPersona/{idPersona}/{idSocio}/{token}', 'EPController@datosPersona');
+
         Route::match(['get', 'options'], 'cancelar/{idClase}', 'EPController@cancelar');
         Route::match(['get', 'options'], 'getSesion', 'EPController@getSesion');
         Route::match(['post', 'options'], 'plantrabajo/{idPersona?}', 'EPController@plantrabajo');
@@ -26,7 +29,7 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['get', 'options'], 'clase/{idEntrenador}/{idUn}', 'EPController@clase');
 
         Route::match(['get', 'options'], 'agendaEps/{idEntrenador}/{idUn}', 'EPController@agendaEps');
-        Route::match(['get', 'options'], 'asignaEntrenador/{idEmpleado}/{idUn}/{idAgenda}', 'EPController@asignaEntrenador');
+        Route::match(['get', 'options'], 'asignaEntrenador/{idEmpleado}/{idUn}/{idAgenda}/{nombreCoordinador}', 'EPController@asignaEntrenador');
 
         Route::match(['get', 'options'], 'general/{idUn}', 'EPController@general');
         Route::match(['post', 'options'], 'inscribir', 'EPController@inscribir');
@@ -50,6 +53,8 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['post', 'options'], 'editarPerfil/{idPersona}', 'EPController@editarPerfil');
 
         Route::match(['post', 'options'], 'getPlanesDeTrabajoEmpleados', 'EPController@getPlanesDeTrabajoEmpleados');
+
+        Route::match(['post', 'options'], 'buscaPersona', 'EPController@buscaPersona');
 
     });
 });
