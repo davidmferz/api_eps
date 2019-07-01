@@ -111,7 +111,7 @@ class Persona extends Model
         }
 
         return $res;
-     }
+    }
 
 
     /**
@@ -751,24 +751,25 @@ class Persona extends Model
         }
 
         $sql = "
-SELECT p.nombre, p.paterno, p.materno, p.idTipoPersona AS tipo,
-    p.fechaNacimiento AS fecha, p.idTipoSexo AS sexo, p.idTipoEstadoCivil AS civil,
-    IFNULL(p.RFC, '') AS RFC, p.idTipoTituloPersona AS titulo,
-    p.fallecido, p.idEstado AS estado, p.bloqueoMail AS bloqueo,
-    p.CURP, p.fechaRegistro AS registro, p.tour, p.idTipoProfesion,
-    p.concesionario, p.producto, p.concesionarioValido, p.idTipoEscolaridad,
-    p.idTipoNivelIngresos, p.hijos, p.bloqueoCallCenter,
-    p.idTipoPersona AS tipo,
-    IF(e.idEmpleado IS NOT NULL, 'Empleado',  IF(s.idSocio IS NOT NULL, 'Socio', 'Publico General')) AS tipoCliente
-FROM persona p
-LEFT JOIN empleado e ON e.idPersona=p.idPersona
-    AND e.idTipoEstatusEmpleado=196 AND e.fechaEliminacion='0000-00-00 00:00:00'
-LEFT JOIN socio s ON s.idPersona=p.idPersona AND s.eliminado=0
-    AND s.idTipoEstatusSocio=81
-WHERE p.idPersona={$persona} AND p.bloqueo=0
-GROUP BY p.idPersona";
+            SELECT p.nombre, p.paterno, p.materno, p.idTipoPersona AS tipo,
+                p.fechaNacimiento AS fecha, p.idTipoSexo AS sexo, p.idTipoEstadoCivil AS civil,
+                IFNULL(p.RFC, '') AS RFC, p.idTipoTituloPersona AS titulo,
+                p.fallecido, p.idEstado AS estado, p.bloqueoMail AS bloqueo,
+                p.CURP, p.fechaRegistro AS registro, p.tour, p.idTipoProfesion,
+                p.concesionario, p.producto, p.concesionarioValido, p.idTipoEscolaridad,
+                p.idTipoNivelIngresos, p.hijos, p.bloqueoCallCenter,
+                p.idTipoPersona AS tipo,
+                IF(e.idEmpleado IS NOT NULL, 'Empleado',  IF(s.idSocio IS NOT NULL, 'Socio', 'Publico General')) AS tipoCliente
+            FROM persona p
+            LEFT JOIN empleado e ON e.idPersona=p.idPersona
+                AND e.idTipoEstatusEmpleado=196 AND e.fechaEliminacion='0000-00-00 00:00:00'
+            LEFT JOIN socio s ON s.idPersona=p.idPersona AND s.eliminado=0
+                AND s.idTipoEstatusSocio=81
+            WHERE p.idPersona={$persona} AND p.bloqueo=0
+            GROUP BY p.idPersona
+        ";
         $query = DB::connection('crm')->select($sql);
-        
+
         if (count($query) > 0) {
             $query = array_map(function($x){return (array)$x;},$query);
             $fila = $query[0];
@@ -777,7 +778,7 @@ GROUP BY p.idPersona";
             return null;
         }
     }
-    
+
     /**
      * Genera una array con los datos generales de la cuenta de mail solicitada
      *
@@ -2115,7 +2116,7 @@ GROUP BY p.idPersona";
      *
      * @return boolean
      */
-    public function 
+    public function
 
     guardarMail($id, $persona, $tipoMail, $mail, $bloqueo)
     {
@@ -2374,7 +2375,7 @@ GROUP BY p.idPersona";
     }
 
 
-    public function asignaKidz($idPersona) 
+    public function asignaKidz($idPersona)
     {
         $this->db->where('idPersona', $idPersona);
         $this->db->delete('personacasokidz');
@@ -2389,7 +2390,7 @@ GROUP BY p.idPersona";
     }
 
 
-    public function eliminaKidz($idPersona) 
+    public function eliminaKidz($idPersona)
     {
         $this->db->where('idPersona', $idPersona);
         $this->db->delete('personacasokidz');
@@ -2881,7 +2882,7 @@ GROUP BY p.idPersona";
             $w_mem = ' AND m.idMembresia='.$membresia;
             $tipoJoin = 'INNER';
         }
-        
+
         $idEmpresaGrupo = 1;
         if (isset($_SESSION['idEmpresaGrupo'])) {
             $idEmpresaGrupo = (int)$_SESSION['idEmpresaGrupo'];
@@ -2889,7 +2890,7 @@ GROUP BY p.idPersona";
                 $idEmpresaGrupo=1;
             }
         }
-        
+
         $w_min = '';
         if ($edadMinima > 0) {
             $w_min = ' AND p.edad>='.$edadMinima;
@@ -2929,26 +2930,26 @@ GROUP BY p.idPersona";
                    AND p1.fechaEliminacion='0000-00-00 00:00:00'
                 WHERE MATCH(nombreCompleto) AGAINST ('{$nombre}' IN BOOLEAN MODE)";
             $query = DB::connection('crm')->select($sql);
-            
+
             $sql = "CREATE INDEX idx_tmp_lista_raza ON tmp_lista_raza (idPersona)";
             $query = DB::connection('crm')->select($sql);
 
             $sql = "
-SELECT p.idPersona,
-UPPER(TRIM(p.nombre)) AS nombre,
-UPPER(TRIM(p.paterno)) AS paterno,
-UPPER(TRIM(p.materno)) AS materno,
-IFNULL(m.idMembresia,'') AS idMembresia, IFNULL(u.clave,'') AS clave,
-IF(m.idMembresia IS NULL, 1, 0) AS tieneMembresia
-FROM persona p
-INNER JOIN tmp_lista_raza t ON t.idPErsona=p.idPersona
-LEFT JOIN socio s ON s.idPersona=p.idPersona AND s.idTipoEstatusSocio=81 AND s.eliminado=0
-LEFT JOIN membresia m ON m.idUnicoMembresia=s.idUnicoMembresia AND m.idTipoEstatusMembresia=27
-    AND m.eliminado=0
-LEFT JOIN un u ON u.idUn=m.idUn
-WHERE CONCAT_WS(' ', p.nombre, p.paterno, p.materno) LIKE '%$nom%' $w_min $w_max
-ORDER BY 7, p.nombre, p.paterno, p.materno
-LIMIT $numeroRegistros";
+            SELECT p.idPersona,
+            UPPER(TRIM(p.nombre)) AS nombre,
+            UPPER(TRIM(p.paterno)) AS paterno,
+            UPPER(TRIM(p.materno)) AS materno,
+            IFNULL(m.idMembresia,'') AS idMembresia, IFNULL(u.clave,'') AS clave,
+            IF(m.idMembresia IS NULL, 1, 0) AS tieneMembresia
+            FROM persona p
+            INNER JOIN tmp_lista_raza t ON t.idPErsona=p.idPersona
+            LEFT JOIN socio s ON s.idPersona=p.idPersona AND s.idTipoEstatusSocio=81 AND s.eliminado=0
+            LEFT JOIN membresia m ON m.idUnicoMembresia=s.idUnicoMembresia AND m.idTipoEstatusMembresia=27
+                AND m.eliminado=0
+            LEFT JOIN un u ON u.idUn=m.idUn
+            WHERE CONCAT_WS(' ', p.nombre, p.paterno, p.materno) LIKE '%$nom%' $w_min $w_max
+            ORDER BY 7, p.nombre, p.paterno, p.materno
+            LIMIT $numeroRegistros";
 
 
         }
@@ -2975,7 +2976,7 @@ LIMIT $numeroRegistros";
             return null;
         }
     }
-    
+
     /**
      * Genera una array con la lista de contactos por persona
      *
@@ -3701,12 +3702,12 @@ LIMIT $numeroRegistros";
         if ($persona == 0) {
             return false;
         }
-        
+
         $query = DB::connection('crm')->table(TBL_PERSONA.' as p')
         ->select('ts.descripcion')
         ->join(TBL_TIPOSEXO .' as ts', 'ts.idTipoSexo','p.idTipoSexo')
         ->where('p.idPersona', $persona);
-        
+
         if ($query->count() > 0) {
             $query = $query->get()->toArray();
             $fila = $query[0];
@@ -4317,7 +4318,7 @@ LIMIT $numeroRegistros";
         ->select('p.idPersona', 'p.idTipoEstadoCivil', 'ec.descripcion')
         ->join(TBL_TIPOESTADOCIVIL.' as ec','p.idTIpoEstadoCivil','ec.idTIpoEstadoCivil')
         ->where('p.idPersona',$persona);
-        
+
         $descripcion = '';
         if ($query->count() > 0) {
             $result = ($query->get()->toArray())[0];
@@ -4502,13 +4503,13 @@ LIMIT $numeroRegistros";
      * @author Víctor Rodríguez <victor.leon@sportsworld.com.mx>
      * @param   string    $codigo    codigo
      * @param   string    $mail mail a guardar
-     * @param   int       $idPersona id de la persona para   
+     * @param   int       $idPersona id de la persona para
      * @return  bool                Verdadero o falso si existe
      */
 
      public function guardaCodigoMail($codigo,$mail)
      {
-        //busco si no existe ya la llave mail vs codigo   
+        //busco si no existe ya la llave mail vs codigo
         $this->db->select('vigencia');
         $this->db->from(TBL_MAIL_CODIGO);
         $this->db->where('mail', $mail);
@@ -4520,7 +4521,7 @@ LIMIT $numeroRegistros";
         $vigencia = date ( 'Y-m-d H:i:s' , $vigencia );
 
         if($query->num_rows > 0) {
-            //existe y solo tenemos que actualizar el codigo y la fecha de vigencia  
+            //existe y solo tenemos que actualizar el codigo y la fecha de vigencia
             $data=['codigo'=>$codigo, 'vigencia'=>$vigencia,'usado'=>0];
             $this->db->where('mail', $mail);
             $exito=$this->db->update(TBL_MAIL_CODIGO, $data);
@@ -4579,10 +4580,10 @@ LIMIT $numeroRegistros";
      {
         $sql="select m.idUnicoMembresia, m.idMembresia, m.idUn, m.idProducto, d.cp, (SELECT count(*)
             FROM crm.socio s
-            WHERE s.idUnicoMembresia IN (m.idUnicoMembresia) 
+            WHERE s.idUnicoMembresia IN (m.idUnicoMembresia)
                 AND s.fechaEliminacion = '0000-00-00 00:00:00' AND s.idTipoEstatusSocio NOT IN (82,88)
             ) integrantes
-            from membresia m, domicilio d 
+            from membresia m, domicilio d
             where d.idPersona=m.idPersona
             and m.idPersona=".$idPersona." order by m.fechaRegistro DESC";
 
@@ -4605,7 +4606,7 @@ LIMIT $numeroRegistros";
 
         //inserto en activacion si no existe registro
         $sql="select folio
-            from  socios.activacion 
+            from  socios.activacion
             where idPersona=".$idPersona."
             and estatus=1 and fechaEliminacion = '0000-00-00 00:00:00'
             ";
@@ -4616,7 +4617,7 @@ LIMIT $numeroRegistros";
             $codigo=$query->row();
             $folio=$codigo->folio;
         }
-        
+
         if($folio=='' || !$folio)
         {
             $random = rand();

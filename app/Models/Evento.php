@@ -664,7 +664,7 @@ class Evento extends Model
         if ($idEvento==0 || $idUn==0) {
             return -1;
         }
-        
+
         $query = DB::connection('crm')->table(TBL_EVENTOUNCAPACIDAD.' ec')
         ->select('ec.capacidad')
         ->join(TBL_EVENTOUN.' eu', 'eu.idEventoUn=ec.idEventoUn AND eu.fechaEliminacion=\'0000-00-00 00:00:00\'', 'INNER')
@@ -676,7 +676,7 @@ class Evento extends Model
         ->where('ec.activo', 1)
         ->where('ec.fechaEliminacion', '0000-00-00 00:00:00')
         ->orderBy('ec.idEventoUnCapacidad', 'desc');
-        
+
         if ($query->count() > 0) {
             $query = array_map(function($x){return (array)$x;},$query);
             $fila = $query[0];
@@ -997,10 +997,10 @@ LIMIT 1";
 
         $cat = (intval($categoria["idCategoria"]) != 109) ? " and p.nombre LIKE '%2018%'" : "";
         */
-        
+
         $cat = '';
-        
-        
+
+
         $query = DB::connection('crm')->table(TBL_EVENTO.' AS e')
         ->select('p.idProducto','p.nombre', 'eu.idEventoUn', 'e.idTipoEvento', 'eu.inicioRegistro', 'eu.finRegistro', 'eu.inicioEvento', 'eu.finEvento', 'eu.reservarInstalacion', 'eu.anticipo', 'eu.edadMinima', 'eu.edadMaxima')
         ->join(TBL_PRODUCTO.' AS p',function ($join) {
@@ -1020,7 +1020,7 @@ LIMIT 1";
         ->where('eu.idUn', $idUn)
         ->get()
         ->toArray();
-        
+
         if (count($query) > 0) {
             $fila = $query[0];
             $datos['idProducto'] = $fila->idProducto;
@@ -1163,11 +1163,11 @@ LIMIT 1";
         settype($idProducto, 'integer');
         settype($idUn, 'integer');
         $res = 0;
-        
+
         if ($idProducto<=0 || $idUn<=1) {
             return $res;
         }
-        
+
         $sql = "SELECT euc.capacidad
             FROM producto p
             INNER JOIN evento e ON e.idProducto=p.idProducto
@@ -1508,18 +1508,18 @@ LIMIT 1";
             $query = DB::connection('crm')->table(TBL_EVENTOFECHA)
             ->select('idEventoInscripcion')
             ->where('idEventoFecha', $idEventoFecha);
-            
+
             if ($query->count() == 0) {
                 return $res;
             }
-            
+
             $fila = $query->get()->toArray();
             $fila = (array_map(function($x){return (array)$x;},$fila))[0];
-            
+
             $idEventoInscripcion = $fila['idEventoInscripcion'];
             if ($idEventoInscripcion > 0) {
                 $datos = array ('fechaEliminacion' => date("Y-m-d H:i:s"));
-                
+
                 $affected_rows = DB::connection('crm')->table(TBL_EVENTOFECHA)
                 ->where('idEventoFecha', $idEventoFecha)
                 ->where('fechaEliminacion', '0000-00-00 00:00:00')
@@ -1528,7 +1528,7 @@ LIMIT 1";
                 ->where('fechaEvento', '>', date('Y-m-d'))
                 ->update($datos);
                 $total = $affected_rows;
-                
+
                 if ($total > 0) {
                     Permiso::log('Se elimino clase para la inscripcion ('.$idEventoInscripcion.')', LOG_EVENTO);
                     $res = true;
@@ -1596,11 +1596,11 @@ LIMIT 1";
         settype($idEvento, 'integer');
         settype($idUn, 'integer');
         $res = false;
-        
+
         if ($idEvento==0 || $idUn==0) {
             return $res;
         }
-        
+
         $qry = "SELECT eu.idEventoUn
             FROM eventoun eu
             INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
@@ -1612,7 +1612,7 @@ LIMIT 1";
         if (count($query) > 0) {
             $res = true;
         }
-        
+
         return $res;
     }
 
@@ -1667,7 +1667,7 @@ LIMIT 1";
         ->where('mov.idMovimiento', $idMovimiento)
         ->distinct()
         ->first();
-        
+
         return $query;
     }
 
@@ -1683,7 +1683,7 @@ LIMIT 1";
     public static function devengarMovimientoContable($idMovimiento){
         $queryMovimiento = DB::connection('crm')->table(TBL_MOVIMIENTOCTACONTABLE)
         ->where('idMovimiento', $idMovimiento);
-        
+
         //Obtenemos datos de Movimiento
             if ($queryMovimiento->count() > 0) {
                 $queryMovimiento = $queryMovimiento->get()->toArray();
@@ -1701,7 +1701,7 @@ LIMIT 1";
         $result = DB::connection('crm')->table(TBL_MOVIMIENTOCTACONTABLE)
         ->where($whereCtaContable)
         ->update($set);
-        
+
         if($result){
             $insertTblDevengado = [
                'idMovimientoCtaContable' => $movimientoctacontable->idMovimientoCtaContable,
@@ -1728,11 +1728,11 @@ LIMIT 1";
             'cveUnidad'             => $movimientoctacontable->cveUnidad ,
             'cantidad'              => $movimientoctacontable->cantidad
         );
-        
+
         $idMovimientoCuentaCont = DB::connection('crm')->table(TBL_MOVIMIENTOCTACONTABLE)
         ->insertGetId($datosDevengado);
         $idMovimientoCuentaCont = DB::connection('crm')->insert_id();
-        
+
         if($idMovimientoCuentaCont > 0 ){
             $sql = "UPDATE `movimientoctacontable` SET fechaAplica = adddate(last_day('".$movimientoctacontable->fechaAplica."'), 1) WHERE `idMovimientoCtaContable` =". $idMovimientoCuentaCont;
              DB::connection('crm')->select($sql);
@@ -2400,7 +2400,7 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
      */
     public static function inscripcion($idEvento, $idUn, $idPersona, $idPersonaRespVta = 0, $monto = 0,
         $pagado = 0, $membresia = 0, $cantidad = 0, $totalSesion = 0, $idTipoCliente = TIPO_CLIENTEEXTERNO,
-        $descQuincenas = 1, $informativo = 0, $participantes = 0, $idPersonaRespVta1 = 0)
+        $descQuincenas = 1, $informativo = 0, $participantes = 0, $idPersonaRespVta1 = 0, $visa = 0)
     {
         settype($idEvento, 'integer');
         settype($idUn, 'integer');
@@ -2413,11 +2413,12 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         settype($idTipoCliente, 'integer');
         settype($descQuincenas, 'integer');
         settype($informativo, 'integer');
+        settype($visa, 'integer');
 
         if ($idEvento == 0 || $idUn == 0 || $idPersona == 0 or $idPersonaRespVta == 0) {
             return 0;
         }
-        
+
         $query = DB::connection('crm')->table(TBL_EVENTOUN)
         ->select('idEventoUn', 'edadMinima', 'edadMaxima')
         ->where('idUn', $idUn)
@@ -2434,12 +2435,12 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         } else {
             return (-1);
         }
-        
+
         $query = DB::connection('crm')->table(TBL_EVENTO.' AS  e')
         ->select('p.nombre')
         ->join(TBL_PRODUCTO.' AS p', 'e.idProducto','=','p.idProducto')
         ->where('e.idEvento', $idEvento)->get()->toArray();
-        
+
         if (count($query) > 0) {
             $fila = $query[0];
             $nombre = $fila->nombre;
@@ -2461,23 +2462,24 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         $empleadoSession = (int)$_SESSION['idEmpleado'];
         if ($empleadoSession==0) {
             $empleadoSession = Empleado::obtenIdEmpleado($idPersonaRespVta);
-            
+
         }
 
         $reg = array (
-            'idEventoUn'              => $idEventoUn,
-            'idPersona'               => $idPersona,
-            'idUn'                    => $unSession,
-            'idEmpleado'              => $empleadoSession,
-            'idTipoEstatusInscripcion'=> 1,
-            'monto'                   => $monto,
-            'pagado'                  => $pagado,
-            'cantidad'                => $cantidad,
-            'totalSesiones'           => $totalSesion,
-            'idTipoCliente'           => $idTipoCliente,
-            'descQuincenas'           => $descQuincenas,
-            'informativo'             => $informativo,
-            'participantes'           => $participantes
+            'idEventoUn'               => $idEventoUn,
+            'idPersona'                => $idPersona,
+            'idUn'                     => $unSession,
+            'idEmpleado'               => $empleadoSession,
+            'idTipoEstatusInscripcion' => 1,
+            'monto'                    => $monto,
+            'pagado'                   => $pagado,
+            'cantidad'                 => $cantidad,
+            'totalSesiones'            => $totalSesion,
+            'idTipoCliente'            => $idTipoCliente,
+            'descQuincenas'            => $descQuincenas,
+            'informativo'              => $informativo,
+            'participantes'            => $participantes,
+            'visa'                     => $visa
         );
 
         $inscripcion = DB::connection('crm')->table(TBL_EVENTOINSCRIPCION)->insertGetId($reg);
@@ -2542,11 +2544,11 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
     {
         settype($idInscripcion, 'integer');
         settype($idMovimiento, 'integer');
-        
+
         if ($idInscripcion == 0 || $idMovimiento == 0) {
             return 0;
         }
-        
+
         $reg = array (
             'idEventoInscripcion' => $idInscripcion,
             'idMovimiento'        => $idMovimiento
@@ -2555,7 +2557,7 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         ->insertGetId($reg);
         $permiso=new Permiso;
         $permiso->log('Se vincula evento al movimiento ('.$idMovimiento.')', LOG_EVENTO);
-        
+
         return $id;
     }
 
@@ -2584,14 +2586,14 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
             where idEventoInscripcion = '{$idEventoInscripcion}'
             and fechaEliminacion = '0000-00-00 00:00:00' ";
             $query = DB::connection('crm')->select($sql);
-            
+
             $query = DB::connection('crm')
             ->table(TBL_EVENTOINSCRIPCION)
             ->select('totalSesiones')
             ->where('idEventoInscripcion', $idEventoInscripcion)
             ->where('fechaEliminacion', '0000-00-00 00:00:00')
             ->get()->toArray();
-            
+
             $query = array_map(function($x){return (array)$x;},$query);
             $fila = $query[0];
             $totalSesiones = $fila['totalSesiones'];
@@ -2601,7 +2603,7 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
             ->where('idEventoInscripcion', $idEventoInscripcion)
             ->where('fechaEliminacion', '0000-00-00 00:00:00');
             $totalClase = $query->count();
-            
+
             $estatusClase = ESTATUS_CLASE_ASIGNADO;
             if ($demo==1) {
                 $estatusClase = ESTATUS_CLASE_DEMO;
@@ -3176,11 +3178,11 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
     {
         settype($idEventoInscripcion, 'integer');
         settype($importe, 'float');
-        
+
         if ($idEventoInscripcion == 0) {
             return false;
         }
-        
+
         $set   = array('monto' => $importe);
         $where = array(
             'idEventoInscripcion' => $idEventoInscripcion,
@@ -3189,7 +3191,7 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
         $res   = DB::connection('crm')->table(TBL_EVENTOINSCRIPCION)
         ->where($where)
         ->update($set);
-        
+
         return true;
     }
 
@@ -3741,7 +3743,7 @@ WHERE ep.fechaEliminacion='0000-00-00 00:00:00'
     public function obtenIdCategoria($idEvento)
     {
         settype($idEvento, 'integer');
-        
+
         $sql = "
 SELECT pr.idCategoria
 FROM  evento e
@@ -4499,11 +4501,11 @@ WHERE e.idEvento IN (".$idEvento.")
         settype($idProducto, 'integer');
         settype($idUn, 'integer');
         $res = 0;
-        
+
         if ($idProducto<=0 || $idUn<=1) {
             return $res;
         }
-        
+
         $sql = "SELECT euc.capacidad
             FROM producto p
             INNER JOIN evento e ON e.idProducto=p.idProducto
@@ -4520,7 +4522,7 @@ WHERE e.idEvento IN (".$idEvento.")
         if (count($query) > 0) {
             $res = $query[0]->capacidad;
         }
-        
+
         return $res;
     }
 

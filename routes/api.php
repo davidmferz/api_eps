@@ -45,11 +45,14 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['post', 'options'], 'calificacion/{idEventoInscripcion?}', 'EPController@calificacion');
         Route::match(['get', 'options'], 'getEntrenadores/{idUn}', 'EPController@getEntrenadores');
 
-        Route::match(['get', 'options'], 'hola', 'EPController@hola');
 
         Route::match(['post', 'options'], 'editarPerfil/{idPersona}', 'EPController@editarPerfil');
 
         Route::match(['post', 'options'], 'getPlanesDeTrabajoEmpleados', 'EPController@getPlanesDeTrabajoEmpleados');
+
+        // Promo VISA
+        Route::match(['get', 'options'], 'verifyVisa/{idPersona}/{categoria}/{participantes}', 'EPController@verifyVisa');
+        Route::match(['get', 'options'], 'dataVisa/{idPersona}', 'EPController@dataVisa');
 
     });
 });
