@@ -1297,6 +1297,7 @@ class EPController extends ApiController
     {
         // productos validos
         $categorias = array(108,109, 111);
+
         try {
             // se valida que el producto a vender
             if (in_array($categoria, $categorias) && $participantes == 1) {
