@@ -6,15 +6,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class MailEntrenador extends Mailable
+class SendEncuestaEvaluacion extends Mailable
 {
     use Queueable, SerializesModels;
-
-    /**
-     * The demo object instance.
-     *
-     * @var Demo
-     */
     public $datos;
 
     /**
@@ -25,6 +19,7 @@ class MailEntrenador extends Mailable
     public function __construct($datos)
     {
         $this->datos = $datos;
+        //
     }
 
     /**
@@ -34,8 +29,9 @@ class MailEntrenador extends Mailable
      */
     public function build()
     {
+
         return $this
-            ->subject('Asignacion de un socio')
-            ->view('emails.entrenador');
+            ->subject('Encuesta entrenador ')
+            ->view('emails.encuesta');
     }
 }

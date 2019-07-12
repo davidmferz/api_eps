@@ -74,9 +74,20 @@ class AgendaInbody extends Model
 
         $nombreEntrenador = $query[0]->nombre;
         //dd($nombreEmpleado);
-        $now    = Carbon::now();
-        $after  = Carbon::now()->addMonth(2);
-        $before = Carbon::now()->subMonths(1);
+        $now = Carbon::now();
+        if ($fecha != '') {
+            $before         = new Carbon($fecha);
+            $before->minute = 0;
+
+            $after         = new Carbon($fecha);
+            $after->minute = 0;
+            $after->addHour(1);
+
+        } else {
+            $before = Carbon::now()->subMonths(1);
+            $after  = Carbon::now()->addMonth(2);
+
+        }
 
         $res = self::select(DB::connection('aws')->raw("un.nombre ,
             idAgenda as id ,
@@ -98,22 +109,20 @@ class AgendaInbody extends Model
                 $join->on('un.idUn', '=', 'agenda_inbody.idUn');
             })
             ->where('agenda_inbody.fechaEliminacion', '=', '0000-00-00 00:00:00')
-            ->whereBetween('fechaSolicitud', [$before, $after])
             ->where('agenda_inbody.idUn', '=', $idUn)
             ->where('agenda_inbody.idEmpleado', '=', $idEmpleado);
 
-        if ($fecha != '') {
-            $res->where('fechaSolicitud', '=', $fecha);
-        }
+        $res->whereBetween('fechaSolicitud', [$before, $after]);
+
         $res = $res->orderBy('agenda_inbody.idUn', 'asc')
             ->orderBy('fechaSolicitud', 'asc')
             ->get()
             ->toArray();
-
-        /* $addSlashes = str_replace('?', "'?'", $res->toSql());
-        $sq         = vsprintf(str_replace('?', '%s', $addSlashes), $res->getBindings());
-        dd($sq);
-         */
+/*
+$addSlashes = str_replace('?', "'?'", $res->toSql());
+$sq         = vsprintf(str_replace('?', '%s', $addSlashes), $res->getBindings());
+dd($sq);
+ */
         if (count($res) > 0) {
 
             $idPersonas    = array_unique(array_column($res, 'idPersona'));

@@ -28,9 +28,6 @@ Route::group(['prefix' => 'v1/'], function () {
 
         Route::match(['get', 'options'], 'clase/{idEntrenador}/{idUn}', 'EPController@clase');
 
-        Route::match(['get', 'options'], 'agendaEps/{idEntrenador}/{idUn}', 'EPController@agendaEps');
-        Route::match(['get', 'options'], 'asignaEntrenador/{idEmpleado}/{idUn}/{idAgenda}/{nombreCoordinador}', 'EPController@asignaEntrenador');
-
         Route::match(['get', 'options'], 'general/{idUn}', 'EPController@general');
         Route::match(['post', 'options'], 'inscribir', 'EPController@inscribir');
         Route::match(['get', 'options'], 'reAgendar/{idEventoFecha}/{delay}', 'EPController@reAgendar');
@@ -39,22 +36,31 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['get', 'options'], 'sexo', 'EPController@sexo');
         Route::match(['get', 'options'], 'estadocivil', 'EPController@estadocivil');
         Route::match(['get', 'options'], 'estado', 'EPController@estado');
-        Route::match(['post', 'options'], 'inbody/{idPersona?}/{cantidad?}', 'EPController@inbody');
         Route::match(['get', 'options'], 'datosCliente', 'EPController@datosCliente');
         Route::match(['get', 'options'], 'nuevosClientes', 'EPController@nuevosClientes');
         Route::match(['get', 'options'], 'comisiones/{idPersona?}', 'EPController@comisiones');
         Route::match(['get', 'options'], 'logout', 'EPController@logout');
         Route::match(['get', 'options'], 'perfil/{idPersona}', 'EPController@perfil');
-        Route::match(['post', 'options'], 'calificacion/{idEventoInscripcion?}', 'EPController@calificacion');
         Route::match(['get', 'options'], 'getEntrenadores/{idUn}', 'EPController@getEntrenadores');
 
-        Route::match(['get', 'options'], 'hola', 'EPController@hola');
-
         Route::match(['post', 'options'], 'editarPerfil/{idPersona}', 'EPController@editarPerfil');
-
         Route::match(['post', 'options'], 'getPlanesDeTrabajoEmpleados', 'EPController@getPlanesDeTrabajoEmpleados');
-
         Route::match(['post', 'options'], 'buscaPersona', 'EPController@buscaPersona');
 
+        // Inbody
+        Route::match(['get', 'options'], 'agendaEps/{idEntrenador}/{idUn}', 'InbodyController@agendaEps');
+        Route::match(['get', 'options'], 'asignaEntrenador/{idEmpleado}/{idUn}/{idAgenda}/{nombreCoordinador}', 'InbodyController@asignaEntrenador');
+        Route::match(['post', 'options'], 'inbody/{idPersona?}/{cantidad?}', 'InbodyController@inbody');
+        Route::match(['post', 'options'], 'agendaInbodyCoordinador', 'InbodyController@agendaInbodyCoordinador');
+
+        //calificacion encuestas
+        Route::match(['post', 'options'], 'setCalificacion', 'Calificacion@setCalificacion');
+        Route::match(['get', 'options'], 'getInfoCalificacion/{idEventoInscripcion}/{token}', 'Calificacion@getInfoCalificacion');
+        Route::match(['get', 'options'], 'getCalificacionEntrenadores/{idUn}', 'Calificacion@getCalificacionEntrenadores');
+
+        // RUTINAS ENTRENADORES
+        Route::match(['post', 'options'], 'getRutinasEntrenadores', 'RutinasController@getRutinasEntrenadores');
+
+        Route::match(['get', 'options'], 'hola', 'EPController@hola');
     });
 });

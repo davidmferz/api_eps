@@ -31,6 +31,25 @@ class Empleado extends Model
     }
 
     /**
+     * Obtiene los datos generales de empleado
+     *
+     * @param integer $idPersona IdPersona
+     *
+     * @author Santa Garcia
+     *
+     * @return string
+     */
+    public function scopeObtenDatosEmpleado($query, $idPersona)
+    {
+        return $query->selectRaw("idEmpleado,CONCAT(p.nombre,' ',p.paterno,' ',p.materno) as  nombre, idArea, empleado.rfc, imss, idTipoEstatusEmpleado, idOperador, fechaContratacion")
+            ->join('crm.persona as p', 'p.idPersona', 'empleado.idPersona')
+            ->where('p.idPersona', $idPersona)
+            ->get()
+            ->toArray();
+
+    }
+
+    /**
      * Actualiza las actividades deportivas de un empleado
      *
      * @param integer $idActividadDeportiva Identificador de actividad deporitva
@@ -615,39 +634,6 @@ class Empleado extends Model
                 $data[$fila->idTipoEstatusEmpleado] = $fila->descripcion;
             }
             return $data;
-        }
-    }
-
-    /**
-     * Obtiene los datos generales de empleado
-     *
-     * @param integer $idPersona IdPersona
-     *
-     * @author Santa Garcia
-     *
-     * @return string
-     */
-    public function obtenDatosEmpleado($idPersona = 0, $estatus = 0)
-    {
-        if ($idPersona == 0) {
-            return 0;
-        }
-        settype($idPersona, 'integer');
-
-        $this->db->select('idEmpleado, idArea, rfc, imss, idTipoEstatusEmpleado, idOperador, fechaContratacion');
-        $this->db->from(TBL_EMPLEADO);
-        $where = array('idPersona' => $idPersona);
-        if ($estatus > 0) {
-            $this->db->where('idTipoEstatusEmpleado', $estatus);
-        }
-        $this->db->where($where);
-        $query = $this->db->get();
-        //echo $this->db->last_query();
-        if ($query->num_rows() > 0) {
-            $fila = $query->row_array();
-            return $fila;
-        } else {
-            return 0;
         }
     }
 
