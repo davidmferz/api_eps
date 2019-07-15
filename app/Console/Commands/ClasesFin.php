@@ -44,6 +44,7 @@ class ClasesFin extends Command
     public function handle()
     {
         $idEventoInscripciones = EventoInscripcion::FindClasesTerminadas();
+        Log::debug('id incripciones terminadas ');
         Log::debug($idEventoInscripciones);
         if (count($idEventoInscripciones) > 0) {
             $conteo             = new ConteoMails();
@@ -56,7 +57,6 @@ class ClasesFin extends Command
                 $token        = new TokenEncuestas();
                 $token->token = $strToken;
                 $token->save();
-                $value->token = $strToken;
                 Mail::to($value->mail)->send(new SendEncuestaEvaluacion($value));
             }
 
