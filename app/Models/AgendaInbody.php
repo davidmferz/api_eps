@@ -38,6 +38,24 @@ class AgendaInbody extends Model
     const FITWEEK_INICIO = 5;
     const FITWEEK_FINAL  = 12;
 
+    public static function getDatosMailAgendainbody($idAgenda)
+    {
+        $sql = "SELECT
+                    CONCAT(p.nombre,' ',p.paterno,' ',p.materno) as  nombreSocio,
+                    CONCAT(pe.nombre,' ',pe.paterno,' ',pe.materno) as  nombreEmpleado,
+                    u.nombre as nombreClub,
+                    e.idPersona as idPersona_empleado
+                from    piso.agenda_inbody as ai
+                JOIN deportiva.persona as p ON p.idPersona=ai.idPersona
+                JOIN deportiva.empleado as e ON ai.idEmpleado=e.idEmpleado
+                JOIN deportiva.persona as pe ON pe.idPersona=e.idPersona
+                JOIN deportiva.un as u ON u.idUn = ai.idUn
+                where idAgenda= {$idAgenda}";
+        $query = DB::connection('aws')->select($sql);
+
+        return $query[0];
+    }
+
     /**
      * Consulta Inbody por Empleado
      *
@@ -56,9 +74,20 @@ class AgendaInbody extends Model
 
         $nombreEntrenador = $query[0]->nombre;
         //dd($nombreEmpleado);
-        $now    = Carbon::now();
-        $after  = Carbon::now()->addMonth();
-        $before = Carbon::now()->subMonths(2);
+        $now = Carbon::now();
+        if ($fecha != '') {
+            $before         = new Carbon($fecha);
+            $before->minute = 0;
+
+            $after         = new Carbon($fecha);
+            $after->minute = 0;
+            $after->addHour(1);
+
+        } else {
+            $before = Carbon::now()->subMonths(1);
+            $after  = Carbon::now()->addMonth(2);
+
+        }
 
         $res = self::select(DB::connection('aws')->raw("un.nombre ,
             idAgenda as id ,
@@ -80,22 +109,20 @@ class AgendaInbody extends Model
                 $join->on('un.idUn', '=', 'agenda_inbody.idUn');
             })
             ->where('agenda_inbody.fechaEliminacion', '=', '0000-00-00 00:00:00')
-            ->whereBetween('fechaSolicitud', [$before, $after])
             ->where('agenda_inbody.idUn', '=', $idUn)
             ->where('agenda_inbody.idEmpleado', '=', $idEmpleado);
 
-        if ($fecha != '') {
-            $res->where('fechaSolicitud', '=', $fecha);
-        }
+        $res->whereBetween('fechaSolicitud', [$before, $after]);
+
         $res = $res->orderBy('agenda_inbody.idUn', 'asc')
             ->orderBy('fechaSolicitud', 'asc')
             ->get()
             ->toArray();
-
-        /* $addSlashes = str_replace('?', "'?'", $res->toSql());
-        $sq         = vsprintf(str_replace('?', '%s', $addSlashes), $res->getBindings());
-        dd($sq);
-         */
+/*
+$addSlashes = str_replace('?', "'?'", $res->toSql());
+$sq         = vsprintf(str_replace('?', '%s', $addSlashes), $res->getBindings());
+dd($sq);
+ */
         if (count($res) > 0) {
 
             $idPersonas    = array_unique(array_column($res, 'idPersona'));
@@ -112,7 +139,7 @@ class AgendaInbody extends Model
                             ";
 
             $elemts = DB::connection('crm')->select($sql);
-            $finIds=array_column($elemts,'idPersona');
+            $finIds = array_column($elemts, 'idPersona');
             foreach ($res as $key => $value) {
                 if (in_array((string) $value['idPersona'], $finIds)) {
                     $res[$key]['nuevo'] = 1;

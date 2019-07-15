@@ -11,11 +11,13 @@ use API_EPS\Models\Empleado;
 use API_EPS\Models\EP;
 use API_EPS\Models\Evento;
 use API_EPS\Models\EventoFecha;
+use API_EPS\Models\EventoInscripcion;
 use API_EPS\Models\Membresia;
 use API_EPS\Models\Movimiento;
 use API_EPS\Models\Persona;
 use API_EPS\Models\Producto;
 use API_EPS\Models\Socio;
+use API_EPS\Models\Token;
 use API_EPS\Models\Un;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,28 @@ use Illuminate\Support\Facades\Log;
  */
 class EPController extends ApiController
 {
+
+    public function datosPersona($idPersona, $idSocio, $token)
+    {
+        if (!Token::ValidaToken($token)) {
+            return $this->errorResponse('Token Invalido  ');
+
+        }
+        $idPersona = intval($idPersona);
+        $idSocio   = intval($idSocio);
+        if ($idSocio > 0 && $idPersona > 0) {
+            $result = Persona::DatosPersona($idPersona, $idSocio);
+            if (count($result) > 0) {
+
+                return $this->successResponse($result, 'Cliente encontrado  ');
+            } else {
+                return $this->errorResponse('Cliente no encontrado ');
+
+            }
+        } else {
+            return $this->errorResponse('error de datos ');
+        }
+    }
 
     /**
      * [agenda description]
@@ -69,13 +93,84 @@ class EPController extends ApiController
      *
      * @return [Json] $retval        [respuesta para FRONT]
      */
+    public function altaPost(Request $request)
+    {
+
+        $clases = $request->input('clases');
+        if (COUNT($clases) <= 0) {
+            return $this->errorResponse('Selecciona minimo una clase');
+
+        }
+        $send = [];
+        foreach ($clases as $key => $value) {
+
+            $idEmpleado    = ($value['empleado'] != null) ? $value['empleado'] : Empleado::obtenIdEmpleado($value['idPersona']);
+            $datosEmpleado = Empleado::DatosEmpleadoPuesto($idEmpleado);
+            $fechaClase    = explode(' ', $value['timestamp']);
+
+            $valida  = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
+            $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $datosEmpleado['idUn']);
+            if ($valida > 0 && COUNT($inbodys) > 0) {
+                $send[] = [
+                    'estatus'   => 'error',
+                    'mensaje'   => 'clase ocupada para la fecha ' . $fechaClase[0] . ' y hora ' . $fechaClase[1],
+                    'timestamp' => $value['timestamp'],
+                ];
+                continue;
+            }
+
+            $fecha   = substr($value['timestamp'], 0, 10);
+            $hora    = substr($value['timestamp'], 11, 8);
+            $idClase = Evento::insertaClase($value['idInscripcion'], $idEmpleado, $value['idPersona'], $fecha, $hora);
+            $retval  = array();
+            if ($idClase > 0) {
+                $send[] = [
+                    'estatus' => 'ok',
+                    'mensaje' => 'clase registrada',
+                    'idClase' => $idClase,
+                ];
+
+            } else {
+                $send[] = [
+                    'estatus' => 'error',
+                    'mensaje' => 'error para inscribir a la fecha ' . $fechaClase[0] . ' y hora ' . $fechaClase[1],
+                ];
+            }
+        }
+        return $this->successResponse($send, 'clases estatus inscripcion ');
+
+    }
+
+    /**
+     * [alta description]
+     *
+     * @param  [type] $idInscripcion [id de tabla EVENTOINSCRIPCION]
+     * @param  [type] $idEntrenador  [idPersona de la persona logueada]
+     * @param  [type] $timestamp     [fecha para la clase]
+     * @param  [type] $empleado      [idEmpleado 'para cuando un gerente hace una asignacion']
+     *
+     * @return [Json] $retval        [respuesta para FRONT]
+     */
     public function alta($idInscripcion, $idEntrenador, $timestamp, $empleado = null)
     {
-        $idEmpleado = ($empleado != null) ? $empleado : Empleado::obtenIdEmpleado($idEntrenador);
-        $fecha      = substr($timestamp, 0, 10);
-        $hora       = substr($timestamp, 11, 8);
-        $idClase    = Evento::insertaClase($idInscripcion, $idEmpleado, $idEntrenador, $fecha, $hora);
-        $retval     = array();
+        $idEmpleado    = ($empleado != null) ? $empleado : Empleado::obtenIdEmpleado($idEntrenador);
+        $datosEmpelado = Empleado::DatosEmpleadoPuesto($idEmpleado);
+        $fechaClase    = explode(' ', $timestamp);
+
+        $valida  = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
+        $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $datosEmpelado['idUn']);
+        if ($valida > 0 && COUNT($inbodys) > 0) {
+            $error['status']    = 400;
+            $error['message']   = 'La hora ya esta ocupada ';
+            $error['code']      = '1010';
+            $error['more_info'] = 'http://localhost/docs/error/1010';
+            return response()->json($error, $error['status']);
+        }
+
+        $fecha   = substr($timestamp, 0, 10);
+        $hora    = substr($timestamp, 11, 8);
+        $idClase = Evento::insertaClase($idInscripcion, $idEmpleado, $idEntrenador, $fecha, $hora);
+        $retval  = array();
         if ($idClase > 0) {
             $clase['idClase']  = $idClase;
             $retval['status']  = 'OK';
@@ -159,8 +254,8 @@ class EPController extends ApiController
         if (count($entrenadores) > 0) {
             $send = [];
 
-            $meta = EP::meta_venta_array($entrenadores);
-            $plan = EP::renovaciones_array($entrenadores);
+            $meta = EP::metaVentaArray($entrenadores);
+            $plan = EP::renovacionesArray($entrenadores);
             foreach ($entrenadores as $key => $value) {
 
                 // isset($plan[$value]) ? dd($plan[$value]) : [];
@@ -197,7 +292,8 @@ class EPController extends ApiController
         $idPersona = $idPersona === 0 ? $_SESSION['idPersona'] : $idPersona;
         session_write_close();
         try {
-            if ($_SERVER['REQUEST_METHOD'] == 'POST') { // por POST recibimos datos para guardar
+            if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+                // por POST recibimos datos para guardar
 
                 $request = json_decode(trim(file_get_contents('php://input')), true);
                 /*
@@ -289,7 +385,7 @@ class EPController extends ApiController
 
             $retval = array(
                 'status'  => 'success',
-                'data'    => EP::meta_venta($idPersona),
+                'data'    => EP::metaVenta($idPersona),
                 'code'    => 200,
                 'message' => 'OK',
             );
@@ -342,72 +438,14 @@ class EPController extends ApiController
     }
 
     /**
-     * [agendaEps description]
-     *
-     * @param  [type] $idEntrenador [description]
-     * @param  [type] $idUn         [description]
-     *
-     * @return [type]               [description]
-     */
-    public function agendaEps($idEntrenador, $idUn)
-    {
-        session_write_close();
-        $idEmpleado = Empleado::obtenIdEmpleado($idEntrenador);
-
-        $datos      = EP::clase($idEmpleado, $idUn);
-        $inbodys    = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
-        $arrayMerge = array_merge($datos, $inbodys);
-        if (is_array($arrayMerge)) {
-
-            return $this->successResponse($arrayMerge, 'Agenda ');
-        } else {
-            return $this->errorResponse('No se encontraron datos', 400);
-
-        }
-    }
-
-    /**
-     * [agendaEps description]
-     *
-     * @param  [type] $idEntrenador [description]
-     * @param  [type] $idUn         [description]
-     *
-     * @return [type]               [description]
-     */
-    public function asignaEntrenador($idEmpleado, $idUn, $idAgenda)
-    {
-        session_write_close();
-        if ($idEmpleado == 0) {
-            return $this->errorResponse('Selecciona un Entrenador', 400);
-        }
-
-        $inbody   = AgendaInbody::findOrFail($idAgenda);
-        $fechaAux = explode(' ', $inbody->fechaSolicitud);
-        $fecha    = $fechaAux[0];
-        $hora     = $fechaAux[1];
-        $datos    = EP::clase($idEmpleado, $idUn, $fecha, $hora);
-        $inbodys  = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn, $inbody->fechaSolicitud);
-
-        $arrayMerge = array_merge($datos, $inbodys);
-        if (is_array($arrayMerge) && count($arrayMerge) > 0) {
-
-            return $this->errorResponse('El horario ya esta ocupado', 400);
-        } else {
-            $inbody->idEmpleado = $idEmpleado;
-            $inbody->save();
-            $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
-
-            return $this->successResponse($inbodys, 'Asignado correctamente');
-        }
-    }
-
-    /**
      * [incribir description]
      *
      * @return [type] [description]
      */
     public function inscribir()
     {
+        $idEventoInscripciones = EventoInscripcion::FindClasesTerminadas();
+
         session_write_close();
         $jsonData = json_decode(trim(file_get_contents('php://input')), true);
 
@@ -469,8 +507,9 @@ class EPController extends ApiController
             if ($demo == 1) {
                 $fechaClase = explode(' ', $jsonData['fecha']);
 
-                $valida = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
-                if ($valida > 0) {
+                $valida  = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
+                $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $jsonData['idUn']);
+                if ($valida > 0 && COUNT($inbodys) > 0) {
                     $error['status']    = 400;
                     $error['message']   = 'La hora ya esta ocupada ';
                     $error['code']      = '1010';
@@ -667,10 +706,12 @@ class EPController extends ApiController
                                     $descripcionTipoEvento = 'VENTA DE PROGRAMA DEPORTIVO DE';
                                     $idTipoComision        = TIPO_COMISION_PROGRAMADEPORTIVO;
                                     //$isSocio=Socio::where('fechaEliminacion','=','0000-00-00 00:00:00')->where('idPersona','=',$jsonData['idCliente'])->get()->toArray();
-                                    if ($jsonData['tipo'] != 'Socio') { #Externo
-                                    $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONEXTERNA);
-                                    } else { #Socio
-                                    $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONINTERNA);
+                                    if ($jsonData['tipo'] != 'Socio') {
+                                        #Externo
+                                        $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONEXTERNA);
+                                    } else {
+                                        #Socio
+                                        $montoComision = Comision::obtenCapacidad($jsonData['idUn'], TIPO_EVENTO_COMISIONINTERNA);
                                     }
                                 } elseif ($generales['tipoEvento'] == TIPO_EVENTO_CURSOVERANO) {
                                     $idTipoComision = TIPO_COMISION_CURSODEVERANO;
@@ -721,10 +762,11 @@ class EPController extends ApiController
 
     public function login(Request $request)
     {
+        dd(env('DB_HOST_CRM'));
+
         // session_destroy();
         $email    = $request->input('email');
         $password = $request->input('password');
-
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $res       = EP::login($email, $password);
             $res_array = array_map(function ($x) {return (array) $x;}, $res);
@@ -961,71 +1003,6 @@ class EPController extends ApiController
     }
 
     /**
-     * inbody - Recibe en el GET el idPersona y en el POST los datos del inbody para almacenar.
-     *
-     * @return json
-     */
-    public function inbody($idPersona = null, $cantidad = null)
-    {
-        session_write_close();
-
-        try {
-            $retval = array();
-            if (!is_null($idPersona) && !is_null($cantidad)) {
-                settype($idPersona, 'int');
-                settype($cantidad, 'int');
-                $retval  = EP::obtenInBody($idPersona, $cantidad);
-                $code    = 200;
-                $message = 'OK';
-            } else {
-                $request = json_decode(trim(file_get_contents('php://input')), true);
-                foreach ($request as $k => $value) {
-                    if (!is_numeric($value)) {
-                        throw new \RuntimeException('El valor de ' . $k . ' no es numerico');
-                    }
-
-                    if ($k != 'idPersona' && ($value > 999.99 || $value < 0)) {
-                        throw new \RuntimeException('Valor ' . $k . ' fuera de rango');
-                    }
-
-                }
-                if (!isset($request['idPersona'])) {
-                    throw new \RuntimeException('El idPersona no definido');
-                }
-
-                settype($request['idPersona'], 'int');
-                if (!is_int($request['idPersona'])) {
-                    throw new \RuntimeException('El idPersona es invalido');
-                }
-
-                /*
-                 * La estatura va en centimetros
-                 */
-                #$request['estatura'] = $request['estatura']*100;
-                EP::ingresaInBody($request);
-                $code    = 201;
-                $message = 'Created';
-            }
-            $retval = array(
-                'status'  => 'success',
-                'data'    => $retval,
-                'code'    => $code,
-                'message' => $message,
-            );
-            return response()->json($retval, $retval['code']);
-        } catch (\RuntimeException $ex) {
-            header('Bad Request', true, 400);
-            $retval = array(
-                'status'  => 'error',
-                'data'    => array(),
-                'code'    => 400,
-                'message' => $ex->getMessage(),
-            );
-            return response()->json($retval, $retval['code']);
-        }
-    }
-
-    /**
      * [datosCliente description]
      * @return [type] [description]
      */
@@ -1183,50 +1160,6 @@ class EPController extends ApiController
             $retval = array(
                 'status'  => 'success',
                 'data'    => EP::perfil($idPersona),
-                'code'    => $code,
-                'message' => $message,
-            );
-            return response()->json($retval, $retval['code']);
-        } catch (\RuntimeException $ex) {
-            header('Bad Request', true, 400);
-            $retval = array(
-                'status'  => 'error',
-                'data'    => array(),
-                'code'    => 400,
-                'message' => $ex->getMessage(),
-            );
-            return response()->json($retval, $retval['code']);
-        }
-    }
-
-    /**
-     * calificacion - Obtener/poner la calificación de un EP
-     * @return HTTP status
-     *
-     */
-    public function calificacion($idEventoInscripcion = null)
-    {
-        try {
-            $retval = array();
-            if (!is_null($idEventoInscripcion)) {
-                settype($idEventoInscripcion, 'int');
-                $retval  = is_null(EP::obtenCalificacion($idEventoInscripcion)) ? 0 : 1;
-                $code    = 200;
-                $message = 'OK';
-            } else {
-                $request = json_decode(trim(file_get_contents('php://input')), true);
-                settype($request['token'], 'int');
-                settype($request['calificacion'], 'int');
-                if (!is_int($request['token'])) {
-                    throw new \RuntimeException('El idEventoInscripcion es invalido');
-                }
-                EP::ingresaCalificacion($request);
-                $code    = 201;
-                $message = 'Created';
-            }
-            $retval = array(
-                'status'  => 'success',
-                'data'    => $retval,
                 'code'    => $code,
                 'message' => $message,
             );
