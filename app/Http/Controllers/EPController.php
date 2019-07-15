@@ -762,7 +762,6 @@ class EPController extends ApiController
 
     public function login(Request $request)
     {
-        dd(env('DB_HOST_CRM'));
 
         // session_destroy();
         $email    = $request->input('email');
