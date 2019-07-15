@@ -25,10 +25,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        Log::debug('corriendo ');
+        Log::debug('realizando validacion de fin de clases ');
 
         $schedule->command('clases:fin')
-            ->dailyAt('11:00');
+            ->hourly();
     }
 
     /**

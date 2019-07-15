@@ -35,21 +35,21 @@ class EventoInscripcion extends Model
 
         $fechaIni = Carbon::now()->minute(0)->second(0);
 
-        $fechaFin = Carbon::now()->addHour(6)->minute(0)->second(0);
+        $fechaFin = Carbon::now()->addHour()->minute(0)->second(0);
         return $query->select('ef.idEventoInscripcion')
             ->join('crm.eventofecha as ef', 'ef.idEventoInscripcion', '=', 'eventoinscripcion.idEventoInscripcion')
             ->whereRaw('eventoinscripcion.eliminado= 0')
             ->whereRaw('eventoinscripcion.totalSesiones = eventoinscripcion.totalSeguimiento')
             ->whereBetween('ef.fechaEvento', [
-                '2019-04-27', '2019-04-27',
-                //$fechaIni->format('Y-m-d'), $fechaFin->format('Y-m-d')
+                //'2019-04-27', '2019-04-27',
+                $fechaIni->format('Y-m-d'), $fechaFin->format('Y-m-d'),
             ])
             ->whereBetween('ef.horaEvento', [$fechaIni->format('H:i:s'), $fechaFin->format('H:i:s')])
             ->get()
             ->toArray();
-        $addSlashes = str_replace('?', "'?'", $query->toSql());
-        $sq         = vsprintf(str_replace('?', '%s', $addSlashes), $query->getBindings());
-        dd($sq);
+        /*$addSlashes = str_replace('?', "'?'", $query->toSql());
+    $sq         = vsprintf(str_replace('?', '%s', $addSlashes), $query->getBindings());
+    dd($sq);*/
     }
 
     public static function getNombresEmail($idEventoInscripciones)
