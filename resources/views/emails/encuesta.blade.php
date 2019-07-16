@@ -24,7 +24,7 @@
                 Apreciable <b>{!! $datos->nombre_socio !!}.</b><br />
                 Te enviamos una encuesta para evaluar al entrenador<br />
                 <b>{!! $datos->nombre_entrenador  !!}.</b> <br />
-                 <a href="http://192.168.64.2/front_ep/dist/#/calificacion/{!! $datos->idEventoInscripcion  !!}/{!! $datos->token  !!}">Encuessta Sports wolrd </a>
+                 <a href="{!! $datos->host  !!}/app-eps/#/calificacion/{!! $datos->idEventoInscripcion  !!}/{!! $datos->token  !!}">Encuesta Sports wolrd </a>
             </div>
         </div>
     </div>
