@@ -61,6 +61,7 @@ class ClasesFin extends Command
                 $value->host  = env('APP_URL');
                 $url          = $value->host . '/app-eps/#/calificacion/' . $value->idEventoInscripcion . '/' . $value->token;
                 Log::debug('Prueba mail');
+                Log::debug($value->mail);
                 Log::debug($url);
 
                 Mail::to($value->mail)->send(new SendEncuestaEvaluacion($value));
