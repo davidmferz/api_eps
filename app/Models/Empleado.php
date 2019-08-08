@@ -2,28 +2,53 @@
 
 namespace API_EPS\Models;
 
-use Carbon\Carbon;
-use API_EPS\Models\CatRutinas;
-use API_EPS\Models\MenuActividad;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use API_EPS\Models\Objeto;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Empleado extends Model
 {
 
     use SoftDeletes;
     protected $connection = 'crm';
-    protected $table = 'crm.empleado';
-    protected $primaryKey = 'idEmplaedo';
+    protected $table      = 'crm.empleado';
+    protected $primaryKey = 'idEmpleado';
 
     const CREATED_AT = 'fechaRegistro';
     const UPDATED_AT = 'fechaActualizacion';
     const DELETED_AT = 'fechaEliminacion';
-    
+
+    public function scopeGetEmail($query, $idPersona)
+    {
+        return $query->select('mail.mail')
+            ->where('empleado.idPersona', $idPersona)
+            ->join('crm.mail', 'empleado.idPersona', '=', 'mail.idPersona')
+            ->where('mail.idTipoMail', 37)
+            ->where('mail.eliminado', 0)
+            ->first();
+
+    }
+
+    /**
+     * Obtiene los datos generales de empleado
+     *
+     * @param integer $idPersona IdPersona
+     *
+     * @author Santa Garcia
+     *
+     * @return string
+     */
+    public function scopeObtenDatosEmpleado($query, $idPersona)
+    {
+        return $query->selectRaw("idEmpleado,CONCAT(p.nombre,' ',p.paterno,' ',p.materno) as  nombre, idArea, empleado.rfc, imss, idTipoEstatusEmpleado, idOperador, fechaContratacion")
+            ->join('crm.persona as p', 'p.idPersona', 'empleado.idPersona')
+            ->where('p.idPersona', $idPersona)
+            ->get()
+            ->toArray();
+
+    }
+
     /**
      * Actualiza las actividades deportivas de un empleado
      *
@@ -36,18 +61,18 @@ class Empleado extends Model
      *
      * @return array
      */
-    public function actualizaActividadDeportiva ($idActividadDeportiva, $idEmpleado, $idEmpleadoActividad, $activo)
+    public function actualizaActividadDeportiva($idActividadDeportiva, $idEmpleado, $idEmpleadoActividad, $activo)
     {
         settype($idActividadDeportiva, 'integer');
         settype($idEmpleadoActividad, 'integer');
         settype($activo, 'integer');
 
-        $datos  = array();
+        $datos                        = array();
         $datos['idEmpleadoActividad'] = $idEmpleadoActividad;
         $datos['error']               = 1;
         $datos['mensaje']             = 'Faltan datos';
 
-        if ( ! $idActividadDeportiva) {
+        if (!$idActividadDeportiva) {
             return $datos;
         }
         $datos['error']   = 0;
@@ -59,7 +84,7 @@ class Empleado extends Model
 
             $res = $this->db->update(TBL_EMPLEADOACTIVIDAD, $set, $where);
 
-            if ( ! $res) {
+            if (!$res) {
                 $datos['error']   = 2;
                 $datos['mensaje'] = 'Error al actualizar registro';
             }
@@ -68,7 +93,7 @@ class Empleado extends Model
                 $set = array(
                     'idActividadDeportiva' => $idActividadDeportiva,
                     'idEmpleado'           => $idEmpleado,
-                    'activo'               => $activo
+                    'activo'               => $activo,
                 );
                 $res = $this->db->insert(TBL_EMPLEADOACTIVIDAD, $set);
 
@@ -94,20 +119,20 @@ class Empleado extends Model
      *
      * @return boolean
      */
-    public function actualizaClub ($idEmpleadoPuesto, $idUn, $club = '')
+    public function actualizaClub($idEmpleadoPuesto, $idUn, $club = '')
     {
         settype($idEmpleadoPuesto, 'integer');
         settype($idUn, 'integer');
 
-        if (! $idEmpleadoPuesto or ! $idUn) {
+        if (!$idEmpleadoPuesto or !$idUn) {
             return false;
         }
         $where = array('idEmpleadoPuesto' => $idEmpleadoPuesto);
-        $set   = array('idUn'             => $idUn);
+        $set   = array('idUn' => $idUn);
         $res   = $this->db->update(TBL_EMPLEADOPUESTO, $set, $where);
 
         if ($res) {
-            $this->permisos_model->log('Se actualiza club de empleado a '.$club, LOG_EMPLEADOS);
+            $this->permisos_model->log('Se actualiza club de empleado a ' . $club, LOG_EMPLEADOS);
         }
         return $res;
     }
@@ -127,7 +152,7 @@ class Empleado extends Model
         settype($idEmpleado, 'integer');
         settype($idTipoEstatusEmpleado, 'integer');
 
-        if (! $idEmpleado or ! $idTipoEstatusEmpleado) {
+        if (!$idEmpleado or !$idTipoEstatusEmpleado) {
             return false;
         }
         $where = array('idEmpleado' => $idEmpleado);
@@ -153,13 +178,13 @@ class Empleado extends Model
         settype($idEmpleado, 'integer');
         settype($idOperador, 'integer');
 
-        if ($idEmpleado==0 or $idOperador==0) {
+        if ($idEmpleado == 0 or $idOperador == 0) {
             return false;
         }
 
         $where = array('idEmpleado' => $idEmpleado);
-        $set = array('idOperador' => $idOperador);
-        $res = $this->db->update(TBL_EMPLEADO, $set, $where);
+        $set   = array('idOperador' => $idOperador);
+        $res   = $this->db->update(TBL_EMPLEADO, $set, $where);
 
         if ($res) {
             $this->permisos_model->log('Actualiza operador de empleado', LOG_EMPLEADOS);
@@ -178,20 +203,20 @@ class Empleado extends Model
      *
      * @return boolean
      */
-    public function actualizaPuesto ($idEmpleadoPuesto, $idPuesto, $puesto = '')
+    public function actualizaPuesto($idEmpleadoPuesto, $idPuesto, $puesto = '')
     {
         settype($idEmpleadoPuesto, 'integer');
         settype($idPuesto, 'integer');
 
-        if (! $idEmpleadoPuesto or ! $idPuesto) {
+        if (!$idEmpleadoPuesto or !$idPuesto) {
             return false;
         }
         $where = array('idEmpleadoPuesto' => $idEmpleadoPuesto);
-        $set   = array('idPuesto'         => $idPuesto);
+        $set   = array('idPuesto' => $idPuesto);
         $res   = $this->db->update(TBL_EMPLEADOPUESTO, $set, $where);
 
         if ($res) {
-            $this->permisos_model->log('Se actualiza puesto de empleado a '.$puesto, LOG_EMPLEADOS);
+            $this->permisos_model->log('Se actualiza puesto de empleado a ' . $puesto, LOG_EMPLEADOS);
         }
         return $res;
     }
@@ -207,10 +232,10 @@ class Empleado extends Model
      */
     public function arrayPuestos($puesto)
     {
-        $datos  = array();
+        $datos = array();
 
         $puesto = trim($puesto);
-        if ($puesto=="") {
+        if ($puesto == "") {
             return $datos;
         }
 
@@ -234,7 +259,7 @@ class Empleado extends Model
      *
      * @return string
      */
-    public function detalleEvaluacion($idPersona, $estatus='')
+    public function detalleEvaluacion($idPersona, $estatus = '')
     {
         settype($idPersona, 'integer');
 
@@ -247,37 +272,37 @@ class Empleado extends Model
                     snc.descripcion as respuesta ,snc.valor, se.nombre as evaluacion,concat_ws(' ',p2.nombre,p2.paterno,p2.materno) as responsable,
                     pu.descripcion as puesto,if(s.comentarios is null,'Ninguno',s.comentarios) as comentarios, e.fechaContratacion, s.fechaEnvioEvaluacion,
                     s.fechaActualizacion, s.estatus
-                from ".TBL_SATISFACCIONEMPLEADOEVALUACION." s
-                left join ".TBL_SATISFACCIONATENCIONEVALUACION." sae on sae.idSatisfaccionEmpleadoEvaluacion = s.idSatisfaccionEmpleadoEvaluacion and sae.fechaEliminacion = '0000-00-00 00:00:00'
-                left join ".TBL_SATISFACCIONPREGUNTAEVALUACION." spe on spe.idsatisfaccionpreguntaevaluacion = sae.idSatisfaccionPreguntaEvaluacion and spe.activo = 1 and spe.fechaEliminacion = '0000-00-00 00:00;00'
-                left join ".TBL_SATISFACCIONPREGUNTA." sp on sp.idSatisfaccionPregunta = spe.idSatisfaccionPregunta and sp.activo = 1 and sp.fechaEliminacion = '0000-00-00 00:00:00'
-                inner join ".TBL_PERSONA." p on p.idPersona = s.idPersona
-                left join ".TBL_SATISFACCIONNIVELCALIFICACION." snc on snc.idsatisfaccionnivelcalificacion = sae.idSatisfaccionNivelCalificacion and snc.activo = 1
-                left join ".TBL_SATISFACCIONEVALUACION." se on se.idSatisfaccionEvaluacion = s.idSatisfaccionEvaluacion and se.activo = 1 and se.fechaEliminacion = '0000-00-00 00:00:00'
-                inner join ".TBL_PERSONA." p2 on p2.idPersona = s.idResponsable
-                inner join ".TBL_EMPLEADO." e on e.idPersona = s.idPersona and e.idTipoEstatusEmpleado = 196 and e.fechaEliminacion = '0000-00-00 00:00:00'
-                inner join ".TBL_EMPLEADOPUESTO." ep on ep.idEmpleado = e.idEmpleado and ep.fechaEliminacion = '0000-00-00 00:00:00'
-                inner join ".TBL_PUESTO." pu on pu.idPuesto = ep.idPuesto and pu.fechaEliminacion = '0000-00-00 00:00:00'
-                where #s.estatus = '".$estatus."' and
-                    s.fechaEliminacion = '0000-00-00 00:00:00' and s.idPersona =".$idPersona." ";
+                from " . TBL_SATISFACCIONEMPLEADOEVALUACION . " s
+                left join " . TBL_SATISFACCIONATENCIONEVALUACION . " sae on sae.idSatisfaccionEmpleadoEvaluacion = s.idSatisfaccionEmpleadoEvaluacion and sae.fechaEliminacion = '0000-00-00 00:00:00'
+                left join " . TBL_SATISFACCIONPREGUNTAEVALUACION . " spe on spe.idsatisfaccionpreguntaevaluacion = sae.idSatisfaccionPreguntaEvaluacion and spe.activo = 1 and spe.fechaEliminacion = '0000-00-00 00:00;00'
+                left join " . TBL_SATISFACCIONPREGUNTA . " sp on sp.idSatisfaccionPregunta = spe.idSatisfaccionPregunta and sp.activo = 1 and sp.fechaEliminacion = '0000-00-00 00:00:00'
+                inner join " . TBL_PERSONA . " p on p.idPersona = s.idPersona
+                left join " . TBL_SATISFACCIONNIVELCALIFICACION . " snc on snc.idsatisfaccionnivelcalificacion = sae.idSatisfaccionNivelCalificacion and snc.activo = 1
+                left join " . TBL_SATISFACCIONEVALUACION . " se on se.idSatisfaccionEvaluacion = s.idSatisfaccionEvaluacion and se.activo = 1 and se.fechaEliminacion = '0000-00-00 00:00:00'
+                inner join " . TBL_PERSONA . " p2 on p2.idPersona = s.idResponsable
+                inner join " . TBL_EMPLEADO . " e on e.idPersona = s.idPersona and e.idTipoEstatusEmpleado = 196 and e.fechaEliminacion = '0000-00-00 00:00:00'
+                inner join " . TBL_EMPLEADOPUESTO . " ep on ep.idEmpleado = e.idEmpleado and ep.fechaEliminacion = '0000-00-00 00:00:00'
+                inner join " . TBL_PUESTO . " pu on pu.idPuesto = ep.idPuesto and pu.fechaEliminacion = '0000-00-00 00:00:00'
+                where #s.estatus = '" . $estatus . "' and
+                    s.fechaEliminacion = '0000-00-00 00:00:00' and s.idPersona =" . $idPersona . " ";
         } else {
             $sql = "select s.contratoIndeterminado,concat_ws(' ',p.nombre,p.paterno,p.materno) as empleado, s.promedio, s.fechaActualizacion,sp.descripcion as pregunta,
                     snc.descripcion as respuesta ,snc.valor, se.nombre as evaluacion,concat_ws(' ',p2.nombre,p2.paterno,p2.materno) as responsable,
                     pu.descripcion as puesto,if(s.comentarios is null,'Ninguno',s.comentarios) as comentarios, e.fechaContratacion, s.fechaEnvioEvaluacion,
                     s.fechaActualizacion, s.estatus
-                from ".TBL_SATISFACCIONEMPLEADOEVALUACION." s
-                inner join ".TBL_SATISFACCIONATENCIONEVALUACION." sae on sae.idSatisfaccionEmpleadoEvaluacion = s.idSatisfaccionEmpleadoEvaluacion and sae.fechaEliminacion = '0000-00-00 00:00:00'
-                inner join ".TBL_SATISFACCIONPREGUNTAEVALUACION." spe on spe.idsatisfaccionpreguntaevaluacion = sae.idSatisfaccionPreguntaEvaluacion and spe.activo = 1 and spe.fechaEliminacion = '0000-00-00 00:00;00'
-                inner join ".TBL_SATISFACCIONPREGUNTA." sp on sp.idSatisfaccionPregunta = spe.idSatisfaccionPregunta and sp.activo = 1 and sp.fechaEliminacion = '0000-00-00 00:00:00'
-                inner join ".TBL_PERSONA." p on p.idPersona = s.idPersona
-                inner join ".TBL_SATISFACCIONNIVELCALIFICACION." snc on snc.idsatisfaccionnivelcalificacion = sae.idSatisfaccionNivelCalificacion and snc.activo = 1
-                inner join ".TBL_SATISFACCIONEVALUACION." se on se.idSatisfaccionEvaluacion = s.idSatisfaccionEvaluacion and se.activo = 1 and se.fechaEliminacion = '0000-00-00 00:00:00'
-                inner join ".TBL_PERSONA." p2 on p2.idPersona = s.idResponsable
-                inner join ".TBL_EMPLEADO." e on e.idPersona = s.idPersona and e.idTipoEstatusEmpleado = 196 and e.fechaEliminacion = '0000-00-00 00:00:00'
-                inner join ".TBL_EMPLEADOPUESTO." ep on ep.idEmpleado = e.idEmpleado and ep.fechaEliminacion = '0000-00-00 00:00:00'
-                inner join ".TBL_PUESTO." pu on pu.idPuesto = ep.idPuesto and pu.fechaEliminacion = '0000-00-00 00:00:00'
-                where s.estatus = '".$estatus."' and
-                    s.fechaEliminacion = '0000-00-00 00:00:00' and s.idPersona =".$idPersona." ";
+                from " . TBL_SATISFACCIONEMPLEADOEVALUACION . " s
+                inner join " . TBL_SATISFACCIONATENCIONEVALUACION . " sae on sae.idSatisfaccionEmpleadoEvaluacion = s.idSatisfaccionEmpleadoEvaluacion and sae.fechaEliminacion = '0000-00-00 00:00:00'
+                inner join " . TBL_SATISFACCIONPREGUNTAEVALUACION . " spe on spe.idsatisfaccionpreguntaevaluacion = sae.idSatisfaccionPreguntaEvaluacion and spe.activo = 1 and spe.fechaEliminacion = '0000-00-00 00:00;00'
+                inner join " . TBL_SATISFACCIONPREGUNTA . " sp on sp.idSatisfaccionPregunta = spe.idSatisfaccionPregunta and sp.activo = 1 and sp.fechaEliminacion = '0000-00-00 00:00:00'
+                inner join " . TBL_PERSONA . " p on p.idPersona = s.idPersona
+                inner join " . TBL_SATISFACCIONNIVELCALIFICACION . " snc on snc.idsatisfaccionnivelcalificacion = sae.idSatisfaccionNivelCalificacion and snc.activo = 1
+                inner join " . TBL_SATISFACCIONEVALUACION . " se on se.idSatisfaccionEvaluacion = s.idSatisfaccionEvaluacion and se.activo = 1 and se.fechaEliminacion = '0000-00-00 00:00:00'
+                inner join " . TBL_PERSONA . " p2 on p2.idPersona = s.idResponsable
+                inner join " . TBL_EMPLEADO . " e on e.idPersona = s.idPersona and e.idTipoEstatusEmpleado = 196 and e.fechaEliminacion = '0000-00-00 00:00:00'
+                inner join " . TBL_EMPLEADOPUESTO . " ep on ep.idEmpleado = e.idEmpleado and ep.fechaEliminacion = '0000-00-00 00:00:00'
+                inner join " . TBL_PUESTO . " pu on pu.idPuesto = ep.idPuesto and pu.fechaEliminacion = '0000-00-00 00:00:00'
+                where s.estatus = '" . $estatus . "' and
+                    s.fechaEliminacion = '0000-00-00 00:00:00' and s.idPersona =" . $idPersona . " ";
         }
         $query = $this->db->query($sql);
 
@@ -304,7 +329,7 @@ class Empleado extends Model
      *
      * @return array
      */
-    public function empleadoActivos($nombre = "",  $restricciones = 0, $idUn = 0, $numeroRegistros = REGISTROS_POR_PAGINA, $idPersona = 0, $tipoPuestoComision = '', $idEvento = 0)
+    public function empleadoActivos($nombre = "", $restricciones = 0, $idUn = 0, $numeroRegistros = REGISTROS_POR_PAGINA, $idPersona = 0, $tipoPuestoComision = '', $idEvento = 0)
     {
         settype($restricciones, "integer");
         settype($idUn, "integer");
@@ -313,77 +338,77 @@ class Empleado extends Model
         settype($tipoPuestoComision, "string");
         settype($idEvento, "integer");
 
-        $nombre = trim($nombre);
-        $nombre = $this->db->escape_like_str($nombre);
-        $nombre = str_replace(" ", "%", $nombre);
-        $selectDefault = '';
-        $fromDefault = '';
-        $innerDefault = '';
+        $nombre              = trim($nombre);
+        $nombre              = $this->db->escape_like_str($nombre);
+        $nombre              = str_replace(" ", "%", $nombre);
+        $selectDefault       = '';
+        $fromDefault         = '';
+        $innerDefault        = '';
         $innerComisionConfig = '';
-        $whereDefault = '';
-        $sqlOrderDefault = '';
-        $sql = '';
-        $sql1 = '';
-        $sql2 = '';
-        $sql3 = '';
+        $whereDefault        = '';
+        $sqlOrderDefault     = '';
+        $sql                 = '';
+        $sql1                = '';
+        $sql2                = '';
+        $sql3                = '';
 
-        if ($this->session->userdata('idOperador')==1) {
+        if ($this->session->userdata('idOperador') == 1) {
             $selectDefault = "SELECT DISTINCT p.idPersona, p.nombre, p.paterno, p.materno, pu.descripcion AS puesto ";
-            $fromDefault   = "FROM ".TBL_PERSONA." p ";
+            $fromDefault   = "FROM " . TBL_PERSONA . " p ";
             $innerDefault  = "
-                INNER JOIN ".TBL_EMPLEADO." e ON p.idPersona = e.idPersona AND e.fechaEliminacion='0000-00-00 00:00:00'
-                INNER JOIN ".TBL_EMPLEADOPUESTO." ep ON e.idEmpleado = ep.idEmpleado AND ep.fechaEliminacion='0000-00-00 00:00:00'
-                INNER JOIN ".TBL_PUESTO." pu ON ep.idPuesto = pu.idPuesto ";
+                INNER JOIN " . TBL_EMPLEADO . " e ON p.idPersona = e.idPersona AND e.fechaEliminacion='0000-00-00 00:00:00'
+                INNER JOIN " . TBL_EMPLEADOPUESTO . " ep ON e.idEmpleado = ep.idEmpleado AND ep.fechaEliminacion='0000-00-00 00:00:00'
+                INNER JOIN " . TBL_PUESTO . " pu ON ep.idPuesto = pu.idPuesto ";
             if ($tipoPuestoComision and $idEvento) {
-                $innerComisionConfig .= " INNER JOIN ".TBL_EVENTOPUESTOCOMISION." epc ON epc.idPuesto = pu.idPuesto AND epc.tipoPuesto = '".$tipoPuestoComision."' AND epc.idEvento = ".$idEvento." AND epc.activo = 1 AND epc.fechaEliminacion = '0000-00-00 00:00:00' ";
+                $innerComisionConfig .= " INNER JOIN " . TBL_EVENTOPUESTOCOMISION . " epc ON epc.idPuesto = pu.idPuesto AND epc.tipoPuesto = '" . $tipoPuestoComision . "' AND epc.idEvento = " . $idEvento . " AND epc.activo = 1 AND epc.fechaEliminacion = '0000-00-00 00:00:00' ";
             }
-            $whereDefault = " WHERE CONCAT(p.nombre,' ', p.paterno,' ', p.materno) LIKE '%".$nombre."%' ";
+            $whereDefault = " WHERE CONCAT(p.nombre,' ', p.paterno,' ', p.materno) LIKE '%" . $nombre . "%' ";
 
-            if ($idUn>0) {
-                $whereDefault .= " AND ep.idUn = ".$idUn." ";
+            if ($idUn > 0) {
+                $whereDefault .= " AND ep.idUn = " . $idUn . " ";
             }
             if ($restricciones > 0) {
-                if ($this->permisos_model->validaTodosPermisos(PER_COMISION_TODOSCLUBS)==false) {
-                    $whereDefault .= " AND (ep.idUn = ".$this->session->userdata('idUn').
-                        " OR ep.idUn IN (SELECT idUn FROM ungerente WHERE fechaEliminacion='0000-00-00 00:00:00' AND idPersona=".
-                        $this->session->userdata('idPersona').")) ";
+                if ($this->permisos_model->validaTodosPermisos(PER_COMISION_TODOSCLUBS) == false) {
+                    $whereDefault .= " AND (ep.idUn = " . $this->session->userdata('idUn') .
+                    " OR ep.idUn IN (SELECT idUn FROM ungerente WHERE fechaEliminacion='0000-00-00 00:00:00' AND idPersona=" .
+                    $this->session->userdata('idPersona') . ")) ";
                 }
-                if ($this->permisos_model->validaTodosPermisos(PER_COMISION_BUSCAREMPLEADO)==false) {
-                    $whereDefault .= " AND e.idPersona = ".$this->session->userdata('idPersona')." ";
+                if ($this->permisos_model->validaTodosPermisos(PER_COMISION_BUSCAREMPLEADO) == false) {
+                    $whereDefault .= " AND e.idPersona = " . $this->session->userdata('idPersona') . " ";
                 }
-                if ($this->permisos_model->validaTodosPermisos(PER_COMISION_SOLOJECUTIVOS)==true) {
+                if ($this->permisos_model->validaTodosPermisos(PER_COMISION_SOLOJECUTIVOS) == true) {
                     $p = strtoupper($this->obtienePuesto($this->session->userdata('idPuesto')));
-                    if(strpos($p,'VENTAS') !== false ) {
+                    if (strpos($p, 'VENTAS') !== false) {
                         $whereDefault .= " AND pu.descripcion LIKE '%VENTAS%' ";
                     }
                 }
-                if ($this->permisos_model->validaTodosPermisos(PER_COMISION_BUSCAREMPLEADOSINACTIVOS)==false) {
-                    $whereDefault .= " AND e.idTipoEstatusEmpleado = ".ESTATUS_EMPLEADO_ACTIVO." ";
+                if ($this->permisos_model->validaTodosPermisos(PER_COMISION_BUSCAREMPLEADOSINACTIVOS) == false) {
+                    $whereDefault .= " AND e.idTipoEstatusEmpleado = " . ESTATUS_EMPLEADO_ACTIVO . " ";
                 }
             } else {
-                $whereDefault .= " AND e.idTipoEstatusEmpleado = ".ESTATUS_EMPLEADO_ACTIVO." ";
+                $whereDefault .= " AND e.idTipoEstatusEmpleado = " . ESTATUS_EMPLEADO_ACTIVO . " ";
             }
-            $sql1 = $selectDefault.$fromDefault.$innerDefault.$innerComisionConfig.$whereDefault;
+            $sql1 = $selectDefault . $fromDefault . $innerDefault . $innerComisionConfig . $whereDefault;
 
             if ($tipoPuestoComision and $idEvento) {
-                $innerComisionConfig = " INNER JOIN ".TBL_EVENTOUNPUESTOEXCEPCION." eupe ON eupe.idPuesto = pu.idPuesto AND eupe.tipoPuesto = '".$tipoPuestoComision."' AND eupe.activo = 1 AND eupe.fechaEliminacion = '0000-00-00 00:00:00'";
-                $innerEventoUn       = " INNER JOIN ".TBL_EVENTOUN." eu ON eu.idEventoUn = eupe.idEventoUn AND eu.idEvento = ".$idEvento." AND eu.activo = 1 AND eu.fechaEliminacion = '0000-00-00 00:00:00'";
-                $sql2                = $selectDefault.$fromDefault.$innerDefault.$innerComisionConfig.$innerEventoUn.$whereDefault;
-                $innerComisionConfig = " INNER JOIN ".TBL_EVENTOUNPUESTOEXCEPCION." eupe ON eupe.idEmpleado = e.idEmpleado AND eupe.tipoPuesto = '".$tipoPuestoComision."' AND eupe.activo = 1 AND eupe.fechaEliminacion = '0000-00-00 00:00:00'";
-                $sql3                = $selectDefault.$fromDefault.$innerDefault.$innerComisionConfig.$innerEventoUn.$whereDefault;
-                $selectUnion  = "SELECT a.idPersona, a.nombre, a.paterno, a.materno, a.puesto ";
-                $fromUnion    = "FROM ( ";
+                $innerComisionConfig = " INNER JOIN " . TBL_EVENTOUNPUESTOEXCEPCION . " eupe ON eupe.idPuesto = pu.idPuesto AND eupe.tipoPuesto = '" . $tipoPuestoComision . "' AND eupe.activo = 1 AND eupe.fechaEliminacion = '0000-00-00 00:00:00'";
+                $innerEventoUn       = " INNER JOIN " . TBL_EVENTOUN . " eu ON eu.idEventoUn = eupe.idEventoUn AND eu.idEvento = " . $idEvento . " AND eu.activo = 1 AND eu.fechaEliminacion = '0000-00-00 00:00:00'";
+                $sql2                = $selectDefault . $fromDefault . $innerDefault . $innerComisionConfig . $innerEventoUn . $whereDefault;
+                $innerComisionConfig = " INNER JOIN " . TBL_EVENTOUNPUESTOEXCEPCION . " eupe ON eupe.idEmpleado = e.idEmpleado AND eupe.tipoPuesto = '" . $tipoPuestoComision . "' AND eupe.activo = 1 AND eupe.fechaEliminacion = '0000-00-00 00:00:00'";
+                $sql3                = $selectDefault . $fromDefault . $innerDefault . $innerComisionConfig . $innerEventoUn . $whereDefault;
+                $selectUnion         = "SELECT a.idPersona, a.nombre, a.paterno, a.materno, a.puesto ";
+                $fromUnion           = "FROM ( ";
 
                 if ($sql2 and $sql3) {
-                    $fromUnion .= $sql1." UNION ".$sql2." UNION ".$sql3;
+                    $fromUnion .= $sql1 . " UNION " . $sql2 . " UNION " . $sql3;
                 } else {
                     $fromUnion .= $sql1;
                 }
-                $fromUnion .= ") a ORDER BY a.nombre, a.paterno, a.materno LIMIT ".$numeroRegistros." ";
+                $fromUnion .= ") a ORDER BY a.nombre, a.paterno, a.materno LIMIT " . $numeroRegistros . " ";
 
-                $sql = $selectUnion.$fromUnion;
+                $sql = $selectUnion . $fromUnion;
             } else {
-                $sql1 .= " ORDER BY p.nombre, p.paterno, p.materno LIMIT ".$numeroRegistros." ";
+                $sql1 .= " ORDER BY p.nombre, p.paterno, p.materno LIMIT " . $numeroRegistros . " ";
 
                 $sql = $sql1;
             }
@@ -422,7 +447,6 @@ class Empleado extends Model
         }
     }
 
-
     /**
      * Actuliza la pagina de inicio por puesto
      *
@@ -433,15 +457,15 @@ class Empleado extends Model
      *
      * @return boolean
      */
-    public function guardarPaginaInicioPuesto ($puesto, $vinculo)
+    public function guardarPaginaInicioPuesto($puesto, $vinculo)
     {
         settype($puesto, 'integer');
 
-        if ($puesto==0) {
+        if ($puesto == 0) {
             return false;
         }
 
-        if (!file_exists(RUTA_LOCAL.'\system\application\views\home\/'.$vinculo.'.php')) {
+        if (!file_exists(RUTA_LOCAL . '\system\application\views\home\/' . $vinculo . '.php')) {
             return false;
         }
 
@@ -470,7 +494,7 @@ class Empleado extends Model
      *
      * @return string
      */
-    public function listaEmpleados ($opciones, $totales=0, $posicion=0, $registros=25, $orden = '')
+    public function listaEmpleados($opciones, $totales = 0, $posicion = 0, $registros = 25, $orden = '')
     {
         if ($registros == 0) {
             $registros = REGISTROS_POR_PAGINA;
@@ -486,64 +510,64 @@ class Empleado extends Model
         if ($orden == '') {
             $orden = 'e.idEmpleado';
         }
-        $a='';
+        $a = '';
         if ($opciones["idUn"] != 0) {
-            $a =' and ep.idUn='.$opciones["idUn"];
+            $a = ' and ep.idUn=' . $opciones["idUn"];
         }
-        $b='';
+        $b = '';
         if ($opciones["puesto"] != '') {
-            $b =' and pu.descripcion LIKE \'%'.$opciones["puesto"].'%\'';
+            $b = ' and pu.descripcion LIKE \'%' . $opciones["puesto"] . '%\'';
         }
         $d = '';
         if ($opciones["idEmpleado"] != 0) {
-            $d =' and e.idEmpleado='.$opciones["idEmpleado"];
+            $d = ' and e.idEmpleado=' . $opciones["idEmpleado"];
         }
         $e = '';
         if ($opciones["estatus"] != 0) {
-            $e =' and e.idTipoEstatusEmpleado='.$opciones["estatus"];
+            $e = ' and e.idTipoEstatusEmpleado=' . $opciones["estatus"];
         }
         $f = '';
         if ($opciones["idEmpresa"] != 0) {
-            $f =' and em.idEmpresa = '.$opciones["idEmpresa"];
+            $f = ' and em.idEmpresa = ' . $opciones["idEmpresa"];
         }
         $g = '';
         if ($opciones["sinEmail"] == 1) {
-            $g = " HAVING email = '' " ;
+            $g = " HAVING email = '' ";
         }
         $j = '';
         if ($opciones["mail"] != '') {
-            $j = " HAVING email LIKE '%".$opciones['mail']."%' " ;
+            $j = " HAVING email LIKE '%" . $opciones['mail'] . "%' ";
         }
         $h = '';
         $i = '';
         if ($opciones["idPersonaEmpleado"] > 0) {
-            $h = ' AND e.idPersona = '.$opciones['idPersonaEmpleado']." " ;
+            $h = ' AND e.idPersona = ' . $opciones['idPersonaEmpleado'] . " ";
         } elseif ($opciones['nombre'] != '') {
             $arregloTmp = explode('(', $opciones['nombre']);
-            $i = " AND CONCAT_WS(' ', p.nombre, p.paterno, p.materno) LIKE '%".str_replace(' ', '%', $arregloTmp[0])."%' " ;
+            $i          = " AND CONCAT_WS(' ', p.nombre, p.paterno, p.materno) LIKE '%" . str_replace(' ', '%', $arregloTmp[0]) . "%' ";
         }
         $k = '';
-        if($opciones["operador"] > 0){
-            $k = ' AND e.idOperador = '.$opciones["operador"];
+        if ($opciones["operador"] > 0) {
+            $k = ' AND e.idOperador = ' . $opciones["operador"];
         }
         $l = '';
-        if($opciones["estatusContrato"] > -1){
-            if($opciones["estatusContrato"] > 2){
-                if($opciones["estatusContrato"] ==  3){
+        if ($opciones["estatusContrato"] > -1) {
+            if ($opciones["estatusContrato"] > 2) {
+                if ($opciones["estatusContrato"] == 3) {
                     $l = ' AND see.contratoIndeterminado = 1';
-                }else{
+                } else {
                     $l = ' AND see.contratoIndeterminado = 0';
                 }
             }
-            if($opciones["estatusContrato"] <= 2){
-                if($opciones["estatusContrato"] == 1){
+            if ($opciones["estatusContrato"] <= 2) {
+                if ($opciones["estatusContrato"] == 1) {
                     $l = ' AND see.estatus = \'Enviado\' ';
                 }
-                if($opciones["estatusContrato"] == 2){
+                if ($opciones["estatusContrato"] == 2) {
                     $l = ' AND see.estatus = \'Vencido\' ';
                 }
-                if($opciones["estatusContrato"] == 0){
-                    $l = ' AND ADDDATE(ADDDATE(e.fechaContratacion, INTERVAL 2 MONTH),INTERVAL 20 DAY)>date(now()) and e.idOperador ='.OPERADOR_HUMMAN_ACCESS;
+                if ($opciones["estatusContrato"] == 0) {
+                    $l = ' AND ADDDATE(ADDDATE(e.fechaContratacion, INTERVAL 2 MONTH),INTERVAL 20 DAY)>date(now()) and e.idOperador =' . OPERADOR_HUMMAN_ACCESS;
                 }
             }
         }
@@ -553,25 +577,25 @@ class Empleado extends Model
               te.descripcion AS estatus, em.activo, te.activo, ep.idEmpleadoPuesto, u.idEmpresa,
               us.IdUsuario, e.idTipoEstatusEmpleado, pap.idPermisoAplicaPuestos,
               o.clubes AS operador, o.idOperador,see.contratoIndeterminado as contratoIndeterminado,
-              e.fechaContratacion, IF(e.idTipoEstatusEmpleado IN (197), DATE(e.fechaActualizacion), '0000-00-00') AS fechaBaja, 
+              e.fechaContratacion, IF(e.idTipoEstatusEmpleado IN (197), DATE(e.fechaActualizacion), '0000-00-00') AS fechaBaja,
               if(see.promedio is null,0,see.promedio) as porcentaje,see.estatus as estatusEncuesta, see.idSatisfaccionEmpleadoEvaluacion,
              (
               SELECT IFNULL(GROUP_CONCAT(DISTINCT m.mail), '')
-              FROM ".TBL_MAIL." m
+              FROM " . TBL_MAIL . " m
               WHERE m.idPersona = e.idPersona AND m.fechaEliminacion = '0000-00-00 00:00:00'
-                AND m.idTipoMail = ".TIPO_MAIL_EMPLEADO."
+                AND m.idTipoMail = " . TIPO_MAIL_EMPLEADO . "
             )AS email
-            FROM ".TBL_EMPLEADO." e
-            INNER JOIN ".TBL_EMPLEADOPUESTO." ep ON ep.idEmpleado = e.idEmpleado
-            INNER JOIN ".TBL_PUESTO." pu ON pu.idPuesto = ep.idPuesto
-            INNER JOIN ".TBL_PERSONA." p ON p.idPersona = e.idPersona
-            INNER JOIN ".TBL_TIPOESTATUSEMPLEADO." te ON te.idTipoEstatusEmpleado = e.idTipoEstatusEmpleado
-            INNER JOIN ".TBL_UN." u ON u.idUn = ep.idUn
-            INNER JOIN ".TBL_EMPRESA." em ON em.idEmpresa = u.idEmpresa
-            LEFT JOIN ".TBL_OPERADOR." o ON e.idOperador=o.idOperador
-            LEFT JOIN ".TBL_USUARIOS." us ON us.IdEmpleado = e.idEmpleado AND us.fechaEliminacion='0000-00-00 00:00:00'
-            LEFT JOIN ".TBL_PERMISOAPLICAPUESTOS." pap ON pap.idPuesto = pu.idPuesto AND pap.fechaEliminacion = '0000-00-00 00:00:00'
-            LEFT JOIN ".TBL_SATISFACCIONEMPLEADOEVALUACION." see on see.idPersona = e.idPersona and see.fechaEliminacion = '0000-00-00 00:00:00'
+            FROM " . TBL_EMPLEADO . " e
+            INNER JOIN " . TBL_EMPLEADOPUESTO . " ep ON ep.idEmpleado = e.idEmpleado
+            INNER JOIN " . TBL_PUESTO . " pu ON pu.idPuesto = ep.idPuesto
+            INNER JOIN " . TBL_PERSONA . " p ON p.idPersona = e.idPersona
+            INNER JOIN " . TBL_TIPOESTATUSEMPLEADO . " te ON te.idTipoEstatusEmpleado = e.idTipoEstatusEmpleado
+            INNER JOIN " . TBL_UN . " u ON u.idUn = ep.idUn
+            INNER JOIN " . TBL_EMPRESA . " em ON em.idEmpresa = u.idEmpresa
+            LEFT JOIN " . TBL_OPERADOR . " o ON e.idOperador=o.idOperador
+            LEFT JOIN " . TBL_USUARIOS . " us ON us.IdEmpleado = e.idEmpleado AND us.fechaEliminacion='0000-00-00 00:00:00'
+            LEFT JOIN " . TBL_PERMISOAPLICAPUESTOS . " pap ON pap.idPuesto = pu.idPuesto AND pap.fechaEliminacion = '0000-00-00 00:00:00'
+            LEFT JOIN " . TBL_SATISFACCIONEMPLEADOEVALUACION . " see on see.idPersona = e.idPersona and see.fechaEliminacion = '0000-00-00 00:00:00'
             WHERE ep.fechaEliminacion = '0000-00-00 00:00:00' AND p.fechaEliminacion = '0000-00-00 00:00:00'
                 AND u.fechaEliminacion = '0000-00-00 00:00:00' AND em.fechaEliminacion = '0000-00-00 00:00:00'
                 AND u.activo = IF(u.nombre = 'Allocations',0,1) AND em.activo = 1 AND te.activo = 1
@@ -600,10 +624,10 @@ class Empleado extends Model
      */
     public function listaEstatus()
     {
-        $data=array();
+        $data      = array();
         $data['0'] = '';
 
-        $query = $this->db->query('SELECT distinct idTipoEstatusEmpleado, descripcion FROM '.TBL_TIPOESTATUSEMPLEADO.' where activo=1');
+        $query = $this->db->query('SELECT distinct idTipoEstatusEmpleado, descripcion FROM ' . TBL_TIPOESTATUSEMPLEADO . ' where activo=1');
 
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
@@ -614,63 +638,21 @@ class Empleado extends Model
     }
 
     /**
-     * Obtiene los datos generales de empleado
-     *
-     * @param integer $idPersona IdPersona
-     *
-     * @author Santa Garcia
-     *
-     * @return string
-     */
-    public function obtenDatosEmpleado ($idPersona = 0, $estatus = 0)
-    {
-        if ($idPersona == 0) {
-            return 0;
-        }
-        settype($idPersona, 'integer');
-
-        $this->db->select('idEmpleado, idArea, rfc, imss, idTipoEstatusEmpleado, idOperador, fechaContratacion');
-        $this->db->from(TBL_EMPLEADO);
-        $where = array('idPersona' => $idPersona);        
-        if($estatus > 0){
-            $this->db->where('idTipoEstatusEmpleado',$estatus);       			
-        }
-        $this->db->where($where);
-        $query = $this->db->get();
-		//echo $this->db->last_query();
-        if ($query->num_rows() > 0) {
-            $fila = $query->row_array();
-            return $fila;
-        } else {
-            return 0;
-        }
-    }
-
-    /**
      * Obtiene los datos de la tabla empleadopuesto
      *
      * @author Santa Garcia
      *
      * @return string
      */
-    public function obtenDatosEmpleadoPuesto ($idEmpleado = 0)
+    public function scopeDatosEmpleadoPuesto($query, $idEmpleado)
     {
-        if ($idEmpleado == 0) {
-            return 0;
-        }
-        settype($idEmpleado, 'integer');
 
-        $this->db->select('idEmpleadoPuesto, idUn, idPuesto, idPuestoSuperior');
-        $this->db->from(TBL_EMPLEADOPUESTO);
-        $where = array('idEmpleado' => $idEmpleado, 'fechaEliminacion'=>'0000-00-00 00:00:00');
-        $this->db->where($where);
-        $query = $this->db->get();
-        if ($query->num_rows() > 0) {
-            $fila = $query->row_array();
-            return $fila;
-        }else {
-            return 0;
-        }
+        $where = array('empleadoPuesto.idEmpleado' => $idEmpleado, 'empleadoPuesto.fechaEliminacion' => '0000-00-00 00:00:00');
+        return $query->select('empleadoPuesto.idEmpleadoPuesto', 'empleadoPuesto.idUn', 'empleadoPuesto.idPuesto', 'empleadoPuesto.idPuestoSuperior')
+            ->join('empleadoPuesto', 'empleadoPuesto.idEmpleado', '=', 'empleado.idEmpleado')
+            ->where($where)
+            ->first()
+            ->toArray();
     }
 
     /**
@@ -680,7 +662,7 @@ class Empleado extends Model
      *
      * @return string
      */
-    public function obtenDatosPuesto ($condicion = 0)
+    public function obtenDatosPuesto($condicion = 0)
     {
         settype($idEmpleado, 'integer');
 
@@ -689,9 +671,9 @@ class Empleado extends Model
         $this->db->like('descripcion', $condicion, 'both');
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
-             $datos = $query->result_array();
-             return $datos;
-        }else {
+            $datos = $query->result_array();
+            return $datos;
+        } else {
             return 0;
         }
     }
@@ -708,13 +690,13 @@ class Empleado extends Model
     public function obtenGerenteGeneral($club)
     {
         $query = $this->db->query(
-            'select concat(p.nombre," ",p.paterno," ",p.materno) as nombreCompleto from '.TBL_PERSONA.' p '.
-            'left join '.TBL_EMPLEADO.' e on e.idPersona=p.idPersona '.
-            'left join '.TBL_EMPLEADOPUESTO.' ep on ep.idEmpleado=e.idEmpleado '.
-            'left join '.TBL_UN.' u on u.idUn=ep.idUn '.
-            'where ep.idPuesto IN (74,100) and e.idTipoEstatusempleado='.ESTATUS_EMPLEADO_ACTIVO.' and ep.idUn='.$club." ORDER BY idPuesto limit 1"
+            'select concat(p.nombre," ",p.paterno," ",p.materno) as nombreCompleto from ' . TBL_PERSONA . ' p ' .
+            'left join ' . TBL_EMPLEADO . ' e on e.idPersona=p.idPersona ' .
+            'left join ' . TBL_EMPLEADOPUESTO . ' ep on ep.idEmpleado=e.idEmpleado ' .
+            'left join ' . TBL_UN . ' u on u.idUn=ep.idUn ' .
+            'where ep.idPuesto IN (74,100) and e.idTipoEstatusempleado=' . ESTATUS_EMPLEADO_ACTIVO . ' and ep.idUn=' . $club . " ORDER BY idPuesto limit 1"
         );
-        $row = $query->row();
+        $row      = $query->row();
         $nombreGG = $row->nombreCompleto;
         return $nombreGG;
     }
@@ -728,7 +710,7 @@ class Empleado extends Model
      *
      * @return integer
      */
-    public static function obtenIdEmpleado ($idPersona = 0, $activo=0)
+    public static function obtenIdEmpleado($idPersona = 0, $activo = 0)
     {
         settype($idPersona, 'integer');
         settype($activo, 'integer');
@@ -740,12 +722,12 @@ class Empleado extends Model
         }
 
         $a = '';
-        if ($activo==1) {
+        if ($activo == 1) {
             $a = ' AND idTipoEstatusEmpleado=196';
         }
 
-        $sql = "SELECT idEmpleado FROM ".TBL_EMPLEADO." WHERE idPersona = $idPersona {$a};";
-        $query = DB::connection('crm')->select($sql);
+        $sql        = "SELECT idEmpleado FROM " . TBL_EMPLEADO . " WHERE idPersona = $idPersona {$a};";
+        $query      = DB::connection('crm')->select($sql);
         $idEmpleado = (count($query) > 0) ? $query[0]->idEmpleado : 0;
 
         return $idEmpleado;
@@ -760,7 +742,7 @@ class Empleado extends Model
      *
      * @return integer
      */
-    public function obtenIdPersona ($idEmpleado = 0)
+    public function obtenIdPersona($idEmpleado = 0)
     {
         $idPersona = 0;
 
@@ -769,8 +751,8 @@ class Empleado extends Model
         }
         settype($idEmpleado, 'integer');
 
-        $sql = "SELECT idPersona FROM ".TBL_EMPLEADO." WHERE idEmpleado = ".$idEmpleado.";";
-        $query = $this->db->query($sql);
+        $sql       = "SELECT idPersona FROM " . TBL_EMPLEADO . " WHERE idEmpleado = " . $idEmpleado . ";";
+        $query     = $this->db->query($sql);
         $idPersona = ($query->num_rows > 0) ? $query->row_object()->idPersona : '';
 
         return $idPersona;
@@ -799,13 +781,13 @@ class Empleado extends Model
         $query = $this->db->get();
 
         if (trim($query->row_object()->paginaInicio) == 'agendaAnfitrion') {
-            $ci =& get_instance();
+            $ci = &get_instance();
             $ci->load->model('checkup_model');
             $ci->load->model('permisos_model');
 
-            $datos['club'] = $this->session->userdata('idUn');
-            $listaConsultorio = $ci->checkup_model->listaConsultorio($datos['club'],0,1);
-            $contador = 0;
+            $datos['club']    = $this->session->userdata('idUn');
+            $listaConsultorio = $ci->checkup_model->listaConsultorio($datos['club'], 0, 1);
+            $contador         = 0;
             foreach ($listaConsultorio as $key => $value) {
                 if ($value == 'Afiliacion') {
                     $contador++;
@@ -814,7 +796,7 @@ class Empleado extends Model
             }
 
             if ($contador == 1) {
-                return 'agendaAnfitrion' ;
+                return 'agendaAnfitrion';
             } else {
                 return null;
             }
@@ -830,7 +812,7 @@ class Empleado extends Model
      *
      * @return array
      */
-    public function obtenPuestos ()
+    public function obtenPuestos()
     {
         $datos = array();
 
@@ -855,7 +837,7 @@ class Empleado extends Model
      *
      * @return array
      */
-    public function obtieneOperador ($idOperador)
+    public function obtieneOperador($idOperador)
     {
         settype($idOperador, 'integer');
         $razonSocial = '';
@@ -874,7 +856,7 @@ class Empleado extends Model
      *
      * @return array
      */
-    public function obtienePuesto ($idPuesto)
+    public function obtienePuesto($idPuesto)
     {
         settype($idPuesto, 'integer');
         $nombre = '';
@@ -900,30 +882,30 @@ class Empleado extends Model
      *
      * @return array
      */
-    public function validaActividadDeportiva ($idEmpleado, $idActividadDeportiva)
+    public function validaActividadDeportiva($idEmpleado, $idActividadDeportiva)
     {
         settype($idEmpleado, 'integer');
         settype($idActividadDeportiva, 'integer');
 
-        $datos = array();
+        $datos                        = array();
         $datos['error']               = 1;
         $datos['mensaje']             = 'Faltan datos';
         $datos['idEmpleadoActividad'] = 0;
         $datos['activo']              = 0;
 
-        if ( ! $idEmpleado or ! $idActividadDeportiva) {
+        if (!$idEmpleado or !$idActividadDeportiva) {
             return $datos;
         }
         $datos['error']   = 0;
         $datos['mensaje'] = '';
-        $where = array(
+        $where            = array(
             'idEmpleado'           => $idEmpleado,
-            'idActividadDeportiva' => $idActividadDeportiva
+            'idActividadDeportiva' => $idActividadDeportiva,
         );
         $query = $this->db->select('idEmpleadoActividad, activo')->get_where(TBL_EMPLEADOACTIVIDAD, $where);
 
         if ($query->num_rows) {
-            $row = $query->row();
+            $row                          = $query->row();
             $datos['idEmpleadoActividad'] = $row->idEmpleadoActividad;
             $datos['activo']              = $row->activo;
         }
@@ -937,22 +919,22 @@ class Empleado extends Model
      *
      * @return string
      */
-    public function validaDatosEmpleado($usuario, $numEmpleado, $numImss=0)
+    public function validaDatosEmpleado($usuario, $numEmpleado, $numImss = 0)
     {
         settype($numEmpleado, 'integer');
 
         $this->db->select('e.idEmpleado');
-        $this->db->from(TBL_EMPLEADO.' e');
-        $this->db->join(TBL_USUARIOS.' u', 'u.idEmpleado = e.idEmpleado');
-        $where = array('e.idEmpleado' => $numEmpleado, 'u.fechaEliminacion'=>'0000-00-00 00:00:00', 'e.fechaEliminacion'=>'0000-00-00 00:00:00','e.idTipoEstatusEmpleado'=>ESTATUS_EMPLEADO_ACTIVO,'u.NombreUsuario'=>$usuario);
+        $this->db->from(TBL_EMPLEADO . ' e');
+        $this->db->join(TBL_USUARIOS . ' u', 'u.idEmpleado = e.idEmpleado');
+        $where = array('e.idEmpleado' => $numEmpleado, 'u.fechaEliminacion' => '0000-00-00 00:00:00', 'e.fechaEliminacion' => '0000-00-00 00:00:00', 'e.idTipoEstatusEmpleado' => ESTATUS_EMPLEADO_ACTIVO, 'u.NombreUsuario' => $usuario);
         if ($numImss > 0) {
-            $this->db->where('imss',$numImss);
+            $this->db->where('imss', $numImss);
         }
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
-               return $fila->idEmpleado;
+                return $fila->idEmpleado;
             }
         } else {
             return 0;
@@ -972,7 +954,7 @@ class Empleado extends Model
 
         $this->db->select('idEmpleado');
         $this->db->from(TBL_EMPLEADO);
-        $where = array('idEmpleado'=>$idEmpleado,'idTipoEstatusEmpleado' => ESTATUS_EMPLEADO_ACTIVO,'fechaEliminacion'=>'0000-00-00 00:00:00');
+        $where = array('idEmpleado' => $idEmpleado, 'idTipoEstatusEmpleado' => ESTATUS_EMPLEADO_ACTIVO, 'fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
@@ -995,7 +977,7 @@ class Empleado extends Model
     {
         $this->db->select('idEmpleado');
         $this->db->from(TBL_EMPLEADO);
-        $where = array('imss' => $imss,'fechaEliminacion'=>'0000-00-00 00:00:00');
+        $where = array('imss' => $imss, 'fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
