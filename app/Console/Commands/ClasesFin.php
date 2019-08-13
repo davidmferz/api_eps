@@ -52,6 +52,7 @@ class ClasesFin extends Command
             $conteo->save();
 
             $informacionCorreos = EventoInscripcion::getNombresEmail($idEventoInscripciones);
+            Log::debug($informacionCorreos);
             foreach ($informacionCorreos as $key => $value) {
                 $strToken     = sha1($value->mail . rand());
                 $token        = new TokenEncuestas();

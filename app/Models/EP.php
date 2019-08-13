@@ -2,7 +2,7 @@
 
 namespace API_EPS\Models;
 
-use API_EPS\Models\EventoCalificacion;
+use API_EPS\Models\CalificacionEntrenador;
 use API_EPS\Models\Objeto;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -974,10 +974,15 @@ SELECT TIMESTAMPADD(MICROSECOND,' . $delay . ',TIMESTAMP(ef.fechaEvento,ef.horaE
                 $club[$key]['nombre'] = $value->nombre;
             }
 
-            $fila['version'] = (Objeto::obtenerObjeto(953))['descripcion'];
+            $fila['version']     = (Objeto::obtenerObjeto(953))['descripcion'];
+            $calificacionUsuario = CalificacionEntrenador::getCalificacionesAws([$fila['idEmpleado']]);
+            if (count($calificacionUsuario) > 0) {
+                $fila['calificacion'] = $calificacionUsuario[0];
 
-            $fila['calificacion'] = self::obtenCalificacionEmpleado($fila['idEmpleado']);
-            $fila['clubs']        = $club;
+            } else {
+                $fila['calificacion'] = [];
+            }
+            $fila['clubs'] = $club;
             if ($fila['idTipoEstatusEmpleado'] == 196) {
                 $res['status'] = '200';
                 foreach ($fila as &$valor) {
@@ -1813,7 +1818,7 @@ WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
         // AND e.idoperador in (2,7)
         $query          = DB::connection('crm')->select($sql);
         $ids            = array_column($query, 'idEmpleado');
-        $calificaciones = EventoCalificacion::GetCalificaciones($ids);
+        $calificaciones = CalificacionEntrenador::getCalificacionesAws($ids);
         $res            = [];
         if (count($query) > 0) {
             foreach ($query as $fila) {
