@@ -220,7 +220,7 @@ class EPController extends ApiController
      */
     public function getSesion(Request $request)
     {
-        if ($_SESSION['idPersona']) {
+        if (isset($_SESSION['idPersona'])) {
             $out =
             array(
                 'idPersona'             => $_SESSION['idPersona'],

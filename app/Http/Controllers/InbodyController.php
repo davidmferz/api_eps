@@ -2,17 +2,18 @@
 
 namespace API_EPS\Http\Controllers;
 
-use API_EPS\Http\Controllers\ApiController;
-use API_EPS\Http\Requests\InbodyCoordinadorRequest;
+use Carbon\Carbon;
+use API_EPS\Models\EP;
+use API_EPS\Models\Un;
+use API_EPS\Models\Persona;
+use API_EPS\Models\Empleado;
 use API_EPS\Mail\MailEntrenador;
 use API_EPS\Models\AgendaInbody;
-use API_EPS\Models\Empleado;
-use API_EPS\Models\EP;
-use API_EPS\Models\Persona;
-use API_EPS\Models\Un;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use API_EPS\Http\Controllers\ApiController;
+use API_EPS\Http\Requests\InbodyCoordinadorRequest;
 
 /**
  * Extraído desde el controller /crm/system/application/controllers/ep.php
@@ -58,7 +59,7 @@ class InbodyController extends ApiController
             $inbody->save();
             if ($inbody->idAgenda) {
                 $correo = Empleado::GetEmail($idPersonaEntrenador);
-
+                Log::debug($correo);
                 //$correo                        = 'luis01cosio@gmail.com';
                 $datosMail                     = new \stdClass();
                 $datosMail->nombreEntrenador   = $nombreEmpleado;
@@ -67,6 +68,8 @@ class InbodyController extends ApiController
                 $datosMail->nombreClub         = $nombreUn;
                 $datosMail->hora               = 'de ' . $fechaSolicitud->format('H:i:s') . ' hasta ' . $fechaSolicitud->addMinutes(30)->format('H:i:s');
                 $datosMail->nombreSocio        = $nombreSocio;
+                Log::debug($correo->mail);
+
                 Mail::to($correo->mail)->send(new MailEntrenador($datosMail));
 
                 return $this->successResponse($inbody, 'Agenda ');
