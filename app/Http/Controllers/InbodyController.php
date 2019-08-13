@@ -58,7 +58,7 @@ class InbodyController extends ApiController
             $inbody->save();
             if ($inbody->idAgenda) {
                 $correo = Empleado::GetEmail($idPersonaEntrenador);
-
+                Log::debug($correo);
                 //$correo                        = 'luis01cosio@gmail.com';
                 $datosMail                     = new \stdClass();
                 $datosMail->nombreEntrenador   = $nombreEmpleado;
@@ -67,6 +67,8 @@ class InbodyController extends ApiController
                 $datosMail->nombreClub         = $nombreUn;
                 $datosMail->hora               = 'de ' . $fechaSolicitud->format('H:i:s') . ' hasta ' . $fechaSolicitud->addMinutes(30)->format('H:i:s');
                 $datosMail->nombreSocio        = $nombreSocio;
+                Log::debug($correo->mail);
+
                 Mail::to($correo->mail)->send(new MailEntrenador($datosMail));
 
                 return $this->successResponse($inbody, 'Agenda ');
