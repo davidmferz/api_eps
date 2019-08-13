@@ -2,17 +2,18 @@
 
 namespace API_EPS\Http\Controllers;
 
-use API_EPS\Http\Controllers\ApiController;
-use API_EPS\Http\Requests\InbodyCoordinadorRequest;
+use Carbon\Carbon;
+use API_EPS\Models\EP;
+use API_EPS\Models\Un;
+use API_EPS\Models\Persona;
+use API_EPS\Models\Empleado;
 use API_EPS\Mail\MailEntrenador;
 use API_EPS\Models\AgendaInbody;
-use API_EPS\Models\Empleado;
-use API_EPS\Models\EP;
-use API_EPS\Models\Persona;
-use API_EPS\Models\Un;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use API_EPS\Http\Controllers\ApiController;
+use API_EPS\Http\Requests\InbodyCoordinadorRequest;
 
 /**
  * Extraído desde el controller /crm/system/application/controllers/ep.php
