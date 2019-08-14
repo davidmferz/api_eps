@@ -5,7 +5,6 @@ namespace API_EPS\Http\Controllers;
 use API_EPS\Http\Controllers\ApiController;
 use API_EPS\Http\Requests\InbodyCoordinadorRequest;
 use API_EPS\Mail\MailEntrenador;
-use API_EPS\Mail\MailPersona;
 use API_EPS\Models\AgendaInbody;
 use API_EPS\Models\Empleado;
 use API_EPS\Models\EP;
@@ -72,6 +71,18 @@ class InbodyController extends ApiController
                 Log::debug($correo->mail);
 
                 Mail::to($correo->mail)->send(new MailEntrenador($datosMail));
+
+                $correoPersona = Persona::getMail($idPersonaSocio);
+
+//$correo                        = 'luis01cosio@gmail.com';
+                $datosMailPersona                     = new \stdClass();
+                $datosMailPersona->nombreEntrenador   = $datos->nombreEmpleado;
+                $datosMailPersona->fechaSolicitud_str = fechaStringES($fechaSolicitud);
+                $datosMailPersona->nombreClub         = $nombreUn;
+                $datosMailPersona->hora               = 'de ' . $fechaSolicitud->format('H:i:s') . ' hasta ' . $fechaSolicitud->addMinutes(30)->format('H:i:s');
+                $datosMailPersona->nombreSocio        = $datos->nombreSocio;
+                Mail::to($correoPersona)->send(new MailPersona($datosMailPersona));
+                Log::debug($correoPersona);
 
                 return $this->successResponse($inbody, 'Agenda ');
             } else {
@@ -149,18 +160,6 @@ class InbodyController extends ApiController
                 $datosMail->hora               = 'de ' . $fecha->format('H:i:s') . ' hasta ' . $fecha->addMinutes(30)->format('H:i:s');
                 $datosMail->nombreSocio        = $datos->nombreSocio;
                 Mail::to($correo->mail)->send(new MailEntrenador($datosMail));
-
-                $correoPersona = Persona::getMail($idPersona);
-
-//$correo                        = 'luis01cosio@gmail.com';
-                $datosMailPersona                     = new \stdClass();
-                $datosMailPersona->nombreEntrenador   = $datos->nombreEmpleado;
-                $datosMailPersona->fechaSolicitud_str = fechaStringES($fecha);
-                $datosMailPersona->nombreClub         = $datos->nombreClub;
-                $datosMailPersona->hora               = 'de ' . $fecha->format('H:i:s') . ' hasta ' . $fecha->addMinutes(30)->format('H:i:s');
-                $datosMailPersona->nombreSocio        = $datos->nombreSocio;
-                Mail::to($correoPersona)->send(new MailPersona($datosMail));
-
             }
 
             return $this->successResponse($inbody, 'Asignado correctamente');
