@@ -779,6 +779,38 @@ class EPController extends ApiController
         }
     }
 
+    public function loginOkta(Request $request)
+    {
+
+        // session_destroy();
+        $email    = $request->input('email');
+        // $password = $request->input('password');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $res       = EP::loginOkta($email);
+            $res_array = array_map(function ($x) {return (array) $x;}, $res);
+            if (isset($res['response'])) {
+                foreach ($res['response'] as $k => $v) {
+                    $_SESSION[$k] = $v;
+                }
+            }
+
+            session_write_close(); //En el modelo guardamos unos datos de sesion...
+            if ($res['status'] == 200) {
+                return response()->json($res['response'], 200);
+            } else {
+                return response()->json($res, 400);
+            }
+        } else {
+            $error['status']    = 400;
+            $error['message']   = 'Correo invalido';
+            $error['code']      = '1001';
+            $error['more_info'] = 'http://localhost/docs/error/1001';
+            // $this->output->set_status_header('400');
+            // $this->output->set_output(json_encode($error));
+            return response()->json($error, 400);
+        }
+    }
+
     public function login(Request $request)
     {
 
