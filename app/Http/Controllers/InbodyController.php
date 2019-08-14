@@ -2,18 +2,18 @@
 
 namespace API_EPS\Http\Controllers;
 
-use Carbon\Carbon;
-use API_EPS\Models\EP;
-use API_EPS\Models\Un;
-use API_EPS\Models\Persona;
-use API_EPS\Models\Empleado;
-use API_EPS\Mail\MailEntrenador;
-use API_EPS\Models\AgendaInbody;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use API_EPS\Http\Controllers\ApiController;
 use API_EPS\Http\Requests\InbodyCoordinadorRequest;
+use API_EPS\Mail\MailEntrenador;
+use API_EPS\Mail\MailPersona;
+use API_EPS\Models\AgendaInbody;
+use API_EPS\Models\Empleado;
+use API_EPS\Models\EP;
+use API_EPS\Models\Persona;
+use API_EPS\Models\Un;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Extraído desde el controller /crm/system/application/controllers/ep.php
@@ -59,7 +59,7 @@ class InbodyController extends ApiController
             $inbody->save();
             if ($inbody->idAgenda) {
                 $correo = Empleado::GetEmail($idPersonaEntrenador);
-                Log::debug($correo);
+                //Log::debug($correo);
                 //$correo                        = 'luis01cosio@gmail.com';
                 $datosMail                     = new \stdClass();
                 $datosMail->nombreEntrenador   = $nombreEmpleado;
@@ -68,9 +68,21 @@ class InbodyController extends ApiController
                 $datosMail->nombreClub         = $nombreUn;
                 $datosMail->hora               = 'de ' . $fechaSolicitud->format('H:i:s') . ' hasta ' . $fechaSolicitud->addMinutes(30)->format('H:i:s');
                 $datosMail->nombreSocio        = $nombreSocio;
-                Log::debug($correo->mail);
+                //Log::debug($correo->mail);
 
                 Mail::to($correo->mail)->send(new MailEntrenador($datosMail));
+
+                $correoPersona = Persona::getMail($idPersonaSocio);
+
+//$correo                        = 'luis01cosio@gmail.com';
+                $datosMailPersona                     = new \stdClass();
+                $datosMailPersona->nombreEntrenador   = $nombreEmpleado;
+                $datosMailPersona->fechaSolicitud_str = fechaStringES($fechaSolicitud);
+                $datosMailPersona->nombreClub         = $nombreUn;
+                $datosMailPersona->hora               = 'de ' . $fechaSolicitud->format('H:i:s') . ' hasta ' . $fechaSolicitud->addMinutes(30)->format('H:i:s');
+                $datosMailPersona->nombreSocio        = $nombreSocio;
+                Mail::to($correoPersona)->send(new MailPersona($datosMailPersona));
+                //Log::debug($correoPersona);
 
                 return $this->successResponse($inbody, 'Agenda ');
             } else {
@@ -134,7 +146,7 @@ class InbodyController extends ApiController
             $inbody->idEmpleado = $idEmpleado;
             $inbody->save();
             //$inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
-            $datos  = AgendaInbody::getDatosMailAgendainbody(1077);
+            $datos  = AgendaInbody::getDatosMailAgendainbody($idAgenda);
             $correo = Empleado::GetEmail($datos->idPersona_empleado);
             if ($correo != null) {
 
