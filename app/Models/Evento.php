@@ -362,7 +362,7 @@ class Evento extends Model
         $res = array();
 
         $fecha = '';
-        //var_dump($dias);
+
         foreach ($dias as $key => $value) {
             if ($fecha=='') {
                 $fecha = "'".$value."'";

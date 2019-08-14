@@ -1303,26 +1303,36 @@ class EPController extends ApiController
             if (in_array($categoria, $categorias) && $participantes == 1) {
                 // se valida que el cliente este registrado en la promocion
                 $valid = PromocionVisa::validaCliente($idPersona);
-                if ($valid && now()->format('Y-m-d') > $valid->inicio && now()->format('Y-m-d') < $valid->final) {
-                    // se obtienen rango de fechas dependiendo de tarjeta
-                    $fechas = PromocionVisa::getFechas($valid->tipo);
-                    // se obtienen las clases impartidas dentro del rango de fechas
-                    $clases = PromocionVisa::validaEvento($idPersona, $fechas, $valid->inicio, $valid->final);
-                    // validacion para comprobar si el cliente puede tomar clase gratuita
-                    if ($clases <= $fechas['days']) {
-                        $retval = array(
-                            'status'  => 'ok',
-                            'data'    => $clases,
-                            'code'    => 200,
-                            'message' => 'response',
-                        );
-                        return response()->json($retval, $retval['code']);
+                if ($valid->count() > 0) {
+                    if ($valid && now()->format('Y-m-d') > $valid->inicio && now()->format('Y-m-d') < $valid->final) {
+                        // se obtienen rango de fechas dependiendo de tarjeta
+                        $fechas = PromocionVisa::getFechas($valid->tipo);
+                        // se obtienen las clases impartidas dentro del rango de fechas
+                        $clases = PromocionVisa::validaEvento($idPersona, $fechas, $valid->inicio, $valid->final);
+                        // validacion para comprobar si el cliente puede tomar clase gratuita
+                        if ($clases <= $fechas['days']) {
+                            $retval = array(
+                                'status'  => 'ok',
+                                'data'    => $clases,
+                                'code'    => 200,
+                                'message' => 'response',
+                            );
+                            return response()->json($retval, $retval['code']);
+                        } else {
+                            $retval = array(
+                                'status'  => 'error',
+                                'data'    => array(),
+                                'code'    => 201,
+                                'message' => 'Ya no tiene clases',
+                            );
+                            return response()->json($retval, $retval['code']);
+                        }
                     } else {
                         $retval = array(
                             'status'  => 'error',
                             'data'    => array(),
                             'code'    => 201,
-                            'message' => 'Ya no tiene clases',
+                            'message' => "El cliente no entro en la promocion visa",
                         );
                         return response()->json($retval, $retval['code']);
                     }
@@ -1330,7 +1340,7 @@ class EPController extends ApiController
                     $retval = array(
                         'status'  => 'error',
                         'data'    => array(),
-                        'code'    => 201,
+                        'code'    => 202,
                         'message' => "El cliente no entro en la promocion visa",
                     );
                     return response()->json($retval, $retval['code']);
@@ -1339,7 +1349,7 @@ class EPController extends ApiController
                 $retval = array(
                     'status'  => 'error',
                     'data'    => array(),
-                    'code'    => 201,
+                    'code'    => 203,
                     'message' => "Producto o capacidad no valido en promociopn visa",
                 );
                 return response()->json($retval, $retval['code']);

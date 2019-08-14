@@ -355,7 +355,7 @@ class Permiso extends Model
         }
         $idPersona = session('idPersona');
         $idUn = session('idUn');
-        
+
         $query = DB::connection('crm')
         ->table(TBL_LOGCATEGORIA)
         ->where('idLogCategoria', $categoriaLog)
@@ -384,7 +384,7 @@ class Permiso extends Model
             'query'            => $str,
             'idProducto'       => $idProducto
         );
-        
+
         $id = DB::connection('crm')->table(TBL_LOG)
         ->insertGetId($datos);
 
@@ -582,7 +582,7 @@ class Permiso extends Model
             $this->permisos_model->log('Inserta nuevo permiso usuario club', self::LOG_PERMISOS);
         } else {
             $id = $queryBusqueda->row()->idPermisoUn;
-            var_dump($id);
+
             $this->db->where('idPermisoUn', $id);
             $this->db->update(TBL_PERMISO_UN, $datos);
             echo $this->db->last_query()."<br />";

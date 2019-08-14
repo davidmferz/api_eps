@@ -4559,7 +4559,7 @@ class Persona extends Model
         //echo $this->db->last_query();
         if($query->num_rows > 0)
         {
-            //var_dump($query->row_array());
+
             $data=['usado'=>1];
             $this->db->where('mail', $mail);
             $this->db->where('codigo', $codigo);
@@ -4628,7 +4628,7 @@ class Persona extends Model
             'idPersona'         => $idPersona,
             'idUnicoMembresia'  => $idUnicoMembresia,
             );
-            //var_dump($datos);
+
             $this->db->insert('socios.activacion', $datos);
         }
 
