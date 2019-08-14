@@ -38,6 +38,21 @@ class Persona extends Model
     ->toArray();*/
     }
 
+    public static function getMail($idPersona){
+        $sql="SELECT  mail FROM crm.persona as p
+        JOIN crm.mail as m ON p.idPersona=m.idPersona
+        where p.idPersona={$idPersona}
+        order by m.idTipoMail";
+        $query = DB::connection('crm')->select($sql);
+        if(count($query )>0){
+            return $query[0]->mail;
+        }else{
+            return false;
+        }
+
+
+    }
+
     /**
      * Bloquea telefonos de las campañas del  call center
      *
