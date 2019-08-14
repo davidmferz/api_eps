@@ -4,7 +4,7 @@ namespace API_EPS\Traits;
 
 trait ApiResponse
 {
-    protected function errorResponse($mensaje, $codigo)
+    protected function errorResponse($mensaje, $codigo = 404)
     {
         return response()->json(
             [
