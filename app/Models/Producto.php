@@ -571,18 +571,19 @@ class Producto extends Model
         }
 
         $sql =  "
-SELECT cp.cuentaProducto
-FROM producto p
-INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-    AND pu.activo=1 AND pu.eliminado=0 AND pu.idUn={$idUn}
-INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
-    AND pp.activo=1 AND pp.eliminado=0
-    AND pp.idCuentaProducto>0
-    AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
-INNER JOIN cuentaproducto cp ON cp.idCuentaProducto=pp.idCuentaProducto
-WHERE p.idProducto={$idProducto} AND p.activo=1 AND p.eliminado=0
-ORDER BY pp.idProductoPrecio DESC
-LIMIT 1";
+            SELECT cp.cuentaProducto
+            FROM producto p
+            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+                AND pu.activo=1 AND pu.eliminado=0 AND pu.idUn={$idUn}
+            INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
+                AND pp.activo=1 AND pp.eliminado=0
+                AND pp.idCuentaProducto>0
+                AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
+            INNER JOIN cuentaproducto cp ON cp.idCuentaProducto=pp.idCuentaProducto
+            WHERE p.idProducto={$idProducto} AND p.activo=1 AND p.eliminado=0
+            ORDER BY pp.idProductoPrecio DESC
+            LIMIT 1
+        ";
         $query = DB::connection('crm')->select($sql);
 
         $res = [];
@@ -2986,7 +2987,7 @@ LIMIT 1";
 
             return $datos;
         }
-        
+
         // $query = DB::connection('crm')->table(TBL_PRODUCTOPRECIO. ' AS  pp');
       /*  if ($idCuentaContable) {
             $query = $query->where('pp.idCuentaContable', $idCuentaContable);
@@ -3010,7 +3011,7 @@ LIMIT 1";
         if ($fidelidad!='') {
             $query = $query->where('pp.idTipoFidelidad', $fidelidad);
         }*/
-        
+
         $sql= "SELECT pp.importe, pp.idProductoPrecio AS id, pp.idCuentaContable, CONCAT('(', cc.numCuenta, ') ', cc.descripcion) AS cuenta,cc.numCuenta, cp.idCuentaProducto, CONCAT('(', cp.cuentaProducto, ') ', cp.descripcion) AS cuentaProducto, IFNULL(cp.cuentaProducto, '') AS numCuentaProducto, pp.activo
             from productoprecio as pp
             JOIN productoUn as  pu ON pu.idProductoUn = pp.idProductoUn
@@ -3034,7 +3035,7 @@ LIMIT 1";
             AND pp.unidades         = 1
             order by pp.idProductoPrecio DESC ";
         $query= DB::connection('crm')->select($sql);
-        
+
         if (count($query)>0) {
             $fila                       = $query[0];
             $datos['monto']             = number_format($fila->importe, 2, '.', '');
@@ -3047,7 +3048,7 @@ LIMIT 1";
             $datos['numCuentaProducto'] = $fila->numCuentaProducto;
             $datos['activo']            = $fila->activo;
         }
-        
+
         return $datos;
     }
 

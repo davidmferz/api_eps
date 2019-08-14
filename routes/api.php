@@ -15,6 +15,7 @@ Route::group(['prefix' => 'v1/'], function () {
     Route::middleware(['cors'])->group(function () {
         Route::match(['get', 'options'], 'perrito/{id}', 'EpsController@perrito');
         Route::match(['post', 'options'], 'login', 'EPController@login');
+        Route::match(['post', 'options'], 'loginOkta', 'EPController@loginOkta');
         Route::match(['get', 'options'], 'agenda/{idEntrenador}/{idUn}', 'EPController@agenda');
         Route::match(['get', 'options'], 'alta/{idInscripcion}/{idEntrenador}/{timestamp}/{empleado?}', 'EPController@alta');
         Route::match(['post', 'options'], 'altaPost', 'EPController@altaPost');
@@ -46,6 +47,10 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['post', 'options'], 'editarPerfil/{idPersona}', 'EPController@editarPerfil');
         Route::match(['post', 'options'], 'getPlanesDeTrabajoEmpleados', 'EPController@getPlanesDeTrabajoEmpleados');
         Route::match(['post', 'options'], 'buscaPersona', 'EPController@buscaPersona');
+
+        // Promo VISA
+        Route::match(['get', 'options'], 'verifyVisa/{idPersona}/{categoria}/{participantes}', 'EPController@verifyVisa');
+        Route::match(['get', 'options'], 'dataVisa/{idPersona}', 'EPController@dataVisa');
 
         // Inbody
         Route::match(['get', 'options'], 'agendaEps/{idEntrenador}/{idUn}', 'InbodyController@agendaEps');

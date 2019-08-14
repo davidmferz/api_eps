@@ -761,22 +761,23 @@ class Persona extends Model
         }
 
         $sql = "
-SELECT p.nombre, p.paterno, p.materno, p.idTipoPersona AS tipo,
-    p.fechaNacimiento AS fecha, p.idTipoSexo AS sexo, p.idTipoEstadoCivil AS civil,
-    IFNULL(p.RFC, '') AS RFC, p.idTipoTituloPersona AS titulo,
-    p.fallecido, p.idEstado AS estado, p.bloqueoMail AS bloqueo,
-    p.CURP, p.fechaRegistro AS registro, p.tour, p.idTipoProfesion,
-    p.concesionario, p.producto, p.concesionarioValido, p.idTipoEscolaridad,
-    p.idTipoNivelIngresos, p.hijos, p.bloqueoCallCenter,
-    p.idTipoPersona AS tipo,
-    IF(e.idEmpleado IS NOT NULL, 'Empleado',  IF(s.idSocio IS NOT NULL, 'Socio', 'Publico General')) AS tipoCliente
-FROM persona p
-LEFT JOIN empleado e ON e.idPersona=p.idPersona
-    AND e.idTipoEstatusEmpleado=196 AND e.fechaEliminacion='0000-00-00 00:00:00'
-LEFT JOIN socio s ON s.idPersona=p.idPersona AND s.eliminado=0
-    AND s.idTipoEstatusSocio=81
-WHERE p.idPersona={$persona} AND p.bloqueo=0
-GROUP BY p.idPersona";
+            SELECT p.nombre, p.paterno, p.materno, p.idTipoPersona AS tipo,
+                p.fechaNacimiento AS fecha, p.idTipoSexo AS sexo, p.idTipoEstadoCivil AS civil,
+                IFNULL(p.RFC, '') AS RFC, p.idTipoTituloPersona AS titulo,
+                p.fallecido, p.idEstado AS estado, p.bloqueoMail AS bloqueo,
+                p.CURP, p.fechaRegistro AS registro, p.tour, p.idTipoProfesion,
+                p.concesionario, p.producto, p.concesionarioValido, p.idTipoEscolaridad,
+                p.idTipoNivelIngresos, p.hijos, p.bloqueoCallCenter,
+                p.idTipoPersona AS tipo,
+                IF(e.idEmpleado IS NOT NULL, 'Empleado',  IF(s.idSocio IS NOT NULL, 'Socio', 'Publico General')) AS tipoCliente
+            FROM persona p
+            LEFT JOIN empleado e ON e.idPersona=p.idPersona
+                AND e.idTipoEstatusEmpleado=196 AND e.fechaEliminacion='0000-00-00 00:00:00'
+            LEFT JOIN socio s ON s.idPersona=p.idPersona AND s.eliminado=0
+                AND s.idTipoEstatusSocio=81
+            WHERE p.idPersona={$persona} AND p.bloqueo=0
+            GROUP BY p.idPersona
+        ";
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
@@ -2926,25 +2927,25 @@ GROUP BY p.idPersona";
                 WHERE MATCH(nombreCompleto) AGAINST ('{$nombre}' IN BOOLEAN MODE)";
             $query = DB::connection('crm')->select($sql);
 
-            $sql   = "CREATE INDEX idx_tmp_lista_raza ON tmp_lista_raza (idPersona)";
+            $sql = "CREATE INDEX idx_tmp_lista_raza ON tmp_lista_raza (idPersona)";
             $query = DB::connection('crm')->select($sql);
 
             $sql = "
-SELECT p.idPersona,
-UPPER(TRIM(p.nombre)) AS nombre,
-UPPER(TRIM(p.paterno)) AS paterno,
-UPPER(TRIM(p.materno)) AS materno,
-IFNULL(m.idMembresia,'') AS idMembresia, IFNULL(u.clave,'') AS clave,
-IF(m.idMembresia IS NULL, 1, 0) AS tieneMembresia
-FROM persona p
-INNER JOIN tmp_lista_raza t ON t.idPErsona=p.idPersona
-LEFT JOIN socio s ON s.idPersona=p.idPersona AND s.idTipoEstatusSocio=81 AND s.eliminado=0
-LEFT JOIN membresia m ON m.idUnicoMembresia=s.idUnicoMembresia AND m.idTipoEstatusMembresia=27
-    AND m.eliminado=0
-LEFT JOIN un u ON u.idUn=m.idUn
-WHERE CONCAT_WS(' ', p.nombre, p.paterno, p.materno) LIKE '%$nom%' $w_min $w_max
-ORDER BY 7, p.nombre, p.paterno, p.materno
-LIMIT $numeroRegistros";
+            SELECT p.idPersona,
+            UPPER(TRIM(p.nombre)) AS nombre,
+            UPPER(TRIM(p.paterno)) AS paterno,
+            UPPER(TRIM(p.materno)) AS materno,
+            IFNULL(m.idMembresia,'') AS idMembresia, IFNULL(u.clave,'') AS clave,
+            IF(m.idMembresia IS NULL, 1, 0) AS tieneMembresia
+            FROM persona p
+            INNER JOIN tmp_lista_raza t ON t.idPErsona=p.idPersona
+            LEFT JOIN socio s ON s.idPersona=p.idPersona AND s.idTipoEstatusSocio=81 AND s.eliminado=0
+            LEFT JOIN membresia m ON m.idUnicoMembresia=s.idUnicoMembresia AND m.idTipoEstatusMembresia=27
+                AND m.eliminado=0
+            LEFT JOIN un u ON u.idUn=m.idUn
+            WHERE CONCAT_WS(' ', p.nombre, p.paterno, p.materno) LIKE '%$nom%' $w_min $w_max
+            ORDER BY 7, p.nombre, p.paterno, p.materno
+            LIMIT $numeroRegistros";
 
         }
         $query = DB::connection('crm')->select($sql);
@@ -4544,9 +4545,9 @@ LIMIT $numeroRegistros";
         $this->db->where('vigencia >=', $fechaHoy);
         $query = $this->db->get();
         //echo $this->db->last_query();
-        if ($query->num_rows > 0) {
-            //var_dump($query->row_array());
-            $data = ['usado' => 1];
+        if($query->num_rows > 0)
+        {
+            $data=['usado'=>1];
             $this->db->where('mail', $mail);
             $this->db->where('codigo', $codigo);
             $this->db->where('usado', 0);
@@ -4610,7 +4611,7 @@ LIMIT $numeroRegistros";
                 'idPersona'        => $idPersona,
                 'idUnicoMembresia' => $idUnicoMembresia,
             );
-            //var_dump($datos);
+
             $this->db->insert('socios.activacion', $datos);
         }
 

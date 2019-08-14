@@ -19,6 +19,8 @@ use API_EPS\Models\Producto;
 use API_EPS\Models\Socio;
 use API_EPS\Models\Token;
 use API_EPS\Models\Un;
+use API_EPS\Models\PromocionVisa;
+use API_EPS\Models\VisaEventoInscripcion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -448,8 +450,8 @@ class EPController extends ApiController
 
         session_write_close();
         $jsonData = json_decode(trim(file_get_contents('php://input')), true);
-
         $fail  = 0;
+        $visa  = 0;
         $error = array();
 
         if (!isset($jsonData['idCategoria'])) {
@@ -489,6 +491,11 @@ class EPController extends ApiController
         if (isset($jsonData['demo'])) {
             $demo = $jsonData['demo'];
         }
+
+        if (array_key_exists('visa', $jsonData)) {
+            $visa = $jsonData['visa'];
+        }
+
         $cantidad = 1;
         if (isset($jsonData['cantidad'])) {
             $cantidad = $jsonData['cantidad'];
@@ -539,7 +546,7 @@ class EPController extends ApiController
             if ($idEvento > 0) {
                 $totalSesiones = $jsonData['clases'] * $cantidad;
                 $importe       = $jsonData['importe'];
-                if ($demo == 1) {
+                if ($demo == 1 || $visa == 1) {
                     $totalSesiones             = 1;
                     $importe                   = 0.00;
                     $cantidad                  = 1;
@@ -549,8 +556,16 @@ class EPController extends ApiController
                     $idEvento, $jsonData['idUn'], $jsonData['idCliente'], $jsonData['idVendedor'],
                     $importe, 0, $jsonData['idUnicoMembresia'], $cantidad,
                     $totalSesiones, TIPO_CLIENTEEXTERNO,
-                    1, 0, $jsonData['participantes'], $jsonData['idEntrenador']
+                    1, 0, $jsonData['participantes'], $jsonData['idEntrenador'], $visa
                 );
+                // inserta registros VISA
+                if ($visa == 1) {
+                    $valid = PromocionVisa::validaCliente($jsonData['idCliente']);
+                    $sql = "INSERT INTO crm.visaeventoinscripcion (idpromocionvisa, idPersona, idEventoInscripcion)
+                    VALUES (".$valid['id'].",".$jsonData['idCliente'].",".$idIncripcion['idIncripcion'].")";
+                    $resultado = DB::connection('crm')->select($sql);
+                }
+
                 $generales      = Evento::datosGenerales($idEvento, $jsonData['idUn']);
                 $cuenta         = Evento::ctaContable($idEvento, $jsonData['idUn']);
                 $cuentaProducto = Evento::ctaProducto($idEvento, $jsonData['idUn']);
@@ -645,7 +660,7 @@ class EPController extends ApiController
                 $datos['cuentaProducto']          = Producto::ctaProducto($generales['idProducto'], $jsonData['idUn']);
                 $datos['idTipoEstatusMovimiento'] = MOVIMIENTO_PENDIENTE;
 
-                if ($demo == 1) {
+                if ($demo == 1 || $visa == 1) {
                     $datos['importe']                 = 0;
                     $datos['idTipoEstatusMovimiento'] = MOVIMIENTO_EXCEPCION_PAGO;
                 }
@@ -662,6 +677,10 @@ class EPController extends ApiController
 
                 if ($demo == 1) {
                     $datos['descripcion'] = 'Demo ' . $descripcionMov . ' - ' . $nombreClub . ' (Num. Inscripcion ' . $idIncripcion['idIncripcion'] . ')';
+                }
+
+                if ($visa == 1) {
+                    $datos['descripcion'] = 'VISA ' . $descripcionMov . ' - ' . $nombreClub . ' (Num. Inscripcion ' . $idIncripcion['idIncripcion'] . ')';
                 }
 
                 $idMovimiento = Movimiento::inserta($datos);
@@ -757,6 +776,38 @@ class EPController extends ApiController
             $error['code']      = '1009';
             $error['more_info'] = 'http://localhost/docs/error/1009';
             $this->output->set_output(json_encode($error));
+        }
+    }
+
+    public function loginOkta(Request $request)
+    {
+
+        // session_destroy();
+        $email    = $request->input('email');
+        // $password = $request->input('password');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $res       = EP::loginOkta($email);
+            $res_array = array_map(function ($x) {return (array) $x;}, $res);
+            if (isset($res['response'])) {
+                foreach ($res['response'] as $k => $v) {
+                    $_SESSION[$k] = $v;
+                }
+            }
+
+            session_write_close(); //En el modelo guardamos unos datos de sesion...
+            if ($res['status'] == 200) {
+                return response()->json($res['response'], 200);
+            } else {
+                return response()->json($res, 400);
+            }
+        } else {
+            $error['status']    = 400;
+            $error['message']   = 'Correo invalido';
+            $error['code']      = '1001';
+            $error['more_info'] = 'http://localhost/docs/error/1001';
+            // $this->output->set_status_header('400');
+            // $this->output->set_output(json_encode($error));
+            return response()->json($error, 400);
         }
     }
 
@@ -1206,8 +1257,99 @@ class EPController extends ApiController
         }
     }
 
-    public function hola()
+    public function verifyVisa($idPersona, $categoria, $participantes)
     {
-        return 'hola';
+        // productos validos
+        $categorias = array(108,109, 111);
+
+        try {
+            // se valida que el producto a vender
+            if (in_array($categoria, $categorias) && $participantes == 1) {
+                // se valida que el cliente este registrado en la promocion
+                $valid = PromocionVisa::validaCliente($idPersona);
+                if ($valid->count() > 0) {
+                    if ($valid && now()->format('Y-m-d') > $valid->inicio && now()->format('Y-m-d') < $valid->final) {
+                        // se obtienen rango de fechas dependiendo de tarjeta
+                        $fechas = PromocionVisa::getFechas($valid->tipo);
+                        // se obtienen las clases impartidas dentro del rango de fechas
+                        $clases = PromocionVisa::validaEvento($idPersona, $fechas, $valid->inicio, $valid->final);
+                        // validacion para comprobar si el cliente puede tomar clase gratuita
+                        if ($clases <= $fechas['days']) {
+                            $retval = array(
+                                'status'  => 'ok',
+                                'data'    => $clases,
+                                'code'    => 200,
+                                'message' => 'response',
+                            );
+                            return response()->json($retval, $retval['code']);
+                        } else {
+                            $retval = array(
+                                'status'  => 'error',
+                                'data'    => array(),
+                                'code'    => 201,
+                                'message' => 'Ya no tiene clases',
+                            );
+                            return response()->json($retval, $retval['code']);
+                        }
+                    } else {
+                        $retval = array(
+                            'status'  => 'error',
+                            'data'    => array(),
+                            'code'    => 201,
+                            'message' => "El cliente no entro en la promocion visa",
+                        );
+                        return response()->json($retval, $retval['code']);
+                    }
+                } else {
+                    $retval = array(
+                        'status'  => 'error',
+                        'data'    => array(),
+                        'code'    => 202,
+                        'message' => "El cliente no entro en la promocion visa",
+                    );
+                    return response()->json($retval, $retval['code']);
+                }
+            } else {
+                $retval = array(
+                    'status'  => 'error',
+                    'data'    => array(),
+                    'code'    => 203,
+                    'message' => "Producto o capacidad no valido en promociopn visa",
+                );
+                return response()->json($retval, $retval['code']);
+            }
+        } catch (\RuntimeException $ex) {
+            header('Bad Request', true, 400);
+            $retval = array(
+                'status'  => 'error',
+                'data'    => array(),
+                'code'    => 400,
+                'message' => $ex->getMessage(),
+            );
+            return response()->json($retval, $retval['code']);
+        }
+    }
+
+    public function dataVisa($idPersona)
+    {
+        try {
+            $valid = PromocionVisa::validaCliente($idPersona);
+            $retval = array(
+                'status'  => 'ok',
+                'data'    => $valid,
+                'code'    => 200,
+                'message' => 'response',
+            );
+            return response()->json($retval);
+        } catch (\RuntimeException $ex) {
+            header('Bad Request', true, 400);
+            $retval = array(
+                'status'  => 'error',
+                'data'    => array(),
+                'code'    => 400,
+                'message' => $ex->getMessage(),
+            );
+            return response()->json($retval, $retval['code']);
+        }
     }
 }
