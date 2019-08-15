@@ -13,6 +13,8 @@
 
 Route::group(['prefix' => 'v1/'], function () {
     Route::middleware(['cors'])->group(function () {
+        
+        //Route::match(['get', 'options'], 'pruebaMetodo', 'EPController@pruebaMetodo');
         Route::match(['get', 'options'], 'perrito/{id}', 'EpsController@perrito');
         Route::match(['post', 'options'], 'login', 'EPController@login');
         Route::match(['post', 'options'], 'loginOkta', 'EPController@loginOkta');
