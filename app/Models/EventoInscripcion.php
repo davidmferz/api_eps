@@ -36,15 +36,13 @@ class EventoInscripcion extends Model
         $fechaIni = Carbon::now()->minute(0)->second(0);
 
         $fechaFin = Carbon::now()->addHour()->minute(0)->second(0);
-        return $query->select('ef.idEventoInscripcion')
+         return $query->select('ef.idEventoInscripcion')
             ->join('crm.eventofecha as ef', 'ef.idEventoInscripcion', '=', 'eventoinscripcion.idEventoInscripcion')
             ->whereRaw('eventoinscripcion.eliminado= 0')
             ->whereRaw('eventoinscripcion.totalSesiones = eventoinscripcion.totalSeguimiento')
-            ->whereBetween('ef.fechaEvento', [
-                //'2019-04-27', '2019-04-27',
-                $fechaIni->format('Y-m-d'), $fechaFin->format('Y-m-d'),
-            ])
-            ->whereBetween('ef.horaEvento', [$fechaIni->format('H:i:s'), $fechaFin->format('H:i:s')])
+            ->where('ef.fechaEvento', $fechaIni->format('Y-m-d'))
+            ->where('ef.horaEvento', '>=',$fechaIni->format('H:i:s'))
+            ->where('ef.horaEvento', '<',$fechaFin->format('H:i:s'))
             ->get()
             ->toArray();
         /*$addSlashes = str_replace('?', "'?'", $query->toSql());
