@@ -120,6 +120,7 @@ class Calificacion extends ApiController
                 );
             }
             $validToken->valid = 0;
+            $validToken->fechaUsado = Carbon::now();
             $validToken->save();
             return $this->successResponse($newRegistro->idEventoCalificacion);
 
