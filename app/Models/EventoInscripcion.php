@@ -36,13 +36,13 @@ class EventoInscripcion extends Model
         $fechaIni = Carbon::now()->minute(0)->second(0);
 
         $fechaFin = Carbon::now()->addHour()->minute(0)->second(0);
-         return $query->select('ef.idEventoInscripcion')
+        return $query->select('ef.idEventoInscripcion')
             ->join('crm.eventofecha as ef', 'ef.idEventoInscripcion', '=', 'eventoinscripcion.idEventoInscripcion')
             ->whereRaw('eventoinscripcion.eliminado= 0')
             ->whereRaw('eventoinscripcion.totalSesiones = eventoinscripcion.totalSeguimiento')
             ->where('ef.fechaEvento', $fechaIni->format('Y-m-d'))
-            ->where('ef.horaEvento', '>=',$fechaIni->format('H:i:s'))
-            ->where('ef.horaEvento', '<',$fechaFin->format('H:i:s'))
+            ->where('ef.horaEvento', '>=', $fechaIni->format('H:i:s'))
+            ->where('ef.horaEvento', '<', $fechaFin->format('H:i:s'))
             ->get()
             ->toArray();
         /*$addSlashes = str_replace('?', "'?'", $query->toSql());
@@ -77,10 +77,11 @@ class EventoInscripcion extends Model
        ) as mail
        FROM crm.eventoinscripcion as ei
        JOIN crm.persona as p ON p.idPersona=ei.idPersona
-       JOIN empleado as e ON e.idEmpleado=ei.idEmpleado
-       JOIN crm.persona as pe ON pe.idPersona=e.idPersona
+       JOIN crm.eventoinvolucrado eie ON ei.idEventoInscripcion=eie.idEventoInscripcion
+       JOIN crm.persona as pe ON pe.idPersona=eie.idPersona
 
         where ei.idEventoInscripcion IN ({$strIds})
+        AND eie.tipo='Entrenador'
        ;";
         $query = DB::connection('crm')->select($sql);
         return $query;
