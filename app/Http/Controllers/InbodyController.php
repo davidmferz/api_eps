@@ -78,7 +78,7 @@ class InbodyController extends ApiController
 //$correo                        = 'luis01cosio@gmail.com';
                 $datosMailPersona                     = new \stdClass();
                 $datosMailPersona->nombreEntrenador   = $nombreEmpleado;
-                $datosMailPersona->fechaSolicitud_str = fechaStringES($fechaAuxCorreo);
+                $datosMailPersona->fechaSolicitud_str = fechaStringES($fechaSolicitud);
                 $datosMailPersona->nombreClub         = $nombreUn;
                 $datosMailPersona->hora               = 'de ' . $fechaAuxCorreo->format('H:i:s') . ' hasta ' . $fechaAuxCorreo->addMinutes(30)->format('H:i:s');
                 $datosMailPersona->nombreSocio        = $nombreSocio;
