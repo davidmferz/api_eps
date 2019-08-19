@@ -55,7 +55,7 @@ class InbodyController extends ApiController
             $inbody->idEmpleado     = $idEmpleado;
             $inbody->idUn           = $idUn;
             $inbody->fechaSolicitud = $fechaSolicitud->format('Y-m-d H:i:s');
-            $fechaAuxCorreo         = $fechaSolicitud->format('Y-m-d H:i:s');
+            $fechaAuxCorreo         = new Carbon($request->input('fechaSolicitud'));
             $inbody->horario        = $hora;
             $inbody->save();
             if ($inbody->idAgenda) {
