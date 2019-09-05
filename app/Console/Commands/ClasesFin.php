@@ -54,18 +54,21 @@ class ClasesFin extends Command
             $informacionCorreos = EventoInscripcion::getNombresEmail($idEventoInscripciones);
             Log::debug($informacionCorreos);
             foreach ($informacionCorreos as $key => $value) {
-                $strToken     = sha1($value->mail . rand());
-                $token        = new TokenEncuestas();
-                $token->token = $strToken;
-                $token->save();
-                $value->token = $strToken;
-                $value->host  = env('APP_URL');
-                $url          = $value->host . '/app-eps/#/calificacion/' . $value->idEventoInscripcion . '/' . $value->token;
-                //Log::debug('Prueba mail');
-                //Log::debug($value->mail);
-                //Log::debug($url);
+                if ($value->mail != null) {
 
-                Mail::to($value->mail)->send(new SendEncuestaEvaluacion($value));
+                    $strToken     = sha1($value->mail . rand());
+                    $token        = new TokenEncuestas();
+                    $token->token = $strToken;
+                    $token->save();
+                    $value->token = $strToken;
+                    $value->host  = env('APP_URL');
+                    $url          = $value->host . '/app-eps/#/calificacion/' . $value->idEventoInscripcion . '/' . $value->token;
+                    //Log::debug('Prueba mail');
+                    //Log::debug($value->mail);
+                    //Log::debug($url);
+
+                    Mail::to($value->mail)->send(new SendEncuestaEvaluacion($value));
+                }
             }
 
         }
