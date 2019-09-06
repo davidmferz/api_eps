@@ -38,7 +38,7 @@ class Menu extends Model
         $ini        = $fecha->format('Y-m-d');
         $fin        = $fecha->endOfMonth()->format('Y-m-d');
 
-        return $query->selectRaw("CONCAT(p.nombre,' ',p.paterno,' ',p.materno) nombre_socio, cr.rutina, cr.nivel,menu.observaciones, menu.idEmpleado")
+        return $query->selectRaw("CONCAT(p.nombre,' ',p.paterno,' ',p.materno) nombre_socio, cr.rutina, cr.nivel,menu.observaciones, menu.idEmpleado, date(menu.fechaRegistro) as fechaRegistro ")
             ->join('piso.cat_rutinas as cr', 'cr.id', '=', 'menu.idRutina')
             ->Join('deportiva.persona as p', 'p.idPersona', '=', 'menu.idPersona')
             ->join('deportiva.empleado as e', 'e.idPersona', '=', 'menu.idEmpleado')
