@@ -54,11 +54,9 @@ class CalificacionEntrenador extends Model
                     ei.idEmpleado,
                     TRUNCATE(SUM(ec.calificacion)/COUNT(ec.calificacion),2) AS calificacion,
                     AVG(IF(ec.{$columna} >0 ,ec.{$columna} ,NULL)) as promedio
-
                     FROM crm.eventocalificacion ec
-                    JOIN crm.eventoinscripcion ei ON ei.idEventoInscripcion = ec.idEventoInscripcion
-                        AND ei.idEmpleado = ec.idEmpleado
-                    JOIN crm.empleado as e ON e.idempleado=ei.idEmpleado  AND idTipoEstatusEmpleado=196
+                    JOIN crm.eventoinvolucrado ei ON ei.idEventoInscripcion = ec.idEventoInscripcion AND tipo='Entrenador'
+                    JOIN crm.empleado as e ON e.idPersona=ei.idPersona AND idTipoEstatusEmpleado=196
                     JOIN crm.persona as p ON p.idPersona=ei.idPersona
                     WHERE ei.idEmpleado IN ({$idEmpleado})
                     AND ei.fechaEliminacion = 0
