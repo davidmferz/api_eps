@@ -58,10 +58,10 @@ class CalificacionEntrenador extends Model
                     JOIN crm.eventoinvolucrado ei ON ei.idEventoInscripcion = ec.idEventoInscripcion AND tipo='Entrenador'
                     JOIN crm.empleado as e ON e.idPersona=ei.idPersona AND idTipoEstatusEmpleado=196
                     JOIN crm.persona as p ON p.idPersona=ei.idPersona
-                    WHERE ei.idEmpleado IN ({$idEmpleado})
+                    WHERE e.idEmpleado IN ({$idEmpleado})
                     AND ei.fechaEliminacion = 0
                     AND ec.fechaEliminacion = 0
-                    GROUP BY ei.idEmpleado
+                    GROUP BY e.idEmpleado
                    ";
         $calificacion = DB::connection('crm')->select($sql);
         if (count($calificacion) > 0) {
