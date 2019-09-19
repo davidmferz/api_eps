@@ -19,15 +19,21 @@ class EventoInscripcion extends Model
 
     public function scopeinfoEvento($query, $idEventoInscripciones)
     {
-        return $query->selectRaw("CONCAT(pe.nombre,' ',pe.paterno,' ',pe.materno) nombre_entrenador, pro.nombre,e.idEmpleado")
-            ->join('empleado as e', 'e.idEmpleado', '=', 'eventoinscripcion.idEmpleado')
+        $query->selectRaw("CONCAT(pe.nombre,' ',pe.paterno,' ',pe.materno) nombre_entrenador, pro.nombre,e.idEmpleado")
+            ->join('eventoinvolucrado as ei', 'ei.idEventoInscripcion', '=', 'eventoinscripcion.idEventoInscripcion')
+            ->join('empleado as e', 'e.idPersona', '=', 'ei.idPersona')
             ->join('persona as pe', 'pe.idPersona', '=', 'e.idPersona')
             ->join('eventoun as eu', 'eu.idEventoUn', '=', 'eventoinscripcion.idEventoUn')
             ->join('evento as ev', 'ev.idEvento', '=', 'eu.idEvento')
             ->join('producto as pro', 'pro.idProducto', '=', 'ev.idProducto')
             ->where('eventoinscripcion.idEventoInscripcion', $idEventoInscripciones)
-            ->get()
-            ->toArray();
+            ->where('ei.tipo', 'Entrenador');
+        $addSlashes = str_replace('?', "'?'", $query->toSql());
+        $sq         = vsprintf(str_replace('?', '%s', $addSlashes), $query->getBindings());
+        dd($sq);
+
+        /*->get()
+    ->toArray();*/
     }
 
     public function scopeFindClasesTerminadas($query)
