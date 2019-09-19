@@ -27,13 +27,9 @@ class EventoInscripcion extends Model
             ->join('evento as ev', 'ev.idEvento', '=', 'eu.idEvento')
             ->join('producto as pro', 'pro.idProducto', '=', 'ev.idProducto')
             ->where('eventoinscripcion.idEventoInscripcion', $idEventoInscripciones)
-            ->where('ei.tipo', 'Entrenador');
-        $addSlashes = str_replace('?', "'?'", $query->toSql());
-        $sq         = vsprintf(str_replace('?', '%s', $addSlashes), $query->getBindings());
-        dd($sq);
-
-        /*->get()
-    ->toArray();*/
+            ->where('ei.tipo', 'Entrenador')
+            ->get()
+            ->toArray();
     }
 
     public function scopeFindClasesTerminadas($query)
