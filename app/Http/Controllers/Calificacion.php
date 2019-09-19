@@ -10,6 +10,7 @@ use API_EPS\Models\EventoInscripcion;
 use API_EPS\Models\TokenEncuestas;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class Calificacion extends ApiController
@@ -119,7 +120,7 @@ class Calificacion extends ApiController
                     $question4]
                 );
             }
-            $validToken->valid = 0;
+            $validToken->valid      = 0;
             $validToken->fechaUsado = Carbon::now();
             $validToken->save();
             return $this->successResponse($newRegistro->idEventoCalificacion);
