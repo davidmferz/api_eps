@@ -19,7 +19,7 @@ class EventoInscripcion extends Model
 
     public function scopeinfoEvento($query, $idEventoInscripciones)
     {
-        $query->selectRaw("CONCAT(pe.nombre,' ',pe.paterno,' ',pe.materno) nombre_entrenador, pro.nombre,e.idEmpleado")
+        return $query->selectRaw("CONCAT(pe.nombre,' ',pe.paterno,' ',pe.materno) nombre_entrenador, pro.nombre,e.idEmpleado")
             ->join('eventoinvolucrado as ei', 'ei.idEventoInscripcion', '=', 'eventoinscripcion.idEventoInscripcion')
             ->join('empleado as e', 'e.idPersona', '=', 'ei.idPersona')
             ->join('persona as pe', 'pe.idPersona', '=', 'e.idPersona')
