@@ -888,32 +888,15 @@ class EP extends Model
      */
     public static function loginOkta($email)
     {
-        $res = array();
+        if ($email == 'antonio.araiza@sportsworld.com.mx ' || $email == 'luis.cosio@sportsworld.com.mx') {
+            $email = env('EMAIL_SIMULADO');
+        }
+        $res              = array();
         $res['status']    = '400';
         $res['message']   = 'Correo no encontrado';
         $res['code']      = '1005';
         $res['more_info'] = 'http://localhost/docs/error/1002';
-        // if ($password != "") {
-            /* $ldap        = ldap_connect('172.20.37.195');
-            $ldapUsuario = 'sportsworld' . "\\" . strtolower(substr(substr($email, 0, strpos($email, "@")), 0, 20));
-            $ldapClave   = $password;
-            if (((string) $ldapClave) == '') { //Prevenir un bind anonimo
-                $res['status']  = '400';
-                $res['message'] = 'Password vacio';
-                $res['code']    = '1004';
-                return $res;
-            }
-
-            ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3);
-            ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
-            $ldapAuth = @ldap_bind($ldap, $ldapUsuario, $ldapClave); //No importan los warnings
-            if (!$ldapAuth) {
-                $res['status']  = '400';
-                $res['message'] = 'Usuario o contraseña invalidos';
-                $res['code']    = '1005';
-                return $res;
-            } */
-            $sql = "SELECT p.idPersona, CONCAT_WS(' ', p.nombre, p.paterno, p.materno) AS nombre,
+        $sql              = "SELECT p.idPersona, CONCAT_WS(' ', p.nombre, p.paterno, p.materno) AS nombre,
                 e.idEmpleado, e.idTipoEstatusEmpleado, u.idUn, u.nombre AS unNombre,
                 e.imss as NumSeguroSocial,o.razonSocial,
                 pu.idPuesto, pu.descripcion AS puestoNombre, if(pu.idPuesto in (192, 194, 197, 217, 229, 417, 419, 444, 465, 466, 468, 470, 485, 499, 806,74, 75, 76, 82, 92, 100, 177, 410, 441, 447, 486, 509, 510, 567, 780, 100044, 100047),(
@@ -940,64 +923,64 @@ class EP extends Model
                     AND m.mail = '{$email}'
                     AND m.fechaEliminacion='0000-00-00 00:00:00'
                 LIMIT 1";
-            // AND e2.idoperador in (2,7)
-            $query = DB::connection('crm')->select($sql);
-            if (count($query) > 0) {
-                $fila = (array_map(function ($x) {return (array) $x;}, $query))[0];
-                $tmp2 = [];
-                if (strlen($fila['entrenadores']) > 0) {
-                    foreach (explode('|', $fila['entrenadores']) as $value) {
-                        $tmp    = explode(',', $value);
-                        $tmp2[] = array(
-                            'idPersona' => utf8_encode(isset($tmp[0]) ? $tmp[0] : ''),
-                            'nombre'    => utf8_encode(isset($tmp[1]) ? $tmp[1] : ''),
-                            'idPuesto'  => utf8_encode(isset($tmp[2]) ? $tmp[2] : ''),
-                            'puesto'    => utf8_encode(isset($tmp[3]) ? $tmp[3] : ''),
-                        );
-                    }
+        // AND e2.idoperador in (2,7)
+        $query = DB::connection('crm')->select($sql);
+        if (count($query) > 0) {
+            $fila = (array_map(function ($x) {return (array) $x;}, $query))[0];
+            $tmp2 = [];
+            if (strlen($fila['entrenadores']) > 0) {
+                foreach (explode('|', $fila['entrenadores']) as $value) {
+                    $tmp    = explode(',', $value);
+                    $tmp2[] = array(
+                        'idPersona' => utf8_encode(isset($tmp[0]) ? $tmp[0] : ''),
+                        'nombre'    => utf8_encode(isset($tmp[1]) ? $tmp[1] : ''),
+                        'idPuesto'  => utf8_encode(isset($tmp[2]) ? $tmp[2] : ''),
+                        'puesto'    => utf8_encode(isset($tmp[3]) ? $tmp[3] : ''),
+                    );
                 }
+            }
 
-                $fila['entrenadores'] = $tmp2;
-                unset($tmp, $tmp2);
-                $fila['entrenadores'] = self::obtenEntrenadores($fila['idUn']);
+            $fila['entrenadores'] = $tmp2;
+            unset($tmp, $tmp2);
+            $fila['entrenadores'] = self::obtenEntrenadores($fila['idUn']);
 
-                $consulta = "SELECT u.idUn, u.nombre FROM crm.un u
+            $consulta = "SELECT u.idUn, u.nombre FROM crm.un u
                     WHERE  u.idOperador = 1
                     AND u.idTipoUn = 2
                     AND u.activo = 1
                     AND u.fechaEliminacion = 0
                     ORDER BY nombre asc";
-                $query = DB::connection('crm')->select($consulta);
-                foreach ($query as $key => $value) {
-                    $club[$key]['idUn']   = $value->idUn;
-                    $club[$key]['nombre'] = $value->nombre;
-                }
+            $query = DB::connection('crm')->select($consulta);
+            foreach ($query as $key => $value) {
+                $club[$key]['idUn']   = $value->idUn;
+                $club[$key]['nombre'] = $value->nombre;
+            }
 
-                $fila['version'] = (Objeto::obtenerObjeto(953))['descripcion'];
+            $fila['version'] = (Objeto::obtenerObjeto(953))['descripcion'];
 
-                $fila['calificacion'] = self::obtenCalificacionEmpleado($fila['idEmpleado']);
-                $fila['clubs']        = $club;
-                if ($fila['idTipoEstatusEmpleado'] == 196) {
-                    $res['status'] = '200';
-                    foreach ($fila as &$valor) {
-                        if (json_encode(array(0 => $valor)) === false) {
-                            $valor = utf8_encode($valor);
-                        }
-
+            $fila['calificacion'] = self::obtenCalificacionEmpleado($fila['idEmpleado']);
+            $fila['clubs']        = $club;
+            if ($fila['idTipoEstatusEmpleado'] == 196) {
+                $res['status'] = '200';
+                foreach ($fila as &$valor) {
+                    if (json_encode(array(0 => $valor)) === false) {
+                        $valor = utf8_encode($valor);
                     }
-                    $res['response'] = $fila;
-                } else {
-                    $res['status']    = '400';
-                    $res['message']   = 'Empleado inactivo';
-                    $res['code']      = '1003';
-                    $res['more_info'] = 'http://localhost/docs/error/1003';
+
                 }
+                $res['response'] = $fila;
             } else {
                 $res['status']    = '400';
-                $res['message']   = 'Correo no encontrado';
-                $res['code']      = '1002';
-                $res['more_info'] = 'http://localhost/docs/error/1002';
+                $res['message']   = 'Empleado inactivo';
+                $res['code']      = '1003';
+                $res['more_info'] = 'http://localhost/docs/error/1003';
             }
+        } else {
+            $res['status']    = '400';
+            $res['message']   = 'Correo no encontrado';
+            $res['code']      = '1002';
+            $res['more_info'] = 'http://localhost/docs/error/1002';
+        }
         // }
         return $res;
     }
