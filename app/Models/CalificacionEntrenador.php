@@ -51,7 +51,7 @@ class CalificacionEntrenador extends Model
         }
 
         $sql = "SELECT
-                    ei.idEmpleado,
+                    e.idEmpleado,
                     TRUNCATE(SUM(ec.calificacion)/COUNT(ec.calificacion),2) AS calificacion,
                     AVG(IF(ec.{$columna} >0 ,ec.{$columna} ,NULL)) as promedio
                     FROM crm.eventocalificacion ec
