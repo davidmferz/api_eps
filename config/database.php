@@ -11,9 +11,9 @@ return [
     | to use as your default connection for all database work. Of course
     | you may use many connections at once using the Database library.
     |
-    */
+     */
 
-    'default' => env('DB_CONNECTION', 'aws'),
+    'default'     => env('DB_CONNECTION', 'aws'),
 
     /*
     |--------------------------------------------------------------------------
@@ -29,11 +29,11 @@ return [
     | so make sure you have the driver for your particular database of
     | choice installed on your machine before you begin development.
     |
-    */
+     */
 
     'connections' => [
 
-	'aws' => [
+        'aws'     => [
             'driver'      => 'mysql',
             'host'        => env('DB_HOST_AWS'),
             'port'        => env('DB_PORT_AWS'),
@@ -47,8 +47,21 @@ return [
             'strict'      => false,
             'engine'      => null,
         ],
-
-        'crm' => [
+        'crm'     => [
+            'driver'      => 'mysql',
+            'host'        => env('DB_HOST_CRM'),
+            'port'        => env('DB_PORT_CRM'),
+            'database'    => env('DB_DATABASE_CRM'),
+            'username'    => env('DB_USERNAME_CRM'),
+            'password'    => env('DB_PASSWORD_CRM'),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset'     => 'utf8mb4',
+            'collation'   => 'utf8mb4_unicode_ci',
+            'prefix'      => '',
+            'strict'      => false,
+            'engine'      => null,
+        ],
+        'crmUtf8' => [
             'driver'      => 'mysql',
             'host'        => env('DB_HOST_CRM'),
             'port'        => env('DB_PORT_CRM'),
@@ -62,7 +75,6 @@ return [
             'strict'      => false,
             'engine'      => null,
         ],
-
     ],
 
     /*
@@ -74,9 +86,9 @@ return [
     | your application. Using this information, we can determine which of
     | the migrations on disk haven't actually been run in the database.
     |
-    */
+     */
 
-    'migrations' => 'migrations',
+    'migrations'  => 'migrations',
 
     /*
     |--------------------------------------------------------------------------
@@ -87,16 +99,16 @@ return [
     | provides a richer body of commands than a typical key-value system
     | such as APC or Memcached. Laravel makes it easy to dig right in.
     |
-    */
+     */
 
-    'redis' => [
+    'redis'       => [
 
-        'client' => 'predis',
+        'client'  => 'predis',
 
         'default' => [
-            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'host'     => env('REDIS_HOST', '127.0.0.1'),
             'password' => env('REDIS_PASSWORD', null),
-            'port' => env('REDIS_PORT', 6379),
+            'port'     => env('REDIS_PORT', 6379),
             'database' => env('REDIS_DB', 0),
         ],
 
