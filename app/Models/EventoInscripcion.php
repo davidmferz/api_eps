@@ -39,12 +39,15 @@ class EventoInscripcion extends Model
 
         $fechaFin = Carbon::now()->addHour()->minute(0)->second(0);
         return $query->select('ef.idEventoInscripcion')
+            ->distinct()
             ->join('crm.eventofecha as ef', 'ef.idEventoInscripcion', '=', 'eventoinscripcion.idEventoInscripcion')
+            ->leftJoin('crm.eventocalificacion as ec', 'ec.idEventoInscripcion', '=', 'ef.idEventoInscripcion')
             ->whereRaw('eventoinscripcion.eliminado= 0')
             ->whereRaw('eventoinscripcion.totalSesiones = eventoinscripcion.totalSeguimiento')
             ->where('ef.fechaEvento', $fechaIni->format('Y-m-d'))
             ->where('ef.horaEvento', '>=', $fechaIni->format('H:i:s'))
             ->where('ef.horaEvento', '<', $fechaFin->format('H:i:s'))
+            ->whereNull('ec.idEventoInscripcion')
             ->get()
             ->toArray();
         /*$addSlashes = str_replace('?', "'?'", $query->toSql());
