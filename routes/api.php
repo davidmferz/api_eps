@@ -72,6 +72,8 @@ Route::group(['prefix' => 'v1/'], function () {
 
         Route::group(['prefix' => 'reporte/'], function () {
 
+            Route::match(['get', 'options'], 'getRegiones', 'ReportesController@getRegiones');
+
             Route::match(['get', 'options'], 'getEstadisticasEntrenadores', 'ReportesController@getEstadisticasEntrenadores');
 
         });
