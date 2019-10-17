@@ -5,6 +5,7 @@ namespace API_EPS\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Menu extends Model
 {
@@ -65,7 +66,63 @@ class Menu extends Model
         $addSlashes = str_replace('?', "'?'", $query->toSql());
         $sq         = vsprintf(str_replace('?', '%s', $addSlashes), $query->getBindings());
         dd($sq);
+    }
 
+    public static function getConteoRutinasClub($idsClubs)
+    {
+        $sql = "SELECT
+                DATE_FORMAT(fechaRegistro, '%Y-%m') date2,
+                idUn,
+                count(*) as numRutinas
+                FROM piso.menu
+                where DATE_FORMAT(fechaRegistro, '%Y-%m')  > DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 6 MONTH) ,'%Y-%m')
+                AND idUn IN ({$idsClubs})
+                group by date2 ,idUn
+                order by date2,idUn";
+        $rows  = DB::connection('aws')->select($sql);
+        $datos = [];
+        foreach ($rows as $key => $value) {
+            $datos[$value->idUn][] = ['mes' => $value->date2, 'num' => $value->numRutinas];
+
+        }
+        return $datos;
+    }
+
+    public static function getConteoRutinasRegion($clubs)
+    {
+        $sql = "SELECT
+                DATE_FORMAT(fechaRegistro, '%Y-%m') date2,
+                idUn,
+                count(*) as numRutinas
+
+                FROM piso.menu
+                where DATE_FORMAT(fechaRegistro, '%Y-%m')  > DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 6 MONTH) ,'%Y-%m')
+                group by date2 ,idUn
+                order by date2,idUn";
+
+        $rows = DB::connection('aws')->select($sql);
+
+        $total = [];
+        $datos = [];
+        foreach ($rows as $key => $value) {
+            if (isset($total[$value->date2])) {
+                $total[$value->date2] += $value->numRutinas;
+            } else {
+                $total[$value->date2] = $value->numRutinas;
+            }
+            foreach ($clubs as $idRegion => $idClubs) {
+                if (in_array($value->idUn, $idClubs)) {
+                    if (isset($datos[$idRegion][$value->date2])) {
+                        $datos[$idRegion][$value->date2] += $value->numRutinas;
+                    } else {
+                        $datos[$idRegion][$value->date2] = $value->numRutinas;
+                    }
+                }
+            }
+        }
+        $datos[0] = $total;
+        ksort($datos);
+        return $datos;
     }
 
 }

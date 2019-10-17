@@ -16,15 +16,21 @@ class Un extends Model
     const UPDATED_AT = 'fechaActualizacion';
     const DELETED_AT = 'fechaEliminacion';
 
-    public function scopeGetClubsRegiones($query)
+    public function scopeGetClubsRegiones($query, $idRegion = 0)
     {
         $where = [
             ['r.activo', '=', 1],
             ['un.activo', '=', 1],
             ['eliminado', '=', 0],
             ['un.idtipoUn', '=', 2],
-            ['r.idRegion', '<>', 0],
         ];
+        if ($idRegion == 0) {
+
+            $where[] = ['r.idRegion', '<>', 0];
+        } else {
+            $where[] = ['r.idRegion', '=', $idRegion];
+
+        }
 
         $datos = $query->select('r.idRegion', 'r.descripcion', 'idUn', 'nombre')
             ->join('crm.region as r', 'un.idRegion', '=', 'r.idRegion')
