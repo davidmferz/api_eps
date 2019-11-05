@@ -1684,8 +1684,7 @@ class EP extends Model
         // ->orderBy('inscripcion','asc')
         // ->toSql();
 
-        $sql = "
-            SELECT * FROM (
+        $sql = "SELECT * FROM (
                 SELECT p.idPersona,
                 CONCAT_WS(' ',p.nombre,p.paterno,p.materno) AS nombre,
                 m.idMembresia,
@@ -1694,15 +1693,21 @@ class EP extends Model
                 MIN(s.fechaRegistro) AS inscripcion
                 FROM persona AS p
                 INNER JOIN socio AS s ON p.idPersona = s.idPersona
+                    AND s.eliminado = 0
+                    AND s.fechaEliminacion = 0
                 INNER JOIN membresia AS m ON s.idUnicoMembresia = m.idUnicoMembresia
-                INNER JOIN mail AS em ON em.idPersona = p.idPersona AND em.eliminado = 0
-                INNER JOIN telefono AS t ON t.idPersona = p.idPersona AND t.fechaEliminacion = 0
+                    AND m.fechaEliminacion = 0
+                INNER JOIN mail AS em ON em.idPersona = p.idPersona
+                    AND em.eliminado = 0
+                INNER JOIN telefono AS t ON t.idPersona = p.idPersona
+                    AND t.fechaEliminacion = 0
                 WHERE m.idUn = {$idUn}
                 GROUP BY p.idPersona
                 ORDER BY inscripcion ASC
             ) o
             WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
             ";
+            // dd($sql);
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
