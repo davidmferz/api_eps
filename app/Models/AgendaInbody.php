@@ -205,6 +205,24 @@ dd($sq);
             $datos[$value->idUn][] = ['mes' => $value->date2, 'num' => $value->numInbody];
         }
         return $datos;
+    }
+    public static function getReporteInbodysEntrenadores($idUn)
+    {
+        $sql = "SELECT DATE_FORMAT(fechaRegistro, '%Y-%m') date2, idEmpleado ,
+                count(*) as numInbody
+                from piso.agenda_inbody
+                where DATE_FORMAT(fechaRegistro, '%Y-%m')  > DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 6 MONTH) ,'%Y-%m')
+                AND idUn = {$idUn}
+                group by date2 ,idUn
+                order by date2,idUn"
+        ;
+
+        $rows  = DB::connection('aws')->select($sql);
+        $datos = [];
+        foreach ($rows as $key => $value) {
+            $datos[$value->idUn][] = ['mes' => $value->date2, 'num' => $value->numInbody];
+        }
+        return $datos;
 
     }
 

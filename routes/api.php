@@ -13,6 +13,7 @@
 
 Route::group(['prefix' => 'v1/'], function () {
     Route::middleware(['cors'])->group(function () {
+        Route::match(['post', 'options'], 'queryPersonaMem', 'PersonaController@queryPersonaMem');
 
         //Route::match(['get', 'options'], 'pruebaMetodo', 'EPController@pruebaMetodo');
         Route::match(['get', 'options'], 'perrito/{id}', 'EpsController@perrito');
@@ -70,12 +71,17 @@ Route::group(['prefix' => 'v1/'], function () {
 
         Route::match(['get', 'options'], 'hola', 'EPController@hola');
 
+        //INBODY
+        Route::match(['post', 'options'], 'createinBody', 'InbodyController@createinBody');
+        Route::match(['get', 'options'], 'lastInBody/{idPersona}', 'InbodyController@lastInBody');
+        Route::match(['get', 'options'], 'historyInbodys/{idPersonaEmpleado}', 'InbodyController@historyInbodys');
+
         Route::group(['prefix' => 'reporte/'], function () {
 
             Route::match(['get', 'options'], 'getRegiones', 'ReportesController@getRegiones');
             Route::match(['get', 'options'], 'getReporteRegion/{idRegion}', 'ReportesController@getReporteRegion');
 
-            Route::match(['get', 'options'], 'getEstadisticasEntrenadores', 'ReportesController@getEstadisticasEntrenadores');
+            Route::match(['get', 'options'], 'getReporteClub/{idUn}', 'ReportesController@getReporteClub');
 
         });
     });

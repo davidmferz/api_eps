@@ -925,6 +925,7 @@ class EP extends Model
                 LIMIT 1";
         // AND e2.idoperador in (2,7)
         $query = DB::connection('crm')->select($sql);
+
         if (count($query) > 0) {
             $fila = (array_map(function ($x) {return (array) $x;}, $query))[0];
             $tmp2 = [];
@@ -942,7 +943,6 @@ class EP extends Model
 
             $fila['entrenadores'] = $tmp2;
             unset($tmp, $tmp2);
-            $fila['entrenadores'] = self::obtenEntrenadores($fila['idUn']);
 
             $consulta = "SELECT u.idUn, u.nombre FROM crm.un u
                     WHERE  u.idOperador = 1
@@ -950,12 +950,30 @@ class EP extends Model
                     AND u.activo = 1
                     AND u.fechaEliminacion = 0
                     ORDER BY nombre asc";
-            $query = DB::connection('crm')->select($consulta);
+            $query       = DB::connection('crm')->select($consulta);
+            $banderaClub = false;
+
             foreach ($query as $key => $value) {
                 $club[$key]['idUn']   = $value->idUn;
                 $club[$key]['nombre'] = $value->nombre;
+                if ($value->idUn == $fila['idUn']) {
+                    $banderaClub = true;
+                }
             }
+            if ($banderaClub) {
 
+                $fila['entrenadores'] = self::obtenEntrenadores($fila['idUn']);
+            } else {
+                $fila['entrenadores'][] = [
+
+                    'club'       => "",
+                    'idEmpleado' => 1035,
+                    'idPersona'  => 0,
+                    'idPuesto'   => 0,
+                    'nombre'     => "",
+                    'puesto'     => "",
+                ];
+            }
             $fila['version'] = (Objeto::obtenerObjeto(953))['descripcion'];
 
             $fila['calificacion'] = self::obtenCalificacionEmpleado($fila['idEmpleado']);
@@ -965,6 +983,7 @@ class EP extends Model
                 foreach ($fila as &$valor) {
                     if (json_encode(array(0 => $valor)) === false) {
                         $valor = utf8_encode($valor);
+
                     }
 
                 }
@@ -1283,9 +1302,9 @@ class EP extends Model
         }
 
         $primera = array_search(intval($idPuesto->idPuesto), $pustNat);
-        if ($primera !== false && $primera > 0) {
+        if ($primera !== false) {
             $segunda = array_search(intval($idPuesto->idPuesto), $pust);
-            if ($segunda !== false && $segunda > 0) {
+            if ($segunda !== false) {
                 $met = 10000;
             } else {
                 $met = 15000;

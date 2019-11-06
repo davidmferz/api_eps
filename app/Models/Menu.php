@@ -124,5 +124,33 @@ class Menu extends Model
         ksort($datos);
         return $datos;
     }
+    public static function getConteoRutinasEntrenadores($idUn)
+    {
+        $sql = "SELECT
+        DATE_FORMAT(m.fechaRegistro, '%Y-%m') date2,
+
+        count(*) as numRutinas,
+        m.idEmpleado,
+        concat(p.nombre,' ',p.paterno) as nombreCompleto
+
+        FROM piso.menu as m
+        join deportiva.persona as p ON p.idPersona=m.idEmpleado
+        where DATE_FORMAT(m.fechaRegistro, '%Y-%m')  > DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 6 MONTH) ,'%Y-%m')
+        AND m.idUn={$idUn}
+        group by date2 ,m.idEmpleado
+        order by date2;
+        ";
+
+        $rows = DB::connection('aws')->select($sql);
+
+        $total = [];
+        $datos = [];
+        foreach ($rows as $key => $value) {
+            $datos[$value->idEmpleado][] = ['mes' => $value->date2, 'num' => $value->numRutinas, 'nombre' => strtolower($value->nombreCompleto)];
+
+        }
+        ksort($datos);
+        return $datos;
+    }
 
 }
