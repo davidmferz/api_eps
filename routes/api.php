@@ -68,6 +68,9 @@ Route::group(['prefix' => 'v1/'], function () {
 
         // RUTINAS ENTRENADORES
         Route::match(['post', 'options'], 'getRutinasEntrenadores', 'RutinasController@getRutinasEntrenadores');
+        Route::match(['get', 'options'], 'historyRutinas/{idPersonaEmpleado}', 'RutinasController@historyRutinas');
+        Route::match(['get', 'options'], 'readMenuActividad/{idPersona}', 'RutinasController@readMenuActividad');
+        Route::match(['get', 'options'], 'getHistoricoCliente/{idPersona}', 'RutinasController@getHistoricoCliente');
 
         Route::match(['get', 'options'], 'hola', 'EPController@hola');
 

@@ -79,8 +79,7 @@ class Persona extends Model
 
             $sql = '';
             if ($membresia > 0) {
-                $sql = "
-                SELECT p.idPersona,
+                $sql = "SELECT p.idPersona,
                     UPPER(TRIM(p.nombre)) AS nombre,
                     UPPER(TRIM(p.paterno)) AS paterno,
                     UPPER(TRIM(p.materno)) AS materno,
@@ -104,18 +103,21 @@ class Persona extends Model
                 LIMIT {$numeroRegistros}";
                 $res = DB::connection('crm')->select($sql);
             } else {
-                $nombres    = explode(' ', trim($nombre));
-                $strNombres = '';
-                foreach ($nombres as $key => $value) {
-                    $strNombres .= '+' . $value . '* ';
-                }
+                $nombre = trim(utf8_encode($nombre));
+                $find   = array('á', 'é', 'í', 'ó', 'ú', 'â', 'ê', 'î', 'ô', 'û', 'ã', 'õ', 'ç', 'ñ', 'Ñ', 'Á');
+                $repl   = array('a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u', 'a', 'o', 'c', 'n', 'N', 'A');
+                $nombre = str_replace($find, $repl, $nombre);
+                //$nombre = $this->db->escape_like_str($nombre);
+                $nombre = htmlspecialchars($nombre);
+                $nombre = str_replace('*', '%', $nombre);
+
+                $w_nombre = " AND TRIM(CONCAT_WS(' ', TRIM(tp.nombre), TRIM(tp.paterno), TRIM(tp.materno))) LIKE '%" . $nombre . "%' ";
 
                 $sql = "SELECT
                 tp.nombre,
                 tp.paterno,
                 tp.materno,
                 tp.idPersona,
-                tp.nombreCompleto,
                 IFNULL(m.idMembresia, '') AS idMembresia,
                 IFNULL(u.idUn, '') AS idUn,
                 IFNULL(u.clave, '') AS clave,
@@ -124,24 +126,15 @@ class Persona extends Model
                 IF(ie.idInvitadoEspecial IS NULL, 0, 1) AS invitado,
                 IF(g.idgympass IS NULL, 0, 1) AS gympass
             FROM(
-                    SELECT
-                        p.idPersona,
-                        UPPER(TRIM(p.nombre)) AS nombre,
-                        UPPER(TRIM(p.paterno)) AS paterno,
-                        UPPER(TRIM(p.materno)) AS materno,
-                        nombreCompleto
-                    FROM personalevenshtein l
-                    INNER JOIN persona p
-                        ON p.idPersona=l.idPersona
-                            AND p.bloqueo=0
-                            AND p.fechaEliminacion='0000-00-00 00:00:00'
-                    WHERE MATCH(nombreCompleto) AGAINST ('{$strNombres}' IN BOOLEAN MODE)
+                SELECT p1.*
+                FROM personalevenshtein l
+                INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
+                    WHERE MATCH(nombreCompleto) AGAINST ('{$nombre}' IN BOOLEAN MODE)
                     order by l.idPersona desc
-                    LIMIT 500
                 ) AS tp
                     LEFT JOIN
                 socio s ON s.idPersona = tp.idPersona
-                    AND s.idTipoEstatusSocio = 81
+                    AND s.idTipoEstatusSocio NOT IN  (82,86)
                     AND s.eliminado = 0
                     LEFT  JOIN
                 membresia m ON m.idUnicoMembresia = s.idUnicoMembresia
@@ -158,7 +151,8 @@ class Persona extends Model
                 gympass g ON g.idPersona = tp.idPersona
                     LEFT JOIN
                 un u ON u.idUn = m.idUn
-            ORDER BY tieneMembresia DESC , nombreCompleto
+            where 1 {$w_nombre}
+            ORDER BY tieneMembresia DESC
             LIMIT {$numeroRegistros}";
 
                 $respuesta = DB::connection('crm')->select($sql);
@@ -319,6 +313,98 @@ class Persona extends Model
         } else {
             return null;
         }
+    }
+    /**
+     * Regresa una array con los datos generales de la persona solicitada
+     *
+     * @param integer $persona Identificador de persona
+     *
+     * @author Jorge Cruz
+     *
+     * @return array
+     */
+    public static function datosGenerales($persona)
+    {
+        settype($persona, 'integer');
+        if ($persona == 0) {
+            return null;
+        }
+
+        $sql = "SELECT p.nombre, p.paterno, p.materno, p.idTipoPersona AS tipo,
+                p.fechaNacimiento AS fecha, p.idTipoSexo AS sexo, p.idTipoEstadoCivil AS civil,
+                IFNULL(p.RFC, '') AS RFC, p.idTipoTituloPersona AS titulo,
+                p.fallecido, p.idEstado AS estado, p.bloqueoMail AS bloqueo,
+                p.CURP, p.fechaRegistro AS registro, p.tour, p.idTipoProfesion,
+                p.concesionario, p.producto, p.concesionarioValido, p.idTipoEscolaridad,
+                p.idTipoNivelIngresos, p.hijos, p.bloqueoCallCenter,
+                p.idTipoPersona AS tipo,
+                IF(e.idEmpleado IS NOT NULL, 'Empleado',  IF(s.idSocio IS NOT NULL, 'Socio', 'Publico General')) AS tipoCliente
+            FROM persona p
+            LEFT JOIN empleado e ON e.idPersona=p.idPersona
+                AND e.idTipoEstatusEmpleado=196 AND e.fechaEliminacion='0000-00-00 00:00:00'
+            LEFT JOIN socio s ON s.idPersona=p.idPersona AND s.eliminado=0
+                AND s.idTipoEstatusSocio=81
+            WHERE p.idPersona={$persona} AND p.bloqueo=0
+            GROUP BY p.idPersona
+        ";
+        $query = DB::connection('crm')->select($sql);
+
+        if (count($query) > 0) {
+            $query = array_map(function ($x) {return (array) $x;}, $query);
+            $fila = $query[0];
+            return $fila;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Regresa el sexo de la persona indicada
+     *
+     * @param integer $persona Identificador de persona
+     *
+     * @author
+     *
+     * @return integer
+     */
+    public static function sexo($persona)
+    {
+        settype($persona, 'integer');
+        if ($persona == 0) {
+            return false;
+        }
+
+        $query = DB::connection('crm')->table(TBL_PERSONA . ' as p')
+            ->select('ts.descripcion')
+            ->join(TBL_TIPOSEXO . ' as ts', 'ts.idTipoSexo', 'p.idTipoSexo')
+            ->where('p.idPersona', $persona);
+
+        if ($query->count() > 0) {
+            $query = $query->get()->toArray();
+            $fila  = $query[0];
+            return $fila->descripcion;
+        } else {
+            return 0;
+        }
+    }
+    /**
+     * Estado civil de la persona
+     * @param int $persona
+     * @return string
+     */
+    public static function obtenerEstadoCivil($persona)
+    {
+        $query = DB::connection('crm')->table(TBL_PERSONA . ' as p')
+            ->select('p.idPersona', 'p.idTipoEstadoCivil', 'ec.descripcion')
+            ->join(TBL_TIPOESTADOCIVIL . ' as ec', 'p.idTIpoEstadoCivil', 'ec.idTIpoEstadoCivil')
+            ->where('p.idPersona', $persona);
+
+        $descripcion = '';
+        if ($query->count() > 0) {
+            $result      = ($query->get()->toArray())[0];
+            $descripcion = $result->descripcion;
+        }
+        return $descripcion;
     }
 
 }

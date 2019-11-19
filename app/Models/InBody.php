@@ -51,25 +51,9 @@ class InBody extends Model
                 ];
             } else {
                 $retval = [
-                    'status'  => 'ok',
-                    'message' => 'No se encontron registros de esta persona',
-                    'data'    => [
-                        [
-                            "peso"             => "0",
-                            "estatura"         => "0",
-                            "RCC"              => "0",
-                            "PGC"              => "0",
-                            "IMC"              => "0",
-                            "MME"              => "0",
-                            "MCG"              => "0",
-                            "ACT"              => "0",
-                            "minerales"        => "0",
-                            "proteina"         => "0",
-                            "fcresp"           => "0",
-                            "fecha"            => "0000-00-00",
-                            "fechaEliminacion" => "0000-00-00 00:00:00",
-                        ],
-                    ],
+                    'status'  => 'sin rutina',
+                    'message' => 'persona sin Inbody, Favor de registar uno ',
+                    'data'    => [],
                 ];
             }
 
@@ -127,7 +111,8 @@ class InBody extends Model
                 FROM piso.personainbody as pi
                 JOIN deportiva.persona as p ON pi.idPersona =p.idPersona
                 where  pi.idPersonaEmpleado={$idPersonaEmpleado}
-                order by idPersonaInBody desc";
+                order by idPersonaInBody desc
+                limit 5";
         $query = DB::connection('aws')->select($sql);
         if (count($query) > 0) {
             return $query;
