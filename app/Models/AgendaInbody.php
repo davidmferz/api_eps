@@ -154,4 +154,76 @@ dd($sq);
         return [];
 
     }
+
+    public static function getReporteInbodysRegion($clubs)
+    {
+        $sql = "SELECT DATE_FORMAT(fechaRegistro, '%Y-%m') date2, idUn ,
+                count(*) as numInbody
+                from piso.agenda_inbody
+                where DATE_FORMAT(fechaRegistro, '%Y-%m')  > DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 6 MONTH) ,'%Y-%m')
+                group by date2 ,idUn
+                order by date2,idUn";
+
+        $rows  = DB::connection('aws')->select($sql);
+        $total = [];
+        $datos = [];
+        foreach ($rows as $key => $value) {
+            if (isset($total[$value->date2])) {
+                $total[$value->date2] += $value->numInbody;
+            } else {
+                $total[$value->date2] = $value->numInbody;
+            }
+            foreach ($clubs as $idRegion => $idClubs) {
+                if (in_array($value->idUn, $idClubs)) {
+                    if (isset($datos[$idRegion][$value->date2])) {
+                        $datos[$idRegion][$value->date2] += $value->numInbody;
+                    } else {
+                        $datos[$idRegion][$value->date2] = $value->numInbody;
+                    }
+                }
+            }
+        }
+        $datos[0] = $total;
+        ksort($datos);
+        return $datos;
+
+    }
+
+    public static function getReporteInbodysClub($idsClubs)
+    {
+        $sql = "SELECT DATE_FORMAT(fechaRegistro, '%Y-%m') date2, idUn ,
+                count(*) as numInbody
+                from piso.agenda_inbody
+                where DATE_FORMAT(fechaRegistro, '%Y-%m')  > DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 6 MONTH) ,'%Y-%m')
+                AND idUn IN ({$idsClubs})
+                group by date2 ,idUn
+                order by date2,idUn";
+
+        $rows  = DB::connection('aws')->select($sql);
+        $datos = [];
+        foreach ($rows as $key => $value) {
+            $datos[$value->idUn][] = ['mes' => $value->date2, 'num' => $value->numInbody];
+        }
+        return $datos;
+    }
+    public static function getReporteInbodysEntrenadores($idUn)
+    {
+        $sql = "SELECT DATE_FORMAT(fechaRegistro, '%Y-%m') date2, idEmpleado ,
+                count(*) as numInbody
+                from piso.agenda_inbody
+                where DATE_FORMAT(fechaRegistro, '%Y-%m')  > DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 6 MONTH) ,'%Y-%m')
+                AND idUn = {$idUn}
+                group by date2 ,idUn
+                order by date2,idUn"
+        ;
+
+        $rows  = DB::connection('aws')->select($sql);
+        $datos = [];
+        foreach ($rows as $key => $value) {
+            $datos[$value->idUn][] = ['mes' => $value->date2, 'num' => $value->numInbody];
+        }
+        return $datos;
+
+    }
+
 }
