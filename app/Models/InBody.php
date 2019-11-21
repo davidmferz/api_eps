@@ -51,9 +51,25 @@ class InBody extends Model
                 ];
             } else {
                 $retval = [
-                    'status'  => 'sin rutina',
-                    'message' => 'persona sin Inbody, Favor de registar uno ',
-                    'data'    => [],
+                    'status'  => 'ok',
+                    'message' => 'No se encontron registros de esta persona',
+                    'data'    => [
+                        [
+                            "peso"             => "0",
+                            "estatura"         => "0",
+                            "RCC"              => "0",
+                            "PGC"              => "0",
+                            "IMC"              => "0",
+                            "MME"              => "0",
+                            "MCG"              => "0",
+                            "ACT"              => "0",
+                            "minerales"        => "0",
+                            "proteina"         => "0",
+                            "fcresp"           => "0",
+                            "fecha"            => "0000-00-00",
+                            "fechaEliminacion" => "0000-00-00 00:00:00",
+                        ],
+                    ],
                 ];
             }
 
