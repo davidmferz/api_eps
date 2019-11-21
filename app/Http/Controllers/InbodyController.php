@@ -3,16 +3,19 @@
 namespace API_EPS\Http\Controllers;
 
 use API_EPS\Http\Controllers\ApiController;
+use API_EPS\Http\Requests\CreateInbodyRequest;
 use API_EPS\Http\Requests\InbodyCoordinadorRequest;
 use API_EPS\Mail\MailEntrenador;
 use API_EPS\Mail\MailPersona;
 use API_EPS\Models\AgendaInbody;
 use API_EPS\Models\Empleado;
 use API_EPS\Models\EP;
+use API_EPS\Models\InBody;
 use API_EPS\Models\Persona;
 use API_EPS\Models\Un;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -295,6 +298,91 @@ class InbodyController extends ApiController
         }
 
         return [];
+    }
+
+    public function createinBody(CreateInbodyRequest $request)
+    {
+        try {
+            // $validated = $request->validated();
+            $retval = array();
+            if (!empty($retval)) {
+                return response()->json($retval, 400);
+            }
+
+            $datos = [
+                'idPersona'         => trim($request->input('persona')),
+                'RCC'               => trim($request->input('rcc')),
+                'PGC'               => trim($request->input('pgc')),
+                'IMC'               => trim($request->input('imc')),
+                'MME'               => trim($request->input('mme')),
+                'MCG'               => trim($request->input('mcg')),
+                'minerales'         => trim($request->input('minerales')),
+                'proteina'          => trim($request->input('proteina')),
+                'ACT'               => trim($request->input('act')),
+                'peso'              => trim($request->input('peso')),
+                'estatura'          => trim($request->input('estatura')),
+                'fcresp'            => trim($request->input('fcresp')),
+                'idPersonaEmpleado' => trim($request->input('idPersonaEmpleado')),
+            ];
+
+            $result = InBody::CreateInBody($datos);
+            if (!empty($result)) {
+                $retval = [
+                    'status'  => 'ok',
+                    'message' => 'Created',
+                    'data'    => $result,
+                ];
+                return response()->json($retval, 201);
+            } else {
+                $retval = [
+                    'status'  => 'error',
+                    'message' => 'El usuario no se pudo registrar',
+                    'data'    => [],
+                ];
+                return response()->json($retval, 204);
+            }
+        } catch (\Exception $ex) {
+            Log::debug("ErrMsg: " . $ex->getMessage() . " File: " . $ex->getFile() . " Line: " . $ex->getLine());
+            $retval = array(
+                'status'  => 'error',
+                'data'    => array(),
+                'message' => $ex->getMessage(),
+            );
+            return response()->json($retval, 400);
+        }
+    }
+    public function lastInBody($idPersona = 0)
+    {
+        try {
+            if (intval($idPersona) == 0) {
+                $retval = [
+                    'status'  => 'fail',
+                    'message' => 'idPersona debe ser número entero y mayor a 0',
+                    'data'    => array(),
+                ];
+                return response()->json($retval, 400);
+            }
+            $idPersona = intval($idPersona);
+
+            $result = InBody::LastInBody($idPersona);
+            return response()->json($result, 200);
+        } catch (\Exception $ex) {
+            Log::debug("ErrMsg: " . $ex->getMessage() . " File: " . $ex->getFile() . " Line: " . $ex->getLine());
+            $retval = array(
+                'status'  => 'error',
+                'data'    => array(),
+                'message' => $ex->getMessage(),
+            );
+            return response()->json($retval, 400);
+        }
+    }
+
+    public function historyInbodys($idPersonaEmpleado)
+    {
+
+        $result = InBody::getHistory($idPersonaEmpleado);
+        return $this->successResponse($result, 200);
+
     }
 
 }
