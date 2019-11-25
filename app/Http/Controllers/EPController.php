@@ -948,12 +948,12 @@ class EPController extends ApiController
     {
         session_write_close();
 
-        $retval         = Persona::datosGenerales($idPersona);
-        $retval['tipo'] = $retval['tipoCliente'];
-        /*$retval['nombre']          = mb_strtoupper(utf8_encode($retval['nombre']));
+        $retval                    = Persona::datosGenerales($idPersona);
+        $retval['nombre']          = mb_strtoupper(utf8_encode($retval['nombre']));
         $retval['paterno']         = mb_strtoupper(utf8_encode($retval['paterno']));
         $retval['materno']         = mb_strtoupper(utf8_encode($retval['materno']));
         $retval['idTipoSexo']      = $retval['sexo'];
+        $retval['tipo']            = $retval['tipoCliente'];
         $retval['sexo']            = Persona::sexo($idPersona);
         $retval['fechaNacimiento'] = $retval['fecha'];
         unset($retval['fecha']);
@@ -961,7 +961,7 @@ class EPController extends ApiController
         $retval['idTipoEstadoCivil'] = $retval['civil'];
         unset($retval['civil']);
         $retval['idEstado'] = $retval['estado'];
-        unset($retval['estado']);*/
+        unset($retval['estado']);
 
         $retval = array(
             'status'  => 'success',
