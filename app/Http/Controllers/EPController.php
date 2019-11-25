@@ -16,12 +16,12 @@ use API_EPS\Models\Membresia;
 use API_EPS\Models\Movimiento;
 use API_EPS\Models\Persona;
 use API_EPS\Models\Producto;
+use API_EPS\Models\PromocionVisa;
 use API_EPS\Models\Socio;
 use API_EPS\Models\Token;
 use API_EPS\Models\Un;
-use API_EPS\Models\PromocionVisa;
-use API_EPS\Models\VisaEventoInscripcion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -450,9 +450,9 @@ class EPController extends ApiController
 
         session_write_close();
         $jsonData = json_decode(trim(file_get_contents('php://input')), true);
-        $fail  = 0;
-        $visa  = 0;
-        $error = array();
+        $fail     = 0;
+        $visa     = 0;
+        $error    = array();
 
         if (!isset($jsonData['idCategoria'])) {
             $fail = 1;
@@ -561,8 +561,8 @@ class EPController extends ApiController
                 // inserta registros VISA
                 if ($visa == 1) {
                     $valid = PromocionVisa::validaCliente($jsonData['idCliente']);
-                    $sql = "INSERT INTO crm.visaeventoinscripcion (idpromocionvisa, idPersona, idEventoInscripcion)
-                    VALUES (".$valid['id'].",".$jsonData['idCliente'].",".$idIncripcion['idIncripcion'].")";
+                    $sql   = "INSERT INTO crm.visaeventoinscripcion (idpromocionvisa, idPersona, idEventoInscripcion)
+                    VALUES (" . $valid['id'] . "," . $jsonData['idCliente'] . "," . $idIncripcion['idIncripcion'] . ")";
                     $resultado = DB::connection('crm')->select($sql);
                 }
 
@@ -783,7 +783,7 @@ class EPController extends ApiController
     {
 
         // session_destroy();
-        $email    = $request->input('email');
+        $email = $request->input('email');
         // $password = $request->input('password');
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $res       = EP::loginOkta($email);
@@ -854,8 +854,13 @@ class EPController extends ApiController
     {
         header("Content-Type: application/json");
         session_write_close();
-        $ep = new EP;
-        return response()->json($ep->general($idUn), 200);
+        //12 horas
+        $datos = Cache::remember('productos-' . $idUn, 43200, function () use ($idUn) {
+            $ep = new EP;
+            return $ep->general($idUn);
+        });
+
+        return response()->json($datos, 200);
     }
 
     /**
@@ -943,8 +948,8 @@ class EPController extends ApiController
     {
         session_write_close();
 
-        $retval                    = Persona::datosGenerales($idPersona);
-        $retval['nombre']          = mb_strtoupper(utf8_encode($retval['nombre']));
+        $retval = Persona::datosGenerales($idPersona);
+        /*$retval['nombre']          = mb_strtoupper(utf8_encode($retval['nombre']));
         $retval['paterno']         = mb_strtoupper(utf8_encode($retval['paterno']));
         $retval['materno']         = mb_strtoupper(utf8_encode($retval['materno']));
         $retval['idTipoSexo']      = $retval['sexo'];
@@ -956,7 +961,7 @@ class EPController extends ApiController
         $retval['idTipoEstadoCivil'] = $retval['civil'];
         unset($retval['civil']);
         $retval['idEstado'] = $retval['estado'];
-        unset($retval['estado']);
+        unset($retval['estado']);*/
 
         $retval = array(
             'status'  => 'success',
@@ -1260,7 +1265,7 @@ class EPController extends ApiController
     public function verifyVisa($idPersona, $categoria, $participantes)
     {
         // productos validos
-        $categorias = array(108,109, 111);
+        $categorias = array(108, 109, 111);
 
         try {
             // se valida que el producto a vender
@@ -1333,7 +1338,7 @@ class EPController extends ApiController
     public function dataVisa($idPersona)
     {
         try {
-            $valid = PromocionVisa::validaCliente($idPersona);
+            $valid  = PromocionVisa::validaCliente($idPersona);
             $retval = array(
                 'status'  => 'ok',
                 'data'    => $valid,
