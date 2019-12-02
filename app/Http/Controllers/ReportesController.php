@@ -19,10 +19,12 @@ class ReportesController extends ApiController
         }
         $inbodysAgendamientos = AgendaInbody::getReporteInbodysRegion($clubs);
         $rutinasClientes      = Menu::getConteoRutinasRegion($clubs);
+        $rankingEntrenadores  = Menu::rakingEntrenadores();
         $response             = [
             'catalogos'            => $catalogo,
             'inbodysAgendamientos' => $inbodysAgendamientos,
             'rutinasClientes'      => $rutinasClientes,
+            'rankingEntrenadores'  => $rankingEntrenadores,
         ];
         return $this->successResponse($response, 'catalogo de regiones y datos.');
     }
