@@ -376,4 +376,42 @@ class Menu extends Model
         return $arr_out;
     }
 
+    public static function rakingEntrenadores()
+    {
+        $inicio       = Carbon::now();
+        $fin          = $inicio->daysInMonth;
+        $inicio->day  = 1;
+        $inicioFormat = $inicio->format('Y-m-d');
+        $inicio->day  = $fin;
+        $finFormat    = $inicio->format('Y-m-d');
+        $sql          = "SELECT   count(*) as num,p.nombre,p.paterno,m.idUn
+                        FROM piso.menu as m
+                        JOIN deportiva.persona as p ON m.idEmpleado =p.idPersona
+                        where m.fechaRegistro between  '{$inicioFormat}' AND '{$finFormat}'
+                        AND idEmpleado IS NOT NULL
+                        group by idEmpleado,m.idUn
+                        order by num desc";
+
+        $res = DB::connection('aws')->select($sql);
+        if (count($res) > 0) {
+            $etiquetas = [];
+            $valor     = [];
+            $idUn      = [];
+            foreach ($res as $key => $value) {
+                $etiquetas[] = $value->nombre . ' ' . $value->paterno;
+                $valor[]     = $value->num;
+                $idUn[]      = $value->idUn;
+            }
+            return [
+                "etiquetas" => $etiquetas,
+                "valor"     => $valor,
+                "clubs"     => $idUn,
+            ];
+
+        } else {
+            return [];
+        }
+
+    }
+
 }

@@ -701,7 +701,7 @@ class EPController extends ApiController
                             Evento::insertaClase(
                                 $idIncripcion['idIncripcion'],
                                 $idEmpleado,
-                                $jsonData['idCliente'],
+                                $jsonData['idEntrenador'],
                                 $fechaClase[0],
                                 $fechaClase[1],
                                 $demo
