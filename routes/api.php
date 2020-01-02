@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Artisan;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -13,6 +15,12 @@
 
 Route::group(['prefix' => 'v1/'], function () {
     Route::middleware(['cors'])->group(function () {
+
+        Route::get('clear', function () {
+            Artisan::call('cache:clear');
+            return "Cache is cleared";
+        });
+
         Route::match(['post', 'options'], 'queryPersonaMem', 'PersonaController@queryPersonaMem');
 
         //Route::match(['get', 'options'], 'pruebaMetodo', 'EPController@pruebaMetodo');
