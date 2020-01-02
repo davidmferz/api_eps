@@ -178,7 +178,8 @@ class EP extends Model
             foreach ($query as $fila) {
                 $r['numClases'] = (int) $fila->clases;
                 $r['precios']   = $this->arrayPrecios($idCategoria, $idUn, $participantes, $fila->clases);
-                $res[]          = $r;
+
+                $res[] = $r;
             }
         }
         return $res;
@@ -751,6 +752,7 @@ class EP extends Model
                     // Se ageregan las clases a los participantes
                     foreach ($categoria['participantes'] as &$arr_participante) {
                         $arr_participante['clases'] = $this->arrayClases($idCategoria, $idUn, $arr_participante['numParticipantes']);
+
                     }
                     $res[]                      = $categoria;
                     $categoria['entrenadores']  = [];
@@ -1273,6 +1275,21 @@ class EP extends Model
         return $retval2;
     }
 
+    public static function buscaMeta($idPuesto)
+    {
+
+        $meta15Mil = [551, 100085];
+        $meta20Mil = [84, 134, 194, 465, 541, 542, 806, 100034, 100053];
+        $meta40Mil = [531, 100029, 100095];
+        if (array_search(intval($idPuesto), $meta15Mil) !== false) {
+            return 15000;
+        } elseif (array_search(intval($idPuesto), $meta20Mil) !== false) {
+            return 20000;
+        } else {
+            return 40000;
+        }
+
+    }
     /**
      * [meta_venta description]
      *
@@ -1301,18 +1318,7 @@ class EP extends Model
         if (count($query) > 0) {
             $idPuesto = $query[0];
         }
-
-        $primera = array_search(intval($idPuesto->idPuesto), $pustNat);
-        if ($primera !== false) {
-            $segunda = array_search(intval($idPuesto->idPuesto), $pust);
-            if ($segunda !== false) {
-                $met = 10000;
-            } else {
-                $met = 15000;
-            }
-        } else {
-            $met = 35000;
-        }
+        $met = self::buscaMeta($idPuesto->idPuesto);
         while ($mesesMenos >= 0) {
             $sql = DB::connection('crm')->select('select date_format(date_sub(now(),interval ' . $mesesMenos . ' month),\'%Y-%m\') as mes');
             if (count($sql) > 0) {
@@ -1726,7 +1732,7 @@ class EP extends Model
             ) o
             WHERE o.inscripcion BETWEEN '{$fecha}' AND NOW()
             ";
-            // dd($sql);
+        // dd($sql);
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
