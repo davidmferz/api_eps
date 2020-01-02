@@ -855,7 +855,6 @@ class EPController extends ApiController
         header("Content-Type: application/json");
         session_write_close();
         //12 horas
-        //Cache::flush();
         $datos = Cache::remember('productos-' . $idUn, 43200, function () use ($idUn) {
             $ep = new EP;
             return $ep->general($idUn);

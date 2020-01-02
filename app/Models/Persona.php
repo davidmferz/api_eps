@@ -108,10 +108,17 @@ class Persona extends Model
                 $repl   = array('a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u', 'a', 'o', 'c', 'n', 'N', 'A');
                 $nombre = str_replace($find, $repl, $nombre);
                 //$nombre = $this->db->escape_like_str($nombre);
-                $nombre = htmlspecialchars($nombre);
+                $nombre      = htmlspecialchars($nombre);
+                $nombre      = strtoupper($nombre);
+                $nombreAux   = explode(' ', $nombre);
+                $nombreMatch = '';
+                foreach ($nombreAux as $key => $value) {
+                    $nombreMatch .= '+' . $value . ' ';
+                }
+
                 $nombre = str_replace('*', '%', $nombre);
 
-                $w_nombre = " AND TRIM(CONCAT_WS(' ', TRIM(tp.nombre), TRIM(tp.paterno), TRIM(tp.materno))) LIKE '%" . $nombre . "%' ";
+                $w_nombre = " AND tp.nombreCompleto LIKE '%" . $nombre . "%' ";
 
                 $sql = "SELECT
                 tp.nombre,
@@ -126,11 +133,12 @@ class Persona extends Model
                 IF(ie.idInvitadoEspecial IS NULL, 0, 1) AS invitado,
                 IF(g.idgympass IS NULL, 0, 1) AS gympass
             FROM(
-                SELECT p1.*
+                SELECT l.nombreCompleto,p1.*
                 FROM personalevenshtein l
                 INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    WHERE MATCH(nombreCompleto) AGAINST ('{$nombre}' IN BOOLEAN MODE)
+                    WHERE MATCH(nombreCompleto) AGAINST ('{$nombreMatch}' IN BOOLEAN MODE)
                     order by l.idPersona desc
+                    limit 1000
                 ) AS tp
                     LEFT JOIN
                 socio s ON s.idPersona = tp.idPersona
@@ -154,7 +162,6 @@ class Persona extends Model
             where 1 {$w_nombre}
             ORDER BY tieneMembresia DESC
             LIMIT {$numeroRegistros}";
-
                 $respuesta = DB::connection('crm')->select($sql);
                 $aux       = [];
                 $res       = [];
@@ -1086,8 +1093,7 @@ class Persona extends Model
             return null;
         }
 
-        $sql = "
-            SELECT p.nombre, p.paterno, p.materno, p.idTipoPersona AS tipo,
+        $sql = "SELECT p.nombre, p.paterno, p.materno, p.idTipoPersona AS tipo,
                 p.fechaNacimiento AS fecha, p.idTipoSexo AS sexo, p.idTipoEstadoCivil AS civil,
                 IFNULL(p.RFC, '') AS RFC, p.idTipoTituloPersona AS titulo,
                 p.fallecido, p.idEstado AS estado, p.bloqueoMail AS bloqueo,
@@ -2555,7 +2561,6 @@ class Persona extends Model
         return true;
     }
 
-
     /**
      * Genera una array con la lista de contactos por persona
      *
@@ -3264,8 +3269,6 @@ class Persona extends Model
         return $r;
     }
 
-
-
     /**
      * [strToHex description]
      *
@@ -3854,7 +3857,6 @@ class Persona extends Model
         return $reg;
     }
 
-
     /**
      * [crearArchivoDatosCredencial description]
      *
@@ -4082,9 +4084,8 @@ class Persona extends Model
         $this->db->where('vigencia >=', $fechaHoy);
         $query = $this->db->get();
         //echo $this->db->last_query();
-        if($query->num_rows > 0)
-        {
-            $data=['usado'=>1];
+        if ($query->num_rows > 0) {
+            $data = ['usado' => 1];
             $this->db->where('mail', $mail);
             $this->db->where('codigo', $codigo);
             $this->db->where('usado', 0);
