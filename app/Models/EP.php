@@ -1425,7 +1425,7 @@ class EP extends Model
                 AND euc4.capacidad={$clases}";
         }
         $year = date("Y");
-        $cat  = ($idCategoria != 109) ? "AND p.nombre LIKE '%2019%'" : "";
+        $cat  = ($idCategoria != 109) ? "AND p.nombre LIKE '%2020%'" : "";
         $sql  = "SELECT * FROM (
             SELECT e.idEvento, p.nombre
             FROM producto p
