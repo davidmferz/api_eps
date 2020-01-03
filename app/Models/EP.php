@@ -1279,7 +1279,7 @@ class EP extends Model
     {
 
         $meta15Mil = [551, 100085];
-        $meta20Mil = [84, 134, 194, 465, 541, 542, 806, 100034, 100053];
+        $meta20Mil = [84, 134, 194, 465, 541, 542, 806, 100034, 100053, 100101];
         $meta40Mil = [531, 100029, 100095];
         if (array_search(intval($idPuesto), $meta15Mil) !== false) {
             return 15000;
