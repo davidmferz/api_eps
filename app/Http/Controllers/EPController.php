@@ -32,6 +32,32 @@ use Illuminate\Support\Facades\Log;
 class EPController extends ApiController
 {
 
+    public function ventaPaquetes($idUn)
+    {
+        $datos = Producto::getPaquetes($idUn);
+        if ($datos) {
+            $entrenadores = EP::arrayEntrenadores($datos['idsCategorias'], $idUn, 'lista_cat');
+            $datos        = array_merge($datos, ['entrenadores' => $entrenadores]);
+            $auxCat       = [];
+            foreach ($datos['categorias'] as $key => $value) {
+                $auxCat[] = ['id' => $key, 'value' => $value];
+            }
+            $datos['categorias'] = $auxCat;
+            $auxProd             = [];
+            foreach ($datos['productos'] as $keyCat => $categorias) {
+                foreach ($categorias as $key => $producto) {
+                    $auxProd[$keyCat][] = ['id' => $key, 'value' => $producto];
+                }
+            }
+            $datos['categorias'] = $auxCat;
+            $datos['productos']  = $auxProd;
+            return response()->json($datos, 200);
+        } else {
+            return response()->json($datos, 400);
+
+        }
+    }
+
     public function datosPersona($idPersona, $idSocio, $token)
     {
         if (!Token::ValidaToken($token)) {
@@ -855,6 +881,7 @@ class EPController extends ApiController
         header("Content-Type: application/json");
         session_write_close();
         //12 horas
+        Cache::flush();
         $datos = Cache::remember('productos-' . $idUn, 43200, function () use ($idUn) {
             $ep = new EP;
             return $ep->general($idUn);

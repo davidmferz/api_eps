@@ -80,10 +80,12 @@ class EP extends Model
             WHERE m.idTipoEstatusMovimiento IN (66, 70)
             ORDER BY nombreCliente
             ";
-        //dd($sql);
+
         $query = DB::connection('crm')->select($sql);
+
         if (count($query) > 0) {
             foreach ($query as $fila) {
+
                 $sql = "SELECT
                     ef.idEventoFecha
                     FROM crm.eventofecha ef
@@ -103,6 +105,7 @@ class EP extends Model
                 }
             }
         }
+
         return $res;
     }
 
@@ -193,7 +196,7 @@ class EP extends Model
      *
      * @return [type]              [description]
      */
-    public function arrayEntrenadores($idCategoria, $idUn, $tipo_cat = null)
+    public static function arrayEntrenadores($idCategoria, $idUn, $tipo_cat = null)
     {
         $res = array();
 
@@ -272,11 +275,14 @@ class EP extends Model
                 ) a
                 {$str_groupby_global}
                 ORDER BY {$str_order_categoria} nombre";
+
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
             foreach ($query as $fila) {
-                $r['idEntrenador']     = $fila->idPersona;
+                $r['idPersona']    = $fila->idPersona;
+                $r['idEntrenador'] = $fila->idPersona;
+
                 $r['nombreEntrenador'] = utf8_encode($fila->nombre);
                 if ($tipo_cat == 'lista_cat') {
                     $r['categoria'] = $fila->idCategoria;
@@ -284,6 +290,7 @@ class EP extends Model
                 $res[] = $r;
             }
         }
+
         return $res;
     }
 
@@ -352,9 +359,9 @@ class EP extends Model
             AND p.eliminado=0
             {$str_groupby}
             ORDER BY pmsi.orden ";
-        $query = DB::connection('crm')->select($sql);
 
-        $sql = "SELECT numeroMeses, descripcion {$str_select_categoria_2} FROM ( {$str_select_categoria_3}
+        $query = DB::connection('crm')->select($sql);
+        $sql   = "SELECT numeroMeses, descripcion {$str_select_categoria_2} FROM ( {$str_select_categoria_3}
             (SELECT numeroMeses, descripcion {$str_select_categoria_2} FROM tmp_WSEp_formaPago p)
         ) a {$str_groupby_2}";
         $query = DB::connection('crm')->select($sql);
@@ -422,6 +429,7 @@ class EP extends Model
             WHERE p.activo=1 AND p.fechaEliminacion=0
             {$str_groupby}
             {$str_orderby} ";
+
         $query = DB::connection('crm')->select($sql);
         if (count($query) > 0) {
 
@@ -686,7 +694,7 @@ class EP extends Model
                 AND pu.activo=1 AND pu.fechaEliminacion=0
                 AND pu.idUn = {$idUn}
                 INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-                    AND eu.idUn = {$idUn} AND eu.activo=1 AND eu.fechaEliminacion=0
+                    AND eu.idUn = pu.idUn AND eu.activo=1 AND eu.fechaEliminacion=0
                     AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
                     AND DATE(NOW()) <= eu.finEvento
                 INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
@@ -706,10 +714,8 @@ class EP extends Model
                 sort($arr_idCategoria);
                 $arrayEntrenadores = $this->arrayEntrenadores(implode(',', $arr_idCategoria), $idUn, 'lista_cat');
                 // print_r($arrayEntrenadores); exit;
-
                 $arrayFormaPago = $this->arrayFormaPago(implode(',', $arr_idCategoria), $idUn, 'lista_cat');
                 // print_r($arrayFormaPago); exit;
-
                 $arrayParticipantes = $this->arrayParticipantes(implode(',', $arr_idCategoria), $idUn, 'lista_cat');
                 // print_r($arrayParticipantes); exit;
 

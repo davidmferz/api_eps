@@ -21,6 +21,8 @@ Route::group(['prefix' => 'v1/'], function () {
             return "Cache is cleared";
         });
 
+        Route::match(['get', 'options'], 'ventaPaquetes/{idUn}', 'EPController@ventaPaquetes');
+
         Route::match(['post', 'options'], 'queryPersonaMem', 'PersonaController@queryPersonaMem');
 
         //Route::match(['get', 'options'], 'pruebaMetodo', 'EPController@pruebaMetodo');

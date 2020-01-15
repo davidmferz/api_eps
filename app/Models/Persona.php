@@ -162,6 +162,7 @@ class Persona extends Model
             where 1 {$w_nombre}
             ORDER BY tieneMembresia DESC
             LIMIT {$numeroRegistros}";
+                dd($sql);
                 $respuesta = DB::connection('crm')->select($sql);
                 $aux       = [];
                 $res       = [];
