@@ -196,7 +196,7 @@ class Menu extends Model
                     INNER JOIN piso.cat_rutinas crut ON crut.id = mnu.idRutina
                     WHERE mnu.idPersona = {$idPersona}
 
-                    ORDER BY mnu.fechaActualizacion desc
+                    ORDER BY mnu.fechaRegistro desc
                     LIMIT 1 ";
         $res = DB::connection('aws')->select($sql);
         if (count($res) > 0) {
