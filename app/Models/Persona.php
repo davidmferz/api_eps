@@ -126,6 +126,7 @@ class Persona extends Model
                 tp.materno,
                 tp.idPersona,
                 IFNULL(m.idMembresia, '') AS idMembresia,
+                IFNULL(m.idUnicoMembresia, '') AS idUnicoMembresia,
                 IFNULL(u.idUn, '') AS idUn,
                 IFNULL(u.clave, '') AS clave,
                 IF(m.idMembresia IS NULL, 0, 1) AS tieneMembresia,
@@ -162,7 +163,6 @@ class Persona extends Model
             where 1 {$w_nombre}
             ORDER BY tieneMembresia DESC
             LIMIT {$numeroRegistros}";
-                dd($sql);
                 $respuesta = DB::connection('crm')->select($sql);
                 $aux       = [];
                 $res       = [];

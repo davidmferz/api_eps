@@ -13,9 +13,25 @@ class EventoInscripcion extends Model
     protected $table      = 'crm.eventoinscripcion';
     protected $primaryKey = 'idEventoInscripcion';
 
-    const CREATED_AT = 'fechaRegistro';
-    const UPDATED_AT = 'fechaActualizacion';
-    const DELETED_AT = 'fechaEliminacion';
+    const CREATED_AT    = 'fechaRegistro';
+    const UPDATED_AT    = 'fechaActualizacion';
+    const DELETED_AT    = 'fechaEliminacion';
+    protected $fillable = [
+        'idEventoUn',
+        'idPersona',
+        'idUn',
+        'idEmpleado',
+        'idTipoEstatusInscripcion',
+        'monto',
+        'pagado',
+        'cantidad',
+        'totalSesiones',
+        'idTipoCliente',
+        'descQuincenas',
+        'informativo',
+        'participantes',
+        'visa',
+    ];
 
     public function scopeinfoEvento($query, $idEventoInscripciones)
     {

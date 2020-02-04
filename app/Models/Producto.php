@@ -30,6 +30,8 @@ class Producto extends Model
                 participantes.capacidad AS numParticipantes,
                 pp.importe,
                 tc.descripcion as tipoCliente,
+                tc.idTipoCliente,
+                ep.idEsquemaPago,
                 ep.descripcion  as esquemaPago
                 FROM producto p
                 INNER JOIN categoria c ON c.idCategoria=p.idCategoria
@@ -136,7 +138,7 @@ class Producto extends Model
                 $aux                                                = [];
                 if (isset($formasPago[$value->idProducto])) {
 
-                    $aux[] = ['id' => 0, 'value' => 'contado'];
+                    $aux[] = ['id' => 1, 'value' => 'contado'];
                     foreach ($formasPago[$value->idProducto] as $keyPago => $tipoPago) {
 
                         $aux[] = ['id' => $keyPago, 'value' => $tipoPago];
@@ -144,7 +146,7 @@ class Producto extends Model
 
                     $tiposPagos = $aux;
                 } else {
-                    $tiposPagos = ['id' => 0, 'value' => 'contado'];
+                    $tiposPagos[] = ['id' => 1, 'value' => 'contado'];
                 }
 
                 $paquetes[$value->idCategoria][$value->idProducto][$value->tipoCliente][$value->esquemaPago] = [
@@ -157,6 +159,8 @@ class Producto extends Model
                     'precio'        => $value->importe,
                     'tipoUsuario'   => $value->tipoCliente,
                     'esquemaPago'   => $value->esquemaPago,
+                    'idTipoCliente' => $value->idTipoCliente,
+                    'idEsquemaPago' => $value->idEsquemaPago,
                     'tiposPagos'    => $tiposPagos,
                 ];
 

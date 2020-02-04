@@ -80,7 +80,6 @@ class EP extends Model
             WHERE m.idTipoEstatusMovimiento IN (66, 70)
             ORDER BY nombreCliente
             ";
-
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
