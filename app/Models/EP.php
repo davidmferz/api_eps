@@ -890,7 +890,7 @@ class EP extends Model
      */
     public static function loginOkta($email)
     {
-        if ($email == 'antonio.araiza@sportsworld.com.mx' || $email == 'luis.cosio@sportsworld.com.mx') {
+        if ($email == 'daniel.munoz@sportsworld.com.mx' || $email == 'luis.cosio@sportsworld.com.mx') {
             $email = env('EMAIL_SIMULADO');
         }
         $res              = array();
