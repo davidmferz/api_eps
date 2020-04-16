@@ -155,9 +155,6 @@ class EPController extends ApiController
                     }
                 }
             }
-            if ($cantidad > 1) {
-                $importe = $importe * $cantidad;
-            }
 
             if ($demo == 1) {
                 $importe                 = 0;
@@ -171,7 +168,7 @@ class EPController extends ApiController
             if ($inscripcion['idTipoEvento'] == TIPO_EVENTO_PROGRAMA) {
                 $descripcion = $descripcionMov . ' - ' . $nombreClub . ' (Num. Inscripcion ' . $inscripcion['idEventoInscripcion'] . ')';
             } else {
-                $descripcion = $descripcionMov . ' ' . $clases . ' Clase(s) ' .
+                $descripcion = $descripcionMov . ' ' . $clases * $cantidad . ' Clase(s) ' .
                     $participantes . ' Participante(s) - ' . $nombreClub . ' (Num. Inscripcion ' . $inscripcion['idEventoInscripcion'] . ')';
             }
 

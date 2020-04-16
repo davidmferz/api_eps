@@ -94,6 +94,7 @@ class Evento extends Model
             ";
 
         $query = DB::connection('crm')->select($sql);
+        Log::debug($query);
         if (count($query) > 0) {
             if ($demo) {
                 $monto         = 0;
@@ -111,19 +112,19 @@ class Evento extends Model
                     ];
                 }
 
-                $pagado        = $monto;
                 $totalSesion   = $query[0]->clases * $cantidad;
                 $participantes = $query[0]->numParticipantes;
             }
+            $idEmpleado = Empleado::obtenIdEmpleado($idPersonaRespVta, 1);
 
             $reg = [
                 'idEventoUn'               => $query[0]->idEventoUn,
                 'idPersona'                => $idPersona,
                 'idUn'                     => $idUn,
-                'idEmpleado'               => $idPersonaRespVta,
+                'idEmpleado'               => $idEmpleado,
                 'idTipoEstatusInscripcion' => 1,
                 'monto'                    => $monto,
-                'pagado'                   => $pagado,
+                'pagado'                   => 0,
                 'cantidad'                 => $cantidad,
                 'totalSesiones'            => $totalSesion,
                 'idTipoCliente'            => $idTipoCliente,
@@ -147,6 +148,7 @@ class Evento extends Model
                 'idPersona'           => $idPersona,
                 'tipo'                => 1,
             ];
+            Log::debug($datos);
             $eventoInscripcion = EventoInvolucrado::create($datos);
 
             $datos = [
