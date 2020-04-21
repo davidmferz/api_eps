@@ -2,6 +2,7 @@
 
 namespace API_EPS\Models;
 
+use API_EPS\Models\Permiso;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -106,6 +107,83 @@ class EventoInscripcion extends Model
        ;";
         $query = DB::connection('crm')->select($sql);
         return $query;
+    }
+
+    public static function insertaProgramaDeportivo($idUn, $idProducto, $idPersona, $idPersonaEntrenador, $idPersonaRespVta, $importe, $cantidad, $idTipoCliente)
+    {
+        $empleado = Empleado::where('idPersona', $idPersonaEntrenador)->where('idTipoEstatusEmpleado', 196)->first();
+        $sql      = "SELECT eu.idEventoUn, p.nombre as productoNombre
+                    FROM producto AS p
+                    JOIN evento AS e ON e.idProducto=p.idProducto
+                    JOIN eventoun AS eu ON eu.idEvento=e.idEvento
+                    WHERE p.idProducto={$idProducto} AND eu.idUn={$idUn}";
+        $query = DB::connection('crm')->select($sql);
+        if (count($query) > 0) {
+            $idEventoUn                                  = $query[0]->idEnventoUn;
+            $eventoInscripcion                           = new self();
+            $eventoInscripcion->idEventoun               = $idEventoUn;
+            $eventoInscripcion->idPersona                = $idPersona;
+            $eventoInscripcion->idUn                     = $idUn;
+            $eventoInscripcion->idEmpleado               = $idEmpleado;
+            $eventoInscripcion->idTipoEstatusInscripcion = 1;
+            $eventoInscripcion->monto                    = $importe;
+            $eventoInscripcion->pagado                   = 0.00;
+            $eventoInscripcion->cantidad                 = $cantidad;
+            $eventoInscripcion->totalSesiones            = 1;
+            $eventoInscripcion->idTipoCliente            = $idTipoCliente;
+            $eventoInscripcion->descQuincenas            = 1;
+            $eventoInscripcion->informativo              = 0;
+            $eventoInscripcion->participantes            = 1;
+            $eventoInscripcion->visa                     = 0;
+            $eventoInscripcion->save();
+
+            $permiso = new Permiso;
+            $permiso->log(
+                'Se realiza incripcion al evento ' . $query[0]->productoNombre . ' (Num. Inscripcion ' . $eventoInscripcion->idEventoInscripcion . ')',
+                LOG_EVENTO,
+                0,
+                $idPersona
+            );
+
+            $datos = [
+                'idEventoInscripcion' => $eventoInscripcion->idEventoInscripcion,
+                'idPersona'           => $idPersona,
+                'tipo'                => 1,
+            ];
+            Log::debug($datos);
+            $eventoInscripcion = EventoInvolucrado::create($datos);
+
+            $datos = [
+                'idEventoInscripcion' => $eventoInscripcion->idEventoInscripcion,
+                'idPersona'           => $idPersonaRespVta,
+                'tipo'                => 2,
+            ];
+            $eventoInscripcion = EventoInvolucrado::create($datos);
+
+            $datos = [
+                'idEventoInscripcion' => $eventoInscripcion->idEventoInscripcion,
+                'idPersona'           => $idPersonaEntrenador,
+                'tipo'                => 3,
+            ];
+            $eventoInscripcion = EventoInvolucrado::create($datos);
+
+            return [
+                'estatus'             => true,
+                'idEventoInscripcion' => $eventoInscripcion->idEventoInscripcion,
+                'cuentaProducto'      => $query[0]->cuentaProducto,
+                'numCuenta'           => $query[0]->numCuenta,
+                'idTipoEvento'        => $query[0]->idTipoEvento,
+                'idEvento'            => $query[0]->idEvento,
+            ];
+
+        } else {
+            return [
+                'estatus' => false,
+                'mensaje' => 'Evento no encontrado',
+
+            ];
+
+        }
     }
 
 }

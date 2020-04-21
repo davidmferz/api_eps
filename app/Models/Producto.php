@@ -88,6 +88,7 @@ class Producto extends Model
             AND participantes.capacidad>0
             WHERE p.activo=1
             AND p.eliminado=0
+            AND p.idProducto <> 4732
             ORDER BY p.nombre
         ";
         $resultado  = DB::connection('crm')->select($sql);
@@ -175,6 +176,160 @@ class Producto extends Model
             return false;
         }
 
+    }
+    public static function precio($idProducto, $idUn, $idTipoRolCliente = ROL_CLIENTE_NINGUNO, $idEsquemaPago = ESQUEMA_PAGO_CONTADO
+
+    ) {
+        settype($idProducto, 'integer');
+        settype($idUn, 'integer');
+
+        $datos                      = array();
+        $datos['monto']             = '0.00';
+        $datos['id']                = 0;
+        $datos['idCta']             = 0;
+        $datos['idCtaProd']         = 0;
+        $datos['cuenta']            = '';
+        $datos['cuentaProducto']    = '';
+        $datos['error']             = 0;
+        $datos['mensaje']           = '';
+        $datos['numCuenta']         = 0;
+        $datos['numCuentaProducto'] = 0;
+        $datos['activo']            = 0;
+        $datos['query']             = array();
+        //$fechaVigencia            = ($fechaVigencia == '') ? date('Y-m-d') : $fechaVigencia;
+
+        if (!$idProducto or !$idUn) {
+            $datos['error']   = 1;
+            $datos['mensaje'] = 'Faltan datos para consulta';
+
+            return $datos;
+        }
+
+        $sql = "SELECT pp.importe, pp.idProductoPrecio AS id, pp.idCuentaContable, CONCAT('(', cc.numCuenta, ') ', cc.descripcion) AS cuenta,cc.numCuenta, cp.idCuentaProducto, CONCAT('(', cp.cuentaProducto, ') ', cp.descripcion) AS cuentaProducto, IFNULL(cp.cuentaProducto, '') AS numCuentaProducto, pp.activo
+            from productoprecio as pp
+            JOIN productoUn as  pu ON pu.idProductoUn = pp.idProductoUn
+                AND pu.idProductoGrupo = pp.idProductoGrupo
+                AND pu.eliminado = 0
+                AND pu.activo = 1
+                AND pu.idProducto       = {$idProducto}
+                AND pu.idUn             = {$idUn}
+            JOIN un as u ON u.idUn = pu.idUn
+                -- AND u.fechaEliminacion = '0000-00-00 00:00:00'
+                AND u.eliminado = 0
+                AND u.activo = 1
+            JOIN cuentacontable AS cc ON pp.idCuentaContable = cc.idCuentaContable
+            JOIN cuentaproducto AS cp ON pp.idCuentaProducto = cp.idCuentaProducto
+            WHERE 1 = 1
+            AND pp.eliminado        = 0
+            AND pp.activo=1
+            AND pp.idTipoRolCliente = {$idTipoRolCliente}
+            AND pp.idEsquemaPago    = {$idEsquemaPago}
+            AND pp.idTipoMembresia  = 0
+            AND pp.unidades         = 1
+            order by pp.idProductoPrecio DESC ";
+        $query = DB::connection('crm')->select($sql);
+
+        if (count($query) > 0) {
+            $fila                       = $query[0];
+            $datos['monto']             = number_format($fila->importe, 2, '.', '');
+            $datos['id']                = $fila->id;
+            $datos['idCta']             = $fila->idCuentaContable;
+            $datos['idCtaProd']         = $fila->idCuentaProducto;
+            $datos['cuenta']            = $fila->cuenta;
+            $datos['cuentaProducto']    = $fila->cuentaProducto;
+            $datos['numCuenta']         = $fila->numCuenta;
+            $datos['numCuentaProducto'] = $fila->numCuentaProducto;
+            $datos['activo']            = $fila->activo;
+        }
+
+        return $datos;
+    }
+
+    /**
+     * [cveProducto description]
+     *
+     * @param  integer $idProducto Identificador de producto
+     *
+     * @return string
+     */
+    public static function cveProducto($idProducto)
+    {
+        settype($idProducto, 'integer');
+
+        $cve   = '';
+        $query = DB::connection('crm')->table(TBL_PRODUCTO)
+            ->select('cveProductoServicio')
+            ->where('idProducto', $idProducto)->get()->toArray();
+
+        if (count($query) > 0) {
+            $fila = $query[0];
+            $cve  = $fila->cveProductoServicio;
+        }
+        return $cve;
+    }
+
+    /**
+     * [cveUnidad description]
+     *
+     * @param  integer $idProducto Identificador de producto
+     *
+     * @return string
+     */
+    public static function cveUnidad($idProducto)
+    {
+        settype($idProducto, 'integer');
+
+        $cve   = '';
+        $query = DB::connection('crm')->table(TBL_PRODUCTO)
+            ->select('cveUnidad')
+            ->where('idProducto', $idProducto)->get()->toArray();
+        if (count($query) > 0) {
+            $fila = $query[0];
+            $cve  = $fila->cveUnidad;
+        }
+        return $cve;
+    }
+    /**
+     * Regresa el string con la clave de producto
+     *
+     * @param  integer $idProducto Identificador de producto
+     * @param  integer $idUn       Identificador de club
+     *
+     * @return string
+     */
+    public static function ctaProducto($idProducto, $idUn)
+    {
+        settype($idProducto, 'integer');
+        settype($idUn, 'integer');
+
+        $res = '';
+
+        if ($idProducto == 0 || $idUn == 0) {
+            return $res;
+        }
+
+        $sql = "
+            SELECT cp.cuentaProducto
+            FROM producto p
+            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+                AND pu.activo=1 AND pu.eliminado=0 AND pu.idUn={$idUn}
+            INNER JOIN productoprecio pp ON pp.idProductoUn=pu.idProductoUn
+                AND pp.activo=1 AND pp.eliminado=0
+                AND pp.idCuentaProducto>0
+                AND DATE(NOW()) BETWEEN pp.inicioVigencia AND pp.finVigencia
+            INNER JOIN cuentaproducto cp ON cp.idCuentaProducto=pp.idCuentaProducto
+            WHERE p.idProducto={$idProducto} AND p.activo=1 AND p.eliminado=0
+            ORDER BY pp.idProductoPrecio DESC
+            LIMIT 1
+        ";
+        $query = DB::connection('crm')->select($sql);
+
+        $res = [];
+        if (count($query) > 0) {
+            $fila = $query[0];
+            $res  = $fila->cuentaProducto;
+        }
+        return $res;
     }
 
 }

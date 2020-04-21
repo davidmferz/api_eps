@@ -274,7 +274,6 @@ class EP extends Model
                 ) a
                 {$str_groupby_global}
                 ORDER BY {$str_order_categoria} nombre";
-
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
@@ -594,58 +593,67 @@ class EP extends Model
         }
         $intervaloDias = 220;
 
-        $sql = "SELECT ef.idEventoFecha AS id,
-                CONCAT(c.nombre, ' - ', CONCAT_WS(' ', p_c.nombre, p_c.paterno, p_c.materno)) AS title,
-                REPLACE(TIMESTAMP(ef.fechaEvento,ef.horaEvento), ' ', 'T') AS start,
-                TIMESTAMPADD(HOUR,1,TIMESTAMP(ef.fechaEvento,ef.horaEvento)) AS end,
-                CONCAT_WS(' ', p_e.nombre, p_e.paterno, p_e.materno) AS nombreEntrenador,
-                IF (ef.idTipoEstatusEventoFecha IN (2, 3, 4, 6), 0,
-                    IF (TIMESTAMP(ef.fechaEvento,ef.horaEvento) < DATE_ADD(NOW(), INTERVAL 1 HOUR), 0 , 1)
-                ) AS editable, tef.idTipoEstatusEventoFecha AS estatusClasem,
-                tef.descripcion AS descripcionClase, IF(co.idTipoEstatusComision=2, 1, 0) AS comisionPagada,
-                if(DATEDIFF(NOW(),so.fechaRegistro )>{$intervaloDias},0,1) as nuevo,
-                if(memre.idUnicoMembresia IS  NULL,0,1) as nuevoMembresia
-            FROM producto p
-            INNER JOIN categoria c ON c.idCategoria=p.idCategoria
-            INNER JOIN evento e ON e.idProducto=p.idProducto
-                AND e.idEventoClasificacion>0
-                AND e.eliminado=0
-            INNER JOIN productoun pu ON pu.idProducto=p.idProducto
-                AND pu.activo=1 AND pu.eliminado=0
-            INNER JOIN eventoun eu ON eu.idEvento=e.idEvento {$wUn} AND eu.idUn=pu.idUn
-                AND eu.activo=1 AND eu.eliminado=0
-                #AND DATE(NOW()) BETWEEN eu.inicioRegistro AND eu.finRegistro
-                AND DATE(NOW()) <= eu.finEvento
-            INNER JOIN eventoinscripcion ei ON ei.idEventoUn=eu.idEventoUn
-                AND ei.eliminado=0
-            INNER JOIN persona p_c ON p_c.idPersona=ei.idPersona
-            LEFT JOIN socio so ON so.idPersona=p_c.idPersona AND so.eliminado=0
-            left JOIN membresiareactivacion as memre ON memre.idUnicoMembresia=so.idUnicoMembresia AND memre.fechaEliminacion ='0000-00-00 00:00:00' AND if(DATEDIFF(NOW(),memre.fechaRegistro )>{$intervaloDias},0,1) = 1
-            INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
-                AND ef.eliminado=0
-                AND ef.idTipoEstatusEventoFecha<>5 {$wEmpleado}
-                AND ef.fechaEvento>=DATE_SUB(DATE(NOW()), INTERVAL 2 MONTH)
-            LEFT JOIN eventofechacomision efc ON efc.idEventoFecha=ef.idEventoFecha
-            LEFT JOIN comision co ON co.idComision=efc.idComision
-                AND co.eliminado=0
-            INNER JOIN tipoestatuseventofecha tef ON tef.idTipoEstatusEventoFecha=ef.idTipoEstatusEventoFecha
-            INNER JOIN persona p_e ON p_e.idPersona=ef.idPersona
-            INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
-                AND euc.idTipoEventoCapacidad=1
-                AND euc.activo=1
-                AND euc.autorizado=1
-                AND euc.eliminado=0
-                AND euc.capacidad>0
-            INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn=eu.idEventoUn
-                AND euc3.idTipoEventoCapacidad=26
-                AND euc3.activo=1 AND euc3.autorizado=1
-                AND euc3.eliminado=0
-                AND euc3.capacidad>0
-            WHERE p.activo=1 AND p.eliminado=0
-            {$sql_horario}
-            ORDER BY ef.fechaEvento, ef.horaEvento";
+        $sql = "SELECT
+                    ef.idEventoFecha AS id,
+                    IF(p.idProducto=4732,CONCAT(p.nombre, ' - ', CONCAT_WS(' ', p_c.nombre, p_c.paterno, p_c.materno)),
+                        CONCAT(c.nombre, ' - ', CONCAT_WS(' ', p_c.nombre, p_c.paterno, p_c.materno)) )AS title,
+                    REPLACE(TIMESTAMP(ef.fechaEvento,ef.horaEvento), ' ', 'T') AS start,
+                    TIMESTAMPADD(HOUR,1,TIMESTAMP(ef.fechaEvento,ef.horaEvento)) AS end,
+                    CONCAT_WS(' ', p_e.nombre, p_e.paterno, p_e.materno) AS nombreEntrenador,
+                    IF (ef.idTipoEstatusEventoFecha IN (2, 3, 4, 6), 0,
+                        IF (TIMESTAMP(ef.fechaEvento,ef.horaEvento) < DATE_ADD(NOW(), INTERVAL 1 HOUR), 0 , 1)
+                    ) AS editable,
+                    tef.idTipoEstatusEventoFecha AS estatusClasem,
+                    tef.descripcion AS descripcionClase,
+                    IF(co.idTipoEstatusComision=2, 1, 0) AS comisionPagada,
+                    if(DATEDIFF(NOW(),so.fechaRegistro )>{$intervaloDias},0,1) as nuevo,
+                    if(memre.idUnicoMembresia IS  NULL,0,1) as nuevoMembresia
+                FROM producto p
+                INNER JOIN categoria c ON c.idCategoria=p.idCategoria
+                INNER JOIN evento e ON e.idProducto=p.idProducto
+                    AND e.idEventoClasificacion>0
+                    AND e.eliminado=0
+                INNER JOIN productoun pu ON pu.idProducto=p.idProducto
+                    AND pu.activo=1 AND pu.eliminado=0
+                INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
+                    {$wUn}
+                    AND eu.idUn=pu.idUn
+                    AND eu.activo=1
+                    AND eu.eliminado=0
+                    AND DATE(NOW()) <= eu.finEvento
+                INNER JOIN eventoinscripcion ei ON ei.idEventoUn=eu.idEventoUn
+                    AND ei.eliminado=0
+                INNER JOIN persona p_c ON p_c.idPersona=ei.idPersona
+                LEFT JOIN socio so ON so.idPersona=p_c.idPersona
+                    AND so.eliminado=0
+                left JOIN membresiareactivacion as memre ON memre.idUnicoMembresia=so.idUnicoMembresia
+                    AND memre.fechaEliminacion ='0000-00-00 00:00:00'
+                    AND if(DATEDIFF(NOW(),memre.fechaRegistro )>{$intervaloDias},0,1) = 1
+                INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
+                    AND ef.eliminado=0
+                    AND ef.idTipoEstatusEventoFecha<>5 {$wEmpleado}
+                    AND ef.fechaEvento>=DATE_SUB(DATE(NOW()), INTERVAL 2 MONTH)
+                LEFT JOIN eventofechacomision efc ON efc.idEventoFecha=ef.idEventoFecha
+                LEFT JOIN comision co ON co.idComision=efc.idComision
+                    AND co.eliminado=0
+                INNER JOIN tipoestatuseventofecha tef ON tef.idTipoEstatusEventoFecha=ef.idTipoEstatusEventoFecha
+                INNER JOIN persona p_e ON p_e.idPersona=ef.idPersona
+                INNER JOIN eventouncapacidad euc ON euc.idEventoUn=eu.idEventoUn
+                    AND euc.idTipoEventoCapacidad=1
+                    AND euc.activo=1
+                    AND euc.autorizado=1
+                    AND euc.eliminado=0
+                    AND euc.capacidad>0
+                INNER JOIN eventouncapacidad euc3 ON euc3.idEventoUn=eu.idEventoUn
+                    AND euc3.idTipoEventoCapacidad=26
+                    AND euc3.activo=1 AND euc3.autorizado=1
+                    AND euc3.eliminado=0
+                    AND euc3.capacidad>0
+                WHERE p.activo=1
+                    AND p.eliminado=0
+                    {$sql_horario}
+                ORDER BY ef.fechaEvento, ef.horaEvento";
         $query = DB::connection('crm')->select($sql);
-
         if (count($query) > 0) {
             // $query = array_map(function($x){return (array)$x;},$query);
             foreach ($query as $fila) {
@@ -663,7 +671,6 @@ class EP extends Model
                 $res[] = $clase;
             }
         }
-
         return $res;
     }
 
@@ -1529,7 +1536,7 @@ class EP extends Model
      *
      * @return [type]              [description]
      */
-    public static function totalDemos($idCategoria, $idPersona)
+    public static function totalDemos($idCategoria, $idPersona, $idEmpleado)
     {
         settype($idCategoria, 'integer');
         settype($idPersona, 'integer');
@@ -1538,15 +1545,16 @@ class EP extends Model
 
         if ($idCategoria > 0 && $idPersona > 0) {
             $sql = "SELECT COUNT(*) AS demos
-                    FROM producto p
-                    INNER JOIN evento e ON e.idProducto=p.idProducto
-                    INNER JOIN eventoun eu ON eu.idEvento=e.idEvento
-                    INNER JOIN eventoinscripcion ei ON ei.idEventoUn=eu.idEventoUn
-                    INNER JOIN eventofecha ef ON ef.idEventoInscripcion=ei.idEventoInscripcion
-                        AND ei.idPersona={$idPersona}
+                    FROM eventofecha ef
+                    JOIN eventoInscripcion as ei on ei.idEventoInscripcion = ef.idEventoInscripcion
+                    JOIN eventoUn as eu on ei.idEventoUn =ei.idEventoUn
+                    JOIN eventoUn as eu on ei.idEventoUn =ei.idEventoUn
+                    WHERE
+                         ef.idPersona={$idPersona}
                         AND ef.fechaEliminacion=0
-                        AND ef.idTipoEstatusEventoFecha=" . ESTATUS_CLASE_DEMO . "
-                    WHERE p.idCategoria={$idCategoria}";
+                        AND ef.idTipoEstatusEventoFecha=6
+                        AND ef.idEmpleado ={$idEmpleado}
+                    ";
             $query = DB::connection('crm')->select($sql);
             if (count($query) > 0) {
                 $query = array_map(function ($x) {return (array) $x;}, $query);

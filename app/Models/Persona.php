@@ -38,6 +38,47 @@ class Persona extends Model
     ->toArray();*/
     }
 
+    public static function buscaTipoCliente($idPersona)
+    {
+        $sql = "SELECT  if(s.idPersona IS NULL,0,1) AS socio,
+                    IF(e.idPersona IS NULL,0,1) AS empleado,
+                    IF(i.idPersona IS NULL,0,1) AS invitadoespecial,
+                    IF(g.idPersona IS NULL,0,1) AS invitado
+			    FROM
+                    persona AS p
+                left JOIN socio s ON p.idPersona =s.idPersona
+					 		AND s.idTipoEstatusSocio NOT IN (82,86)
+                    	AND s.eliminado = 0
+                left JOIN membresia m ON m.idUnicoMembresia = s.idUnicoMembresia
+					 		AND m.idTipoEstatusMembresia = 27
+							AND m.eliminado = 0
+                LEFT JOIN empleado AS e ON e.idPersona =p.idPersona AND  e.idTipoEstatusEmpleado=196 AND e.eliminado=0
+                LEFT JOIN invitadoespecial AS i ON i.idPersona =p.idPersona AND i.activo=1 AND NOW() BETWEEN i.fechaInicio AND i.fechaFin
+                LEFT JOIN  gympass AS g ON g.idPersona=p.idPersona AND g.eliminado=0
+                WHERE 1
+                    AND p.idPersona ={$idPersona}";
+        $query = DB::connection('crm')->select($sql);
+        if (count($query) > 0) {
+            if ($query[0]->socio == 1) {
+
+                return ['tipo' => 'SOCIO'];
+            } elseif ($query[0]->empleado == 1) {
+                return ['tipo' => 'EMP'];
+            } elseif ($query[0]->invitadoEspecial == 1) {
+                return ['tipo' => 'INV'];
+            } elseif ($query[0]->invitado == 1) {
+                return ['tipo' => 'INV'];
+
+            } else {
+                return ['tipo' => 'EXTERNO'];
+
+            }
+        } else {
+            return ['error'];
+
+        }
+    }
+
     public static function getMail($idPersona)
     {
         $sql = "SELECT  mail FROM crm.persona as p
@@ -54,11 +95,10 @@ class Persona extends Model
     }
     public function scopeQueryPersonaMem($query, $nombre, $tipoUsuario)
     {
-        try {
-            $membresia = (int) trim($nombre);
-            $sql       = '';
-            if ($membresia > 0) {
-                $sql = "SELECT p.idPersona,
+        $membresia = (int) trim($nombre);
+        $sql       = '';
+        if ($membresia > 0) {
+            $sql = "SELECT p.idPersona,
                     UPPER(TRIM(p.nombre)) AS nombre,
                     UPPER(TRIM(p.paterno)) AS paterno,
                     UPPER(TRIM(p.materno)) AS materno,
@@ -80,122 +120,34 @@ class Persona extends Model
                     AND m.eliminado=0
                 ORDER BY nombreCompleto
                 LIMIT 20";
-                $res = DB::connection('crm')->select($sql);
-            } else {
-                $nombre = trim(utf8_encode($nombre));
-                $find   = array('á', 'é', 'í', 'ó', 'ú', 'â', 'ê', 'î', 'ô', 'û', 'ã', 'õ', 'ç', 'ñ', 'Ñ', 'Á');
-                $repl   = array('a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u', 'a', 'o', 'c', 'n', 'N', 'A');
-                $nombre = str_replace($find, $repl, $nombre);
-                //$nombre = $this->db->escape_like_str($nombre);
-                $nombre      = htmlspecialchars($nombre);
-                $nombre      = strtoupper($nombre);
-                $nombreAux   = explode(' ', $nombre);
-                $nombreMatch = '';
-                foreach ($nombreAux as $key => $value) {
-                    $nombreMatch .= '+' . $value . ' ';
-                }
-                switch ($tipoUsuario) {
-                    case 'socio':
-                        $res = $this->buscaSocioNombre($nombreMatch);
-                        break;
-                    case 'invitado':
-                        $res = $this->buscaInvitadoEspecialPorNombre($nombreMatch);
-                        break;
-                    case 'empleado':
-                        $res = $this->buscaEmpleadoPorNombre($nombreMatch);
-                        break;
+            $res = DB::connection('crm')->select($sql);
+        } else {
+            $nombre = trim(utf8_encode($nombre));
+            $find   = array('á', 'é', 'í', 'ó', 'ú', 'â', 'ê', 'î', 'ô', 'û', 'ã', 'õ', 'ç', 'ñ', 'Ñ', 'Á');
+            $repl   = array('a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u', 'a', 'o', 'c', 'n', 'N', 'A');
+            $nombre = str_replace($find, $repl, $nombre);
+            //$nombre = $this->db->escape_like_str($nombre);
+            $nombre = htmlspecialchars($nombre);
+            $nombre = strtoupper($nombre);
+            $nombre = str_replace(' ', '%', $nombre);
 
-                    default:
-                        # code...
-                        break;
-                }
-                return $res;
+            switch ($tipoUsuario) {
+                case 'socio':
+                    $res = $this->buscaSocioNombre($nombre);
+                    break;
+                case 'invitado':
+                    $res = $this->buscaInvitadoEspecialPorNombre($nombre);
+                    break;
+                case 'empleado':
+                    $res = $this->buscaEmpleadoPorNombre($nombre);
+                    break;
 
-                $nombre = str_replace('*', '%', $nombre);
-
-                $w_nombre = " AND tp.nombreCompleto LIKE '%" . $nombre . "%' ";
-
-                $sql = "SELECT
-                tp.nombre,
-                tp.paterno,
-                tp.materno,
-                tp.idPersona,
-                IFNULL(m.idMembresia, '') AS idMembresia,
-                IFNULL(m.idUnicoMembresia, '') AS idUnicoMembresia,
-                IFNULL(u.idUn, '') AS idUn,
-                IFNULL(u.clave, '') AS clave,
-                IF(m.idMembresia IS NULL, 0, 1) AS tieneMembresia,
-                IF(e.idEmpleado IS NULL, 0, 1) AS empleado,
-                IF(ie.idInvitadoEspecial IS NULL, 0, 1) AS invitado,
-                IF(g.idgympass IS NULL, 0, 1) AS gympass
-            FROM(
-                SELECT l.nombreCompleto,p1.*
-                FROM personalevenshtein l
-                INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    WHERE MATCH(nombreCompleto) AGAINST ('{$nombreMatch}' IN BOOLEAN MODE)
-                    order by l.idPersona desc
-                    limit 1000
-                ) AS tp
-                    LEFT JOIN
-                socio s ON s.idPersona = tp.idPersona
-                    AND s.idTipoEstatusSocio NOT IN  (82,86)
-                    AND s.eliminado = 0
-                    LEFT  JOIN
-                membresia m ON m.idUnicoMembresia = s.idUnicoMembresia
-                    AND m.idTipoEstatusMembresia = 27
-                    AND m.eliminado = 0
-                    LEFT JOIN
-                empleado e ON e.idPersona = tp.idPersona
-                    AND e.fechaEliminacion = 0
-                    LEFT JOIN
-                invitadoespecial ie ON ie.idPersona = tp.idPersona
-                    AND ie.fechaEliminacion = 0
-                    AND NOW() BETWEEN ie.fechaInicio AND ie.fechaFin
-                    LEFT JOIN
-                gympass g ON g.idPersona = tp.idPersona
-                    LEFT JOIN
-                un u ON u.idUn = m.idUn
-            where 1 {$w_nombre}
-            ORDER BY tieneMembresia DESC
-            LIMIT {$numeroRegistros}";
-                $respuesta = DB::connection('crm')->select($sql);
-                $aux       = [];
-                $res       = [];
-                foreach ($respuesta as $key => $value) {
-                    if (!array_key_exists($value->idPersona, $aux)) {
-                        $flag = false;
-                        if ($value->tieneMembresia) {
-                            $value->tipo = 'SOCIO';
-                            $flag        = true;
-                        } elseif ($value->invitado || $value->gympass) {
-                            if ($value->invitado) {
-                                $value->tipo = 'INV';
-                            } else {
-                                $value->tipo = 'GYMPASS';
-                            }
-                            $flag = true;
-
-                        } elseif ($value->empleado) {
-                            $value->tipo = 'EMP';
-                            $flag        = true;
-                        }
-                        if ($flag) {
-                            $aux[$value->idPersona] = $value;
-                            $res[]                  = $value;
-                        }
-                    }
-                }
+                default:
+                    # code...
+                    break;
             }
-            return $res;
-        } catch (\Exception $ex) {
-            Log::debug("ErrMsg: " . $ex->getMessage() . " File: " . $ex->getFile() . " Line: " . $ex->getLine());
-            $retval = array(
-                'status'  => 'error',
-                'data'    => array(),
-                'message' => $ex->getMessage(),
-            );
-            return response()->json($retval, 500);
         }
+        return $res;
 
     }
 
@@ -212,6 +164,7 @@ class Persona extends Model
                     'SOCIO' as tipo
                 FROM
                     socio s
+                JOIN persona AS p ON p.idPersona =s.idPersona
                 JOIN
                     membresia m ON m.idUnicoMembresia = s.idUnicoMembresia AND m.idTipoEstatusMembresia = 27 AND m.eliminado = 0
                 JOIN un u ON u.idUn = m.idUn
@@ -219,14 +172,15 @@ class Persona extends Model
                     SELECT l.nombreCompleto,p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    WHERE MATCH(nombreCompleto) AGAINST ('{$nombreMatch}' IN BOOLEAN MODE)
-                    ORDER BY l.idPersona DESC
-                    LIMIT 500
+                    WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
                 ) AS tp ON tp.idPErsona=s.idPersona
-                WHERE 1 AND s.idTipoEstatusSocio NOT IN (82,86) AND s.eliminado = 0
+                WHERE 1
+                    AND s.idTipoEstatusSocio NOT IN (82,86)
+                    AND s.eliminado = 0
+                    AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
+
                 ORDER BY tp.idPersona DESC
                 limit 20";
-
         $respuesta = DB::connection('crm')->select($sql);
         return $respuesta;
     }
@@ -238,21 +192,21 @@ class Persona extends Model
                     tp.paterno,
                     tp.materno,
                     tp.idPersona,
-                    e.idEmpleado
+                    e.idEmpleado,
                     'EMP' as tipo
                 FROM
                     empleado e
+                    JOIN persona AS p ON p.idPersona =e.idPersona
 
                 JOIN (
                     SELECT l.nombreCompleto,p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    WHERE MATCH(nombreCompleto) AGAINST ('{$nombreMatch}' IN BOOLEAN MODE)
-                    ORDER BY l.idPersona DESC
-                    LIMIT 500
+                    WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
                 ) AS tp ON tp.idPErsona=e.idPersona
                 WHERE  e.idTipoEstatusEmpleado=196
                     AND e.eliminado = 0
+                    AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
                 ORDER BY tp.idPersona DESC
                 limit 20";
 
@@ -268,20 +222,20 @@ class Persona extends Model
                     tp.materno,
                     tp.idPersona,
                     i.idinvitadoEspecial as idInvitado,
-                    'INV' as tipo
+                    'INV' as tipo,
 
                     'INV ESP' as tipoinvitado
                 FROM
                     invitadoespecial i
+                    JOIN persona AS p ON p.idPersona =i.idPersona
                 JOIN (
                     SELECT l.nombreCompleto,p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    WHERE MATCH(nombreCompleto) AGAINST ('{$nombreMatch}' IN BOOLEAN MODE)
-                    ORDER BY l.idPersona DESC
-                    LIMIT 500
+                    WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
                 ) AS tp ON tp.idPErsona=i.idPersona
                 WHERE i.activo=1 and now() between i.fechaInicio and i.fechaFin
+                AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
                 ORDER BY tp.idPersona DESC
                 limit 12";
         $query = DB::connection('crm')->select($sql);
@@ -298,15 +252,15 @@ class Persona extends Model
                         ELSE 'GYMPASS'
                         END AS tipoinvitado
                 FROM crm.gympass AS g
+                JOIN persona AS p ON p.idPersona =g.idPersona
                 JOIN (
                     SELECT l.nombreCompleto,p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    WHERE MATCH(nombreCompleto) AGAINST ('{$nombreMatch}' IN BOOLEAN MODE)
-                    ORDER BY l.idPersona DESC
-                    LIMIT 500
+                    WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
                 ) AS tp ON tp.idPErsona=g.idPersona
                 WHERE g.eliminado=0
+                AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
                 limit 12
                 ";
         $query2    = DB::connection('crm')->select($sql);

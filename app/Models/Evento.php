@@ -24,17 +24,6 @@ class Evento extends Model
     public static function inscripcionV2($idUn, $idCategoria, $idPersona, $idPersonaRespVta, $idPersonaEntrenador, $idTipoCliente, $demo = 0, $idProducto = 0, $cantidad = 1,
         $importe = 0, $idEsquemaPago = 1) {
 
-        if ($demo) {
-
-            $whereSql = " AND p.idProducto={$idProducto}
-            AND ep.idEsquemaPago = '{$idEsquemaPago}'
-            ";
-        } else {
-            $whereSql = " AND p.idProducto={$idProducto}
-            AND ep.idEsquemaPago = '{$idEsquemaPago}'
-            ";
-        }
-
         $sql = "SELECT
                 p.nombre AS productoNombre,
                 e.idEvento,
@@ -87,7 +76,8 @@ class Evento extends Model
             AND p.eliminado=0
             AND eu.idUn={$idUn}
             AND tc.idTipoCliente={$idTipoCliente}
-            {$whereSql}
+            AND p.idProducto={$idProducto}
+            AND ep.idEsquemaPago = '{$idEsquemaPago}'
 
             order by numClases.capacidad desc, pp.idProductoPrecio desc
             limit 1
@@ -168,6 +158,7 @@ class Evento extends Model
             return [
                 'estatus'             => true,
                 'idEventoInscripcion' => $eventoInscripcion->idEventoInscripcion,
+                'productoNombre'      => $query[0]->productoNombre,
                 'cuentaProducto'      => $query[0]->cuentaProducto,
                 'numCuenta'           => $query[0]->numCuenta,
                 'idTipoEvento'        => $query[0]->idTipoEvento,
