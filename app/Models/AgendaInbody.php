@@ -2,12 +2,13 @@
 
 namespace API_EPS\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
 class AgendaInbody extends Model
 {
+    use SoftDeletes;
     protected $connection = 'aws';
     protected $table      = 'piso.agenda_inbody';
     protected $primaryKey = 'idAgenda';
@@ -38,6 +39,31 @@ class AgendaInbody extends Model
     const FITWEEK_INICIO = 5;
     const FITWEEK_FINAL  = 12;
 
+    public static function getAgendaCoordinador($idUn)
+    {
+        $sql = "SELECT
+                    agenda_inbody.*,
+                    CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno) AS persona,
+                    un.nombre AS club,
+                    DATE_ADD(agenda_inbody.fechaSolicitud, INTERVAL 30 MINUTE) AS fechaFin,
+                    IF(agenda_inbody.fechaConfirmacion IS NULL, FALSE, TRUE) AS confirmado,
+                    IF(agenda_inbody.fechaCancelacion IS NULL, FALSE, TRUE) AS cancelado
+                FROM piso.agenda_inbody
+                INNER JOIN deportiva.persona ON persona.idPersona = agenda_inbody.idPersona
+                INNER JOIN deportiva.un ON un.idUn = agenda_inbody.idUn
+                WHERE agenda_inbody.idUn = {$idUn}
+                    AND fechaSolicitud BETWEEN DATE_SUB(now(), INTERVAL 2 Month) AND DATE_ADD(now(), INTERVAL 2 Month)
+                    AND piso.agenda_inbody.fechaEliminacion IS NULL
+                ORDER BY agenda_inbody.idUn ASC, agenda_inbody.fechaSolicitud ASC";
+        $query = DB::connection('aws')->select($sql);
+        if (count($query) > 0) {
+            return $query;
+        } else {
+            return [];
+        }
+
+    }
+
     public static function getDatosMailAgendainbody($idAgenda)
     {
         $sql = "SELECT
@@ -65,64 +91,31 @@ class AgendaInbody extends Model
      */
     public static function scopeConsultaInbodyEmpleado($query, $idEmpleado, $idUn, $fecha = '')
     {
-        $sql = "SELECT  CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno) AS nombre
-        from persona
-        join empleado ON persona.idPersona = empleado.idPersona
-        where idEmpleado = {$idEmpleado}";
+        $empleado = Empleado::selectRaw("CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno) as nombre")->join('persona', 'persona.idPersona', '=', 'empleado.idPersona')->where('idEmpleado', $idEmpleado)->first();
+        $sql      = "SELECT
+                        un.nombre ,
+                        idAgenda as id ,
+                        persona.idPersona,
+                        CONCAT('InBody', ' - ', CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno)) AS title,
+                        horario , fechaSolicitud as start ,
+                        if(fechaConfirmacion IS NOT NULL OR fechaCancelacion IS NOT  NULL ,0,1)  as editable ,
+                        0 as comisionPagada,
+                        'InBody' as descripcionClase,
+                        '{$empleado->nombre}' as nombreEntrenador,
+                        if(fechaConfirmacion IS NOT NULL,1,0) as confirmado,
+                        if(fechaCancelacion IS NOT NULL,1,0) as cancelado,
+                        0 as  nuevo
+                     from piso.agenda_inbody
+                     inner join deportiva.persona on persona.idPersona = agenda_inbody.idPersona
+                     inner join deportiva.un on un.idUn = agenda_inbody.idUn
+                     where agenda_inbody.fechaEliminacion IS NULL
+                     AND agenda_inbody.idUn = '16'
+                     AND agenda_inbody.idEmpleado = {$idEmpleado}
+                     AND fechaSolicitud BETWEEN DATE_SUB(NOW() ,INTERVAL 2 MONTH) AND DATE_ADD(NOW() ,INTERVAL 2 MONTH)
+                     order by agenda_inbody.idUn asc, fechaSolicitud asc
+        ";
+        $res = DB::connection('aws')->select($sql);
 
-        $query = DB::connection('crm')->select($sql);
-
-        $nombreEntrenador = $query[0]->nombre;
-        //dd($nombreEmpleado);
-        $now = Carbon::now();
-        if ($fecha != '') {
-            $before         = new Carbon($fecha);
-            $before->minute = 0;
-
-            $after         = new Carbon($fecha);
-            $after->minute = 0;
-            $after->addHour(1);
-
-        } else {
-            $before = Carbon::now()->subMonths(1);
-            $after  = Carbon::now()->addMonth(2);
-
-        }
-
-        $res = self::select(DB::connection('aws')->raw("un.nombre ,
-            idAgenda as id ,
-            persona.idPersona,
-            CONCAT('InBody', ' - ', CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno)) AS title,
-            horario , fechaSolicitud as start ,
-            if(`fechaConfirmacion`<>'0000-00-00 00:00:00' OR fechaCancelacion <> '0000-00-00 00:00:00',0,1)  as editable ,
-            0 as comisionPagada,
-            'InBody' as descripcionClase,
-            '{$nombreEntrenador}' as nombreEntrenador,
-            if(`fechaConfirmacion`<>'0000-00-00 00:00:00',1,0) as confirmado,
-            if(`fechaCancelacion`<>'0000-00-00 00:00:00',1,0) as cancelado,
-            0 as  nuevo
-            "))
-            ->join('deportiva.persona', function ($join) {
-                $join->on('persona.idPersona', '=', 'agenda_inbody.idPersona');
-            })
-            ->join('deportiva.un', function ($join) {
-                $join->on('un.idUn', '=', 'agenda_inbody.idUn');
-            })
-            ->where('agenda_inbody.fechaEliminacion', '=', '0000-00-00 00:00:00')
-            ->where('agenda_inbody.idUn', '=', $idUn)
-            ->where('agenda_inbody.idEmpleado', '=', $idEmpleado);
-
-        $res->whereBetween('fechaSolicitud', [$before, $after]);
-
-        $res = $res->orderBy('agenda_inbody.idUn', 'asc')
-            ->orderBy('fechaSolicitud', 'asc')
-            ->get()
-            ->toArray();
-/*
-$addSlashes = str_replace('?', "'?'", $res->toSql());
-$sq         = vsprintf(str_replace('?', '%s', $addSlashes), $res->getBindings());
-dd($sq);
- */
         if (count($res) > 0) {
 
             $idPersonas    = array_unique(array_column($res, 'idPersona'));
@@ -141,8 +134,8 @@ dd($sq);
             $elemts = DB::connection('crm')->select($sql);
             $finIds = array_column($elemts, 'idPersona');
             foreach ($res as $key => $value) {
-                if (in_array((string) $value['idPersona'], $finIds)) {
-                    $res[$key]['nuevo'] = 1;
+                if (in_array((string) $value->idPersona, $finIds)) {
+                    $res[$key]->nuevo = 1;
 
                 }
             }
@@ -223,7 +216,6 @@ dd($sq);
             $datos[$value->idUn][] = ['mes' => $value->date2, 'num' => $value->numInbody];
         }
         return $datos;
-
     }
 
 }

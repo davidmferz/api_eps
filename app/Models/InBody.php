@@ -35,23 +35,41 @@ class InBody extends Model
     {
         try {
             $result = $query->select(
-                'peso', 'estatura', 'RCC', 'PGC', 'IMC', 'MME', 'MCG', 'ACT', 'minerales', 'proteina', 'fcresp', DB::raw('date(fechaRegistro) as fecha '), 'personainbody.fechaEliminacion')
+                'tipoCuerpo', 'numComidas', 'peso', 'estatura', 'RCC', 'PGC', 'IMC', 'MME', 'MCG', 'ACT', 'minerales', 'proteina', 'fcresp', DB::raw('date(fechaRegistro) as fecha '), 'personainbody.fechaEliminacion')
                 ->from('piso.personainbody')
-                ->where('personainbody.fechaEliminacion', '=', '0000-00-00 00:00:00')
+                ->whereNull('personainbody.fechaEliminacion')
                 ->where('personainbody.idPersona', '=', $idPersona)
                 ->orderBy('personainbody.fechaRegistro', 'desc')->limit(1)->get();
 
             // echo print_r($result, true); exit;
 
             if (count($result) > 0) {
+                $aux = [
+                    'tipoCuerpo'       => $result[0]->tipoCuerpo == null ? '' : $result[0]->tipoCuerpo,
+                    'numComidas'       => $result[0]->numComidas == null ? '' : $result[0]->numComidas,
+                    'peso'             => number_format($result[0]->peso, 1),
+                    'estatura'         => INTVAL($result[0]->estatura),
+                    'RCC'              => $result[0]->RCC,
+                    'PGC'              => $result[0]->PGC,
+                    'IMC'              => $result[0]->IMC,
+                    'MME'              => $result[0]->MME,
+                    'MCG'              => $result[0]->MCG,
+                    'ACT'              => $result[0]->ACT,
+                    'minerales'        => $result[0]->minerales,
+                    'proteina'         => $result[0]->proteina,
+                    'fcresp'           => $result[0]->fcresp,
+                    'fecha'            => $result[0]->fecha,
+                    'fechaEliminacion' => $result[0]->fechaEliminacion,
+
+                ];
                 $retval = [
                     'status'  => 'ok',
                     'message' => 'InBodyById',
-                    'data'    => $result,
+                    'data'    => $aux,
                 ];
             } else {
                 $retval = [
-                    'status'  => 'ok',
+                    'status'  => 'Sin Registro',
                     'message' => 'No se encontron registros de esta persona',
                     'data'    => [
                         [

@@ -163,17 +163,18 @@ class Persona extends Model
                     IFNULL(u.clave, '') AS clave,
                     'SOCIO' as tipo
                 FROM
-                    socio s
-                JOIN persona AS p ON p.idPersona =s.idPersona
-                JOIN
-                    membresia m ON m.idUnicoMembresia = s.idUnicoMembresia AND m.idTipoEstatusMembresia = 27 AND m.eliminado = 0
-                JOIN un u ON u.idUn = m.idUn
-                JOIN (
+                (
                     SELECT l.nombreCompleto,p1.*
-                    FROM personalevenshtein l
-                    INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
-                ) AS tp ON tp.idPErsona=s.idPersona
+                    FROM crm.personalevenshtein l
+                    INNER JOIN crm.persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
+                    order by l.nombreCompleto
+                ) AS tp
+                JOIN crm.socio s ON tp.idPErsona=s.idPersona AND MATCH(tp.nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
+                JOIN crm.persona AS p ON p.idPersona =s.idPersona
+                JOIN
+                    crm.membresia m ON m.idUnicoMembresia = s.idUnicoMembresia AND m.idTipoEstatusMembresia = 27 AND m.eliminado = 0
+                JOIN crm.un u ON u.idUn = m.idUn
+
                 WHERE 1
                     AND s.idTipoEstatusSocio NOT IN (82,86)
                     AND s.eliminado = 0
@@ -194,19 +195,17 @@ class Persona extends Model
                     tp.idPersona,
                     e.idEmpleado,
                     'EMP' as tipo
-                FROM
-                    empleado e
-                    JOIN persona AS p ON p.idPersona =e.idPersona
-
-                JOIN (
+                FROM  (
                     SELECT l.nombreCompleto,p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
                     WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
-                ) AS tp ON tp.idPErsona=e.idPersona
-                WHERE  e.idTipoEstatusEmpleado=196
-                    AND e.eliminado = 0
-                    AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
+                    limit 500
+                ) AS tp
+                    JOIN empleado e ON tp.idPErsona=e.idPersona AND e.idTipoEstatusEmpleado=196 AND e.eliminado = 0
+                    JOIN persona AS p ON p.idPersona =e.idPersona
+                WHERE
+                     TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
                 ORDER BY tp.idPersona DESC
                 limit 20";
 
@@ -225,17 +224,17 @@ class Persona extends Model
                     'INV' as tipo,
 
                     'INV ESP' as tipoinvitado
-                FROM
-                    invitadoespecial i
-                    JOIN persona AS p ON p.idPersona =i.idPersona
-                JOIN (
+                FROM (
                     SELECT l.nombreCompleto,p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
                     WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
-                ) AS tp ON tp.idPErsona=i.idPersona
-                WHERE i.activo=1 and now() between i.fechaInicio and i.fechaFin
-                AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
+                    order by l.nombreCompleto
+                ) AS tp
+                JOIN invitadoespecial i ON tp.idPErsona=i.idPersona AND i.activo=1
+                    JOIN persona AS p ON p.idPersona =i.idPersona
+                WHERE
+                 TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
                 ORDER BY tp.idPersona DESC
                 limit 12";
         $query = DB::connection('crm')->select($sql);
@@ -251,16 +250,17 @@ class Persona extends Model
                             WHEN idPersonaGympass = 3 THEN 'INVITADO ESPECIAL'
                         ELSE 'GYMPASS'
                         END AS tipoinvitado
-                FROM crm.gympass AS g
-                JOIN persona AS p ON p.idPersona =g.idPersona
-                JOIN (
+                FROM (
                     SELECT l.nombreCompleto,p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
                     WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
-                ) AS tp ON tp.idPErsona=g.idPersona
-                WHERE g.eliminado=0
-                AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
+                    order by l.nombreCompleto
+                ) AS tp
+                JOIN  crm.gympass AS g ON tp.idPErsona=g.idPersona AND g.eliminado=0
+                JOIN persona AS p ON p.idPersona =g.idPersona
+                WHERE
+                 TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
                 limit 12
                 ";
         $query2    = DB::connection('crm')->select($sql);

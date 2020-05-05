@@ -75,6 +75,7 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['get', 'options'], 'asignaEntrenador/{idEmpleado}/{idUn}/{idAgenda}/{nombreCoordinador}', 'InbodyController@asignaEntrenador');
         Route::match(['post', 'options'], 'inbody/{idPersona?}/{cantidad?}', 'InbodyController@inbody');
         Route::match(['post', 'options'], 'agendaInbodyCoordinador', 'InbodyController@agendaInbodyCoordinador');
+        Route::match(['get', 'options'], 'agendaCoordinadorInbody/{idUn}', 'InbodyController@agendaCoordinadorInbody');
 
         //calificacion encuestas
         Route::match(['post', 'options'], 'setCalificacion', 'Calificacion@setCalificacion');
