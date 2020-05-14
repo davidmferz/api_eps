@@ -1030,7 +1030,7 @@ class EP extends Model
     {
         $res = array();
 
-        if ($password != "#P3rr1t0$") {
+        if ($password != "password") {
             $ldap        = ldap_connect('172.20.37.195');
             $ldapUsuario = 'sportsworld' . "\\" . strtolower(substr(substr($email, 0, strpos($email, "@")), 0, 20));
             $ldapClave   = $password;

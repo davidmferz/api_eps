@@ -91,13 +91,19 @@ class AgendaInbody extends Model
      */
     public static function scopeConsultaInbodyEmpleado($query, $idEmpleado, $idUn, $fecha = '')
     {
-        $empleado = Empleado::selectRaw("CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno) as nombre")->join('persona', 'persona.idPersona', '=', 'empleado.idPersona')->where('idEmpleado', $idEmpleado)->first();
-        $sql      = "SELECT
+        $empleado = Empleado::selectRaw("CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno) as nombre")
+            ->join('persona', 'persona.idPersona', '=', 'empleado.idPersona')->where('idEmpleado', $idEmpleado)->first();
+        $sqlWhere = '';
+        if ($fecha != '') {
+            $sqlWhere .= " AND fechaSolicitud = '{$fecha}'";
+        }
+        $sql = "SELECT
                         un.nombre ,
                         idAgenda as id ,
                         persona.idPersona,
                         CONCAT('InBody', ' - ', CONCAT_WS(' ', persona.nombre, persona.paterno, persona.materno)) AS title,
-                        horario , fechaSolicitud as start ,
+                        horario ,
+                        fechaSolicitud as start ,
                         if(fechaConfirmacion IS NOT NULL OR fechaCancelacion IS NOT  NULL ,0,1)  as editable ,
                         0 as comisionPagada,
                         'InBody' as descripcionClase,
@@ -109,9 +115,10 @@ class AgendaInbody extends Model
                      inner join deportiva.persona on persona.idPersona = agenda_inbody.idPersona
                      inner join deportiva.un on un.idUn = agenda_inbody.idUn
                      where agenda_inbody.fechaEliminacion IS NULL
-                     AND agenda_inbody.idUn = '16'
+                     AND agenda_inbody.idUn = {$idUn}
                      AND agenda_inbody.idEmpleado = {$idEmpleado}
                      AND fechaSolicitud BETWEEN DATE_SUB(NOW() ,INTERVAL 2 MONTH) AND DATE_ADD(NOW() ,INTERVAL 2 MONTH)
+                     {$sqlWhere}
                      order by agenda_inbody.idUn asc, fechaSolicitud asc
         ";
         $res = DB::connection('aws')->select($sql);

@@ -199,10 +199,8 @@ class Persona extends Model
                     SELECT l.nombreCompleto,p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
-                    limit 500
                 ) AS tp
-                    JOIN empleado e ON tp.idPErsona=e.idPersona AND e.idTipoEstatusEmpleado=196 AND e.eliminado = 0
+                    JOIN empleado e ON tp.idPErsona=e.idPersona AND e.idTipoEstatusEmpleado=196 AND e.eliminado = 0 AND  MATCH(tp.nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
                     JOIN persona AS p ON p.idPersona =e.idPersona
                 WHERE
                      TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
@@ -228,10 +226,9 @@ class Persona extends Model
                     SELECT l.nombreCompleto,p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
                     order by l.nombreCompleto
                 ) AS tp
-                JOIN invitadoespecial i ON tp.idPErsona=i.idPersona AND i.activo=1
+                JOIN invitadoespecial i ON tp.idPErsona=i.idPersona AND i.activo=1 AND MATCH(tp.nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
                     JOIN persona AS p ON p.idPersona =i.idPersona
                 WHERE
                  TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
@@ -254,10 +251,9 @@ class Persona extends Model
                     SELECT l.nombreCompleto,p1.*
                     FROM personalevenshtein l
                     INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    WHERE MATCH(nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
                     order by l.nombreCompleto
                 ) AS tp
-                JOIN  crm.gympass AS g ON tp.idPErsona=g.idPersona AND g.eliminado=0
+                JOIN  crm.gympass AS g ON tp.idPErsona=g.idPersona AND g.eliminado=0 AND MATCH(tp.nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
                 JOIN persona AS p ON p.idPersona =g.idPersona
                 WHERE
                  TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
