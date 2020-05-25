@@ -163,7 +163,13 @@ class InbodyController extends ApiController
                 $datosMail->nombreClub         = $datos->nombreClub;
                 $datosMail->hora               = 'de ' . $fecha->format('H:i:s') . ' hasta ' . $fecha->addMinutes(30)->format('H:i:s');
                 $datosMail->nombreSocio        = $datos->nombreSocio;
-                Mail::to($correo->mail)->send(new MailEntrenador($datosMail));
+
+                $mailEntrenador = $correo->mail;
+                if (strtolower(env('APP_ENV')) != 'production') {
+                    $mailEntrenador = env('EMAIL_DEVELOPER');
+                }
+
+                Mail::to($mailEntrenador)->queue(new MailEntrenador($datosMail));
             }
 
             return $this->successResponse($inbody, 'Asignado correctamente');
@@ -311,6 +317,8 @@ class InbodyController extends ApiController
 
             $datos = [
                 'idPersona'         => trim($request->input('persona')),
+                'tipoCuerpo'        => trim($request->input('tipoCuerpo')),
+                'numComidas'        => trim($request->input('numComidas')),
                 'RCC'               => trim($request->input('rcc')),
                 'PGC'               => trim($request->input('pgc')),
                 'IMC'               => trim($request->input('imc')),
@@ -326,6 +334,12 @@ class InbodyController extends ApiController
             ];
 
             $result = InBody::CreateInBody($datos);
+            if ($request->input('idAgenda') > 0) {
+                $hoy                       = Carbon::now();
+                $agenda                    = AgendaInbody::find($request->input('idAgenda'));
+                $agenda->fechaConfirmacion = $hoy->format('Y-m-d');
+                $agenda->save();
+            }
             if (!empty($result)) {
                 $retval = [
                     'status'  => 'ok',
@@ -354,14 +368,7 @@ class InbodyController extends ApiController
     public function lastInBody($idPersona = 0)
     {
         try {
-            if (intval($idPersona) == 0) {
-                $retval = [
-                    'status'  => 'fail',
-                    'message' => 'idPersona debe ser número entero y mayor a 0',
-                    'data'    => array(),
-                ];
-                return response()->json($retval, 400);
-            }
+
             $idPersona = intval($idPersona);
 
             $result = InBody::LastInBody($idPersona);
@@ -382,6 +389,12 @@ class InbodyController extends ApiController
 
         $result = InBody::getHistory($idPersonaEmpleado);
         return $this->successResponse($result, 200);
+    }
+
+    public function agendaCoordinadorInbody($idUn)
+    {
+        $res = AgendaInbody::getAgendaCoordinador($idUn);
+        return $this->successResponse($res, 'Agenda ');
 
     }
 

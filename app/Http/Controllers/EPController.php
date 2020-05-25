@@ -3,10 +3,12 @@
 namespace API_EPS\Http\Controllers;
 
 use API_EPS\Http\Controllers\ApiController;
+use API_EPS\Http\Requests\InscripcionRequest;
 use API_EPS\Models\AgendaInbody;
 use API_EPS\Models\Anualidad;
 use API_EPS\Models\Categoria;
 use API_EPS\Models\Comision;
+use API_EPS\Models\ComisionMovimiento;
 use API_EPS\Models\Empleado;
 use API_EPS\Models\EP;
 use API_EPS\Models\Evento;
@@ -14,12 +16,15 @@ use API_EPS\Models\EventoFecha;
 use API_EPS\Models\EventoInscripcion;
 use API_EPS\Models\Membresia;
 use API_EPS\Models\Movimiento;
+use API_EPS\Models\Permiso;
 use API_EPS\Models\Persona;
 use API_EPS\Models\Producto;
 use API_EPS\Models\PromocionVisa;
 use API_EPS\Models\Socio;
+use API_EPS\Models\Tipocliente;
 use API_EPS\Models\Token;
 use API_EPS\Models\Un;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +36,244 @@ use Illuminate\Support\Facades\Log;
  */
 class EPController extends ApiController
 {
+
+    public function catalogoPaquetes($idUn)
+    {
+        $datos = Producto::getPaquetes($idUn);
+        if ($datos) {
+            $entrenadores = EP::arrayEntrenadores($datos['idsCategorias'], $idUn, 'lista_cat');
+            $datos        = array_merge($datos, ['entrenadores' => $entrenadores]);
+            $auxCat       = [];
+            foreach ($datos['categorias'] as $key => $value) {
+                $auxCat[] = ['id' => $key, 'value' => $value];
+            }
+            $datos['categorias'] = $auxCat;
+            $auxProd             = [];
+            foreach ($datos['productos'] as $keyCat => $categorias) {
+                foreach ($categorias as $key => $producto) {
+                    $auxProd[$keyCat][] = ['id' => $key, 'value' => $producto];
+                }
+            }
+            $datos['categorias'] = $auxCat;
+            $datos['productos']  = $auxProd;
+            return response()->json($datos, 200);
+        } else {
+            return response()->json($datos, 400);
+
+        }
+    }
+
+    public function inscripcionEvento(InscripcionRequest $request)
+    {
+        $permiso = new Permiso;
+
+        $idPersona        = $request->input('idCliente');
+        $idCategoria      = $request->input('idCategoria');
+        $idProducto       = $request->input('idProducto');
+        $idTipoCliente    = $request->input('idTipoCliente');
+        $idUnicoMembresia = $request->input('idUnicoMembresia');
+        $idEsquemaPago    = $request->input('idEsquemaPago');
+
+        $idEntrenador  = $request->input('idEntrenador');
+        $idUn          = $request->input('idUn');
+        $idVendedor    = $request->input('idVendedor');
+        $participantes = $request->input('participantes');
+        $clases        = $request->input('clases');
+        $formaPago     = $request->input('formaPago');
+        $importe       = $request->input('importe');
+        $tipo          = $request->input('tipo');
+        $demo          = $request->input('demo');
+        $cantidad      = $request->input('cantidad');
+        $fecha         = $request->input('fecha');
+
+        $empleado = Empleado::where('idPersona', $idEntrenador)->where('idTipoEstatusEmpleado', 196)->first();
+
+        if ($empleado == null) {
+
+            return $this->errorResponse('Empleado esta  dado de baja o no existe', 404);
+        }
+        $idEmpleado = $empleado->idEmpleado;
+
+        $inscripcion = Evento::inscripcionV2($idUn, $idCategoria, $idPersona, $idVendedor, $idEntrenador, $idTipoCliente, $demo, $idProducto, $cantidad, $importe, $idEsquemaPago);
+        Log::debug($inscripcion);
+        /* $inscripcion = [
+        "estatus"             => true,
+        "idEventoInscripcion" => 556163349,
+        "cuentaProducto"      => "",
+        "numCuenta"           => "4093",
+        "idTipoEvento"        => 3,
+        ];*/
+        if ($inscripcion['estatus']) {
+
+            $esquemaPago = TIPO_ESQUEMA_PAGO_EVENTO_PAQUETE;
+            if ($inscripcion['idTipoEvento'] == TIPO_EVENTO_PROGRAMA) {
+                $esquemaPago = ESQUEMA_PAGO_CONTADO;
+            }
+            $desc_extra = '';
+            //SOCIO
+            if ($idTipoCliente == 1) {
+                if ($idUnicoMembresia > 0) {
+                    $dias      = Membresia::diasRegistro($idUnicoMembresia);
+                    $hoy       = Carbon::now();
+                    $anualidad = Anualidad::anualidadPagada($idUnicoMembresia, $hoy->format('Y'));
+                    $notUn     = [85, 88, 76];
+                    if ($dias >= 0 && $dias <= 7 && !in_array($idUn, $notUn)) {
+                        $especial = Evento::precioPrimerSemana($idProducto, $idUn);
+                        if ($especial > 0) {
+                            $importe    = $especial;
+                            $desc_extra = '-1ER_SEMANA';
+                        } else {
+                            $descuento = Evento::descuentoAnualidad($idProducto, $idUn);
+                            if ($descuento > 0 && $anualidad == true) {
+                                $importe    = (int) ($importe * ((100 - $descuento) / 100));
+                                $desc_extra = '-DESC_ANUAL';
+                            }
+                        }
+                    } else {
+                        $descuento = Evento::descuentoAnualidad($idProducto, $idUn);
+                        if ($descuento > 0 && $anualidad == true) {
+                            $importe    = (int) ($importe * ((100 - $descuento) / 100));
+                            $desc_extra = '-DESC_ANUAL';
+                        }
+                    }
+                }
+            }
+
+            $descripcionMov = Categoria::campo($idCategoria, 'nombre');
+            $nombreClub     = Un::nombre($idUn);
+
+            $descripcion = '';
+            if ($inscripcion['idTipoEvento'] == TIPO_EVENTO_PROGRAMA) {
+                $descripcion = $inscripcion['productoNombre'] . ' - ' . $nombreClub . ' (Num. Inscripcion ' . $inscripcion['idEventoInscripcion'] . ')';
+            } else {
+                $descripcion = $descripcionMov . ' ' . $clases * $cantidad . ' Clase(s) ' .
+                    $participantes . ' Participante(s) - ' . $nombreClub . ' (Num. Inscripcion ' . $inscripcion['idEventoInscripcion'] . ')';
+            }
+
+            $tipoCliente = Tipocliente::find($idTipoCliente);
+            $movimiento  = new Movimiento();
+
+            $movimiento->idPersona               = $idPersona;
+            $movimiento->idTipoEstatusMovimiento = MOVIMIENTO_PENDIENTE;
+            $movimiento->idUn                    = $idUn;
+            $movimiento->descripcion             = $descripcion;
+            $movimiento->importe                 = $importe;
+            $movimiento->iva                     = 16;
+            $movimiento->idUnicoMembresia        = $idUnicoMembresia;
+            $movimiento->idProducto              = $idProducto;
+            $movimiento->origen                  = 'APP_WS_EVT_INS-' . str_replace(' ', '_', strtoupper($tipoCliente->descripcion) . $desc_extra);
+            $movimiento->msi                     = $formaPago;
+            $movimiento->save();
+            Log::debug($movimiento);
+            //$movimiento->fecha = date('Y-m-d');
+            //$movimiento->tipo                    = MOVIMIENTO_TIPO_EVENTO;
+            $idMovimiento = $movimiento->idMovimiento;
+            if ($idMovimiento > 0) {
+                $numeroCuenta = $inscripcion['numCuenta'];
+                if ($numeroCuenta == '' || $numeroCuenta == '0') {
+                    $query = DB::connection('crm')->table(TBL_MOVIMIENTO)
+                        ->delete(array('idMovimiento' => $movimiento));
+                    return (-7);
+                } else {
+                    $cta = array(
+                        'idMovimiento'        => $idMovimiento,
+                        'numeroCuenta'        => $numeroCuenta,
+                        'cuentaProducto'      => $inscripcion['cuentaProducto'],
+                        'idPromocion'         => '0',
+                        'fechaAplica'         => date('Y-m-d'),
+                        'importe'             => number_format($importe, 2, '.', ''),
+                        'idTipoMovimiento'    => MOVIMIENTO_TIPO_EVENTO,
+                        'idUn'                => $idUn,
+                        'cveProductoServicio' => Producto::cveProducto($idProducto),
+                        'cveUnidad'           => Producto::cveUnidad($idProducto),
+                        'cantidad'            => $cantidad,
+                    );
+                    $movimiento_cta = DB::connection('crm')->table(TBL_MOVIMIENTOCTACONTABLE)
+                        ->insertGetId($cta);
+
+                    $total = $movimiento_cta;
+                    if ($total == 0) {
+                        $sql = 'UPDATE movimiento
+                            SET idTipoEstatusMovimiento=' . MOVIMIENTO_CANCELADO . ', fechaEliminacion=NOW()
+                            WHERE idMovimiento=' . $idMovimiento;
+                        $query = DB::connection('crm')->select($sql);
+                        return $this->errorResponse('Error al crear el movimiento', 404);
+                    }
+                    $permiso->log(utf8_decode('Se inserto Movimiento Cta. Contable(' . $movimiento_cta . ') con cuenta (' . $numeroCuenta . ') y movimiento (' . $movimiento . ') (' . date('Y-m-d') . ')'), LOG_SISTEMAS, $idUnicoMembresia);
+                }
+
+                Evento::inscripcionMovimiento($inscripcion['idEventoInscripcion'], $idMovimiento);
+                Evento::modificaMonto($inscripcion['idEventoInscripcion'], $importe);
+                //Se valida si el movimiento se va a devengar en 60 20 20
+                $movDevengado = Evento::movientoDevengado($idMovimiento);
+                //aplicar Devengado 60 20 20 a Movimiento contable
+                //Log::debug($movDevengado);
+                if ($movDevengado !== null) {
+                    if (0 != $movDevengado->activo && 0 != $movDevengado->autorizado) {
+                        $registroContable = Evento::devengarMovimientoContable($idMovimiento);
+                        Log::debug($registroContable);
+                    }
+                }
+
+                $comisionar = Evento::generarComisionVenta($inscripcion['idEvento'], $idUn);
+                Log::debug($comisionar);
+                if ($comisionar == true) {
+                    $descripcionTipoEvento = 'VENTA';
+                    $montoComision         = 0;
+                    $porcentaje            = 0;
+
+                    $idTipoComision = 13;
+                    if ($inscripcion['idTipoEvento'] == TIPO_EVENTO_CLASE) {
+                        $descripcionTipoEvento = 'VENTA DE CLASE PERSONALIZADA DE';
+                        $idTipoComision        = TIPO_COMISION_CLASEPERSONALIZADA;
+                        $porcentaje            = Comision::obtenCapacidad($idUn);
+                        $porcentaje            = ($porcentaje == '') ? 0 : $porcentaje;
+
+                    } elseif ($inscripcion['idTipoEvento'] == TIPO_EVENTO_PROGRAMA) {
+                        $descripcionTipoEvento = 'VENTA DE PROGRAMA DEPORTIVO DE';
+                        $idTipoComision        = TIPO_COMISION_PROGRAMADEPORTIVO;
+                        //$isSocio=Socio::where('fechaEliminacion','=','0000-00-00 00:00:00')->where('idPersona','=',$jsonData['idCliente'])->get()->toArray();
+                        //SOCIO
+                        if ($idTipoCliente != 1) {
+                            #Externo
+                            $montoComision = Comision::obtenCapacidad($idUn, TIPO_EVENTO_COMISIONEXTERNA);
+                        } else {
+                            #Socio
+                            $montoComision = Comision::obtenCapacidad($idUn, TIPO_EVENTO_COMISIONINTERNA);
+                        }
+                    } elseif ($inscripcion['idTipoEvento'] == TIPO_EVENTO_CURSOVERANO) {
+                        $idTipoComision = TIPO_COMISION_CURSODEVERANO;
+                    }
+
+                    $comision                        = new Comision();
+                    $comision->idTipoEstatusComision = TIPO_ESTATUSCOMISION_SINFACTURAR;
+                    $comision->idUn                  = $idUn;
+                    $comision->idTipoComision        = $idTipoComision;
+                    $comision->idPersona             = $empleado->idPersona;
+                    $comision->importe               = $importe;
+                    $comision->descripcion           = $descripcionTipoEvento . ' ' . strtoupper($descripcion);
+                    $comision->montoComision         = $montoComision;
+                    $comision->porcentaje            = $porcentaje;
+                    $comision->manual                = 0;
+                    Log::debug(print_r($comision, true));
+                    $comision->save();
+                    $comisionMovimiento = new ComisionMovimiento();
+
+                    $comisionMovimiento->idComision   = $comision->idComision;
+                    $comisionMovimiento->idMovimiento = $movimiento->idMovimiento;
+                    $comisionMovimiento->save();
+                }
+                return $this->successResponse($inscripcion);
+
+            } else {
+
+                return $this->errorResponse('Error al crear el movimiento', 404);
+            }
+        } else {
+            return $this->errorResponse('Error al realizar la inscripcion', 404);
+        }
+
+    }
 
     public function datosPersona($idPersona, $idSocio, $token)
     {
@@ -446,7 +689,6 @@ class EPController extends ApiController
      */
     public function inscribir()
     {
-        $idEventoInscripciones = EventoInscripcion::FindClasesTerminadas();
 
         session_write_close();
         $jsonData = json_decode(trim(file_get_contents('php://input')), true);
@@ -523,7 +765,7 @@ class EPController extends ApiController
                     $error['more_info'] = 'http://localhost/docs/error/1010';
                     return response()->json($error, $error['status']);
                 }
-                $totalDemos = EP::totalDemos($jsonData['idCategoria'], $jsonData['idCliente']);
+                $totalDemos = EP::totalDemos($jsonData['idCategoria'], $jsonData['idCliente'], $idEmpleado);
                 if ($totalDemos >= 2) {
                     $error['status']    = 400;
                     $error['message']   = 'Excedio el limite de clases demo para este producto';
@@ -535,14 +777,18 @@ class EPController extends ApiController
                     return;
                 }
             }
+            if ($demo == 1) {
+                $idEvento = 2152;
+            } else {
+                $idEvento = EP::obtenerEvento(
+                    $jsonData['idCategoria'],
+                    $jsonData['idUn'],
+                    $jsonData['participantes'],
+                    $jsonData['clases'],
+                    $demo
+                );
+            }
 
-            $idEvento = EP::obtenerEvento(
-                $jsonData['idCategoria'],
-                $jsonData['idUn'],
-                $jsonData['participantes'],
-                $jsonData['clases'],
-                $demo
-            );
             if ($idEvento > 0) {
                 $totalSesiones = $jsonData['clases'] * $cantidad;
                 $importe       = $jsonData['importe'];
@@ -595,7 +841,7 @@ class EPController extends ApiController
                     $cuentaProducto = $p['numCuentaProducto'];
                 }
 
-                if ($p['monto'] == 0.00) {
+                if ($p['monto'] == 0.00 && $demo == 0) {
                     $error['status']    = 400;
                     $error['message']   = 'Error no se enconntro el precio del producto';
                     $error['code']      = '1010';
@@ -855,6 +1101,7 @@ class EPController extends ApiController
         header("Content-Type: application/json");
         session_write_close();
         //12 horas
+        Cache::flush();
         $datos = Cache::remember('productos-' . $idUn, 43200, function () use ($idUn) {
             $ep = new EP;
             return $ep->general($idUn);

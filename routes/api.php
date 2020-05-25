@@ -21,6 +21,13 @@ Route::group(['prefix' => 'v1/'], function () {
             return "Cache is cleared";
         });
 
+        Route::match(['get', 'options'], 'getTipoCliente/{idPersona}', 'EventosController@getTipoCliente');
+        Route::match(['post', 'options'], 'inscribirDemo', 'EventosController@inscribirDemo');
+        Route::match(['post', 'options'], 'inscribirProgramaDeportivo', 'EventosController@inscribirProgramaDeportivo');
+
+        Route::match(['get', 'options'], 'catalogoPaquetes/{idUn}', 'EPController@catalogoPaquetes');
+        Route::match(['post', 'options'], 'inscripcionEvento', 'EPController@inscripcionEvento');
+
         Route::match(['post', 'options'], 'queryPersonaMem', 'PersonaController@queryPersonaMem');
 
         //Route::match(['get', 'options'], 'pruebaMetodo', 'EPController@pruebaMetodo');
@@ -68,6 +75,7 @@ Route::group(['prefix' => 'v1/'], function () {
         Route::match(['get', 'options'], 'asignaEntrenador/{idEmpleado}/{idUn}/{idAgenda}/{nombreCoordinador}', 'InbodyController@asignaEntrenador');
         Route::match(['post', 'options'], 'inbody/{idPersona?}/{cantidad?}', 'InbodyController@inbody');
         Route::match(['post', 'options'], 'agendaInbodyCoordinador', 'InbodyController@agendaInbodyCoordinador');
+        Route::match(['get', 'options'], 'agendaCoordinadorInbody/{idUn}', 'InbodyController@agendaCoordinadorInbody');
 
         //calificacion encuestas
         Route::match(['post', 'options'], 'setCalificacion', 'Calificacion@setCalificacion');
