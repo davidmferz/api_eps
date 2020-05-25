@@ -25,18 +25,20 @@ class CreateInbodyRequest extends FormRequest
     {
         return [
             'persona'           => 'required|integer|min:1',
-            'rcc'               => 'required|numeric|min:0.01',
-            'pgc'               => 'required|numeric|min:0.01',
-            'imc'               => 'required|numeric|min:0.01',
-            'mme'               => 'required|numeric|min:0.01',
-            'mcg'               => 'required|numeric|min:0.01',
-            'act'               => 'required|numeric|min:0.01',
-            'minerales'         => 'required|numeric|min:0.01',
-            'proteina'          => 'required|numeric|min:0.01',
+            'rcc'               => 'nullable|numeric|min:0.01',
+            'pgc'               => 'nullable|numeric|min:0.01',
+            'imc'               => 'nullable|numeric|min:0.01',
+            'mme'               => 'nullable|numeric|min:0.01',
+            'mcg'               => 'nullable|numeric|min:0.01',
+            'act'               => 'nullable|numeric|min:0.01',
+            'minerales'         => 'nullable|numeric|min:0.01',
+            'proteina'          => 'nullable|numeric|min:0.01',
             'estatura'          => 'required|numeric|min:0.01',
             'peso'              => 'required|numeric|min:0.01',
-            'fcresp'            => 'required|numeric|min:0.01',
-            'idPersonaEmpleado' => 'nullable|integer',
+            'numComidas'        => 'required|integer|min:3',
+            'tipoCuerpo'        => 'required|string|min:1',
+            'fcresp'            => 'nullable|numeric|min:0.01',
+            'idPersonaEmpleado' => 'required|integer',
         ];
     }
 

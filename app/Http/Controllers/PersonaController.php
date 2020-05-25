@@ -21,7 +21,8 @@ class PersonaController extends ApiController
                 );
                 return response()->json($retval, 400);
             }
-            $result = Persona::QueryPersonaMem($request->queryStr);
+
+            $result = Persona::QueryPersonaMem($request->queryStr, $request->tipoUsuario);
 
             return $result;
         } catch (\Illuminate\Database\QueryException $ex) {
