@@ -1805,7 +1805,7 @@ class EP extends Model
     {
 
         $res = DB::connection('crm')->table(TBL_EMPLEADO)
-            ->select('idEmpleado', 'idPersona', 'perfil_ep')
+            ->select('idEmpleado', 'idPersona', 'perfil_ep', 'clubes', 'diciplinas')
             ->where('idPersona', $idPersona)
             ->where('idTipoEstatusEmpleado', ESTATUS_EMPLEADO_ACTIVO)
             ->where('fechaEliminacion', 0);

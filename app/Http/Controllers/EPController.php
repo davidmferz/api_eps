@@ -24,6 +24,7 @@ use API_EPS\Models\Socio;
 use API_EPS\Models\Tipocliente;
 use API_EPS\Models\Token;
 use API_EPS\Models\Un;
+use API_EPS\Models\UsuariosMigracion;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -1409,12 +1410,22 @@ class EPController extends ApiController
     public function editarPerfil(Request $request, $idPersona)
     {
 
-        $perfil_ep = $request->input('perfil_ep');
-        $empleado  = Empleado::where('idPersona', $idPersona)
+        $perfil_ep  = $request->input('perfil_ep');
+        $clubs      = $request->input('clubs');
+        $diciplinas = $request->input('diciplinas');
+        $empleado   = Empleado::where('idPersona', $idPersona)
             ->where('idTipoEstatusEmpleado', ESTATUS_EMPLEADO_ACTIVO)
             ->where('fechaEliminacion', 0)->first();
-        $empleado->perfil_ep = $perfil_ep;
+        $empleado->perfil_ep  = $perfil_ep;
+        $empleado->clubes     = $clubs;
+        $empleado->diciplinas = $diciplinas;
         $empleado->save();
+
+        $usuarioMigracion             = UsuariosMigracion::find($idPersona);
+        $usuarioMigracion->actualizar = 1;
+        $usuarioMigracion->coach      = 1;
+        $usuarioMigracion->save();
+
         $retval = array(
             'status'  => 'success',
             'data'    => $empleado,
