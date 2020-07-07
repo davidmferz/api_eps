@@ -40,9 +40,8 @@ class EventosController extends ApiController
         $idEmpleado = Empleado::obtenIdEmpleado($idEntrenador, 1);
 
         $fechaClase = explode(' ', $fecha);
-
-        $valida  = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
-        $inbodys = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn);
+        $valida     = EventoFecha::ValidaHorario($idEmpleado, $fechaClase[0], $fechaClase[1]);
+        $inbodys    = AgendaInbody::ConsultaInbodyEmpleado($idEmpleado, $idUn, $fecha);
         if ($valida > 0 || COUNT($inbodys) > 0) {
             return $this->errorResponse('La hora ya esta ocupada.');
         }
