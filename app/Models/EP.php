@@ -1250,6 +1250,7 @@ class EP extends Model
                 AND m.fechaRegistro BETWEEN DATE_SUB(NOW(),INTERVAL 3 MONTH) AND NOW()
                 GROUP BY idPersona,mes, renovacion
         ";
+
         $query = DB::connection('crm')->select($sql);
         $query = array_map(function ($x) {return (array) $x;}, $query);
         if (count($query) > 0) {

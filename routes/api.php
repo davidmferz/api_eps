@@ -20,6 +20,7 @@ Route::group(['prefix' => 'v1/'], function () {
             Artisan::call('cache:clear');
             return "Cache is cleared";
         });
+        Route::post('creaRutina', 'RutinasController@creaRutina');
 
         Route::match(['get', 'options'], 'getTipoCliente/{idPersona}', 'EventosController@getTipoCliente');
         Route::match(['post', 'options'], 'inscribirDemo', 'EventosController@inscribirDemo');
