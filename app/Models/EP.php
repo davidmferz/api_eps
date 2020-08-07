@@ -1360,7 +1360,7 @@ class EP extends Model
                 FROM crm.eventoinvolucrado einv
                 INNER JOIN crm.eventoinscripcion eins ON einv.idEventoInscripcion = eins.idEventoInscripcion
                     AND eins.fechaEliminacion = '0000-00-00 00:00:00'
-                INNER JOIN crm.eventoparticipante ep ON ep.idEventoInscripcion = eins.idEventoInscripcion
+                left JOIN crm.eventoparticipante ep ON ep.idEventoInscripcion = eins.idEventoInscripcion
                 INNER JOIN crm.eventomovimiento em ON eins.idEventoInscripcion = em.idEventoInscripcion
                 INNER JOIN crm.facturamovimiento fm ON em.idMovimiento = fm.idMovimiento
                 INNER JOIN crm.movimiento m ON em.idMovimiento = m.idMovimiento
