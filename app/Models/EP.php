@@ -55,7 +55,8 @@ class EP extends Model
                 CONCAT_WS(' ', p_c.nombre, p_c.paterno, p_c.materno) AS nombreCliente,
                 ei.totalSesiones,
                 ep.idEmpleado,
-                p_e.idPersona
+                p_e.idPersona,
+                CONCAT(f.prefijoFactura,f.folioFactura) AS factura
             FROM evento e
             INNER JOIN producto p ON p.idProducto = e.idProducto
             INNER JOIN categoria c ON c.idCategoria = p.idCategoria
@@ -76,6 +77,8 @@ class EP extends Model
             INNER JOIN persona p_c ON p_c.idPersona = ei.idPersona
             INNER JOIN eventomovimiento em ON em.idEventoInscripcion = ei.idEventoInscripcion
             INNER JOIN movimiento m ON m.idMovimiento = em.idMovimiento
+            left JOIN crm.facturaMovimiento AS fm ON fm.idMovimiento=m.idMovimiento
+            left JOIN crm.factura AS f ON f.idFactura=fm.idFactura
             INNER JOIN empleado ep ON einv.idPersona = ep.idPersona
             WHERE m.idTipoEstatusMovimiento IN (66, 70)
             ORDER BY nombreCliente
@@ -100,6 +103,7 @@ class EP extends Model
                     $agenda['sesionesDisponibles'] = utf8_encode($sesionesDisponibles);
                     $agenda['idEmpleado']          = utf8_encode($fila->idEmpleado);
                     $agenda['idPersona']           = utf8_encode($fila->idPersona);
+                    $agenda['factura']             = utf8_encode($fila->factura);
                     $res[]                         = $agenda;
                 }
             }
