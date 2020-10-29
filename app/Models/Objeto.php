@@ -1,22 +1,16 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use Carbon\Carbon;
-use API_EPS\Models\CatRutinas;
-use API_EPS\Models\MenuActividad;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-
-use API_EPS\Models\Permiso;
 
 class Objeto extends Model
 {
     // use SoftDeletes;
     protected $connection = 'crm';
-    protected $table = 'crm.objecto';
+    protected $table      = 'crm.objecto';
     protected $primaryKey = 'idObjeto';
 
     // const CREATED_AT = 'fechaRegistro';
@@ -30,14 +24,14 @@ class Objeto extends Model
      *
      * @return array Regresa un array con todos los objetos
      */
-    public static function obtenerObjeto($idObjeto=0)
+    public static function obtenerObjeto($idObjeto = 0)
     {
-        if ($idObjeto>0) {
-            $query = DB::connection('crm')->table(TBL_OBJETO)->where(array('idObjeto'=>$idObjeto));
-            
+        if ($idObjeto > 0) {
+            $query = DB::connection('crm')->table(TBL_OBJETO)->where(array('idObjeto' => $idObjeto));
+
             if ($query->count() > 0) {
                 $query = $query->get()->toArray();
-                $query = array_map(function($x){return (array)$x;},$query);
+                $query = array_map(function ($x) {return (array) $x;}, $query);
                 return $query[0];
             }
         }
@@ -50,18 +44,18 @@ class Objeto extends Model
      *
      * @return array Regresa un array con todos los objetos
      */
-    public function todosObjetos($idObjeto=0)
+    public function todosObjetos($idObjeto = 0)
     {
         $this->db->select('idObjeto, idObjetoPadre, nombreObjeto, vinculo, orden, tipoObjeto');
         $this->db->where('idObjetoPadre', $idObjeto);
-		    if ($this->session->userdata('idOperador')<>1) {
+        if ($this->session->userdata('idOperador') != 1) {
             $this->db->where('restringido', 0);
         }
         $query = $this->db->order_by('orden')->get(TBL_OBJETO);
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
                 $fila->submenu = $this->todosObjetos($fila->idObjeto);
-                $data[] = $fila;
+                $data[]        = $fila;
             }
             return $data;
         }
@@ -97,9 +91,9 @@ class Objeto extends Model
             }
             #return $data;
         } else {
-            if ($this->session->userdata("accesoAD")==1) {
+            if ($this->session->userdata("accesoAD") == 1) {
                 #$data[] = array("idObjeto"=>7, "nombreObjeto"=>"Salir", "vinculo"=>"user/logout", "submenu"=>array("idObjeto"=>31, "nombreObjeto"=>"Cambiar contrasena", "vinculo"=>"user/cambiaPassword"));
-                $data[] = array("idObjeto"=>7, "nombreObjeto"=>"Salir", "vinculo"=>"user/logout");
+                $data[] = array("idObjeto" => 7, "nombreObjeto" => "Salir", "vinculo" => "user/logout");
                 #$menuSU = $this->db->query("SELECT 31 AS idObjeto, 'Cambiar contraseña' AS nombreObjeto, 'user/cambiaPassword' AS vinculo UNION ALL SELECT 7 AS idObjeto, 'Salir' AS nombreObjeto, 'user/logout' AS vinculo");
                 #foreach ($menuSU->result() as $fila){
                 #    $data[] = $fila;
@@ -113,13 +107,13 @@ class Objeto extends Model
     }
 
     /**
-    * Realiza la actualización o inserción de registro en la tabla de Objetos
-    *
-    * @return void
-    */
+     * Realiza la actualización o inserción de registro en la tabla de Objetos
+     *
+     * @return void
+     */
     public function guardar()
     {
-        $datos = array (
+        $datos = array(
             'idObjetoPadre' => $this->input->post('idObjetoPadre'),
             'nombreObjeto'  => $this->input->post('nombreObjeto'),
             'descripcion'   => $this->input->post('descripcion'),
@@ -129,7 +123,7 @@ class Objeto extends Model
             'tipoObjeto'    => $this->input->post('tipoObjeto'),
         );
 
-        if ($this->input->post('idObjeto')>0) {
+        if ($this->input->post('idObjeto') > 0) {
             $this->db->where('idObjeto', $this->input->post('idObjeto'));
             $this->db->update(TBL_OBJETO, $datos);
         } else {
@@ -148,7 +142,7 @@ class Objeto extends Model
     {
         $this->db->select('idObjeto');
         $query = $this->db->where('idObjetoPadre', $idObjeto)->get(TBL_OBJETO);
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             $fila = $query->row_array();
             $this->eliminar($fila['idObjeto']);
         }
@@ -169,7 +163,7 @@ class Objeto extends Model
         }
         $this->db->select('nombreObjeto');
         $query = $this->db->where('idObjeto', $idObjeto)->get(TBL_OBJETO);
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             $fila = $query->row_array();
             return $fila['nombreObjeto'];
         }
@@ -189,8 +183,8 @@ class Objeto extends Model
         }
         $this->db->select_max('orden');
         $query = $this->db->where('idObjetoPadre', $idObjeto)->get(TBL_OBJETO);
-        $fila = $query->row_array();
-        return $fila['orden']+10;
+        $fila  = $query->row_array();
+        return $fila['orden'] + 10;
     }
 
     /**
@@ -200,18 +194,18 @@ class Objeto extends Model
      *
      * @return array
      */
-    public function obtenMenus ()
+    public function obtenMenus()
     {
         $query = $this->db->select('idObjeto, nombreObjeto');
-        $query = $this->db->where('tipoObjeto','1');
-        $query = $this->db->where('idObjetoPadre','0');
-        $query = $this->db->where('nombreObjeto <>','Salir');
-        $query = $this->db->order_by('nombreObjeto','ASC');
+        $query = $this->db->where('tipoObjeto', '1');
+        $query = $this->db->where('idObjetoPadre', '0');
+        $query = $this->db->where('nombreObjeto <>', 'Salir');
+        $query = $this->db->order_by('nombreObjeto', 'ASC');
         $query = $this->db->get(TBL_OBJETO);
-        $data = array();
+        $data  = array();
 
         if ($query->num_rows > 0) {
-            foreach($query->result_array() as $row) {
+            foreach ($query->result_array() as $row) {
                 $data[$row['idObjeto']] = $row['nombreObjeto'];
             }
             return $data;
@@ -227,14 +221,14 @@ class Objeto extends Model
      *
      * @return array
      */
-    public function obtenSubMenus ($idMenu)
+    public function obtenSubMenus($idMenu)
     {
         $data = array();
         $this->db->select('idObjeto, nombreObjeto');
-        $this->db->where('tipoObjeto','1');
-        $this->db->where('idObjetoPadre',$idMenu);
-        $this->db->where('nombreObjeto <>','Salir');
-        $this->db->order_by('nombreObjeto','ASC');
+        $this->db->where('tipoObjeto', '1');
+        $this->db->where('idObjetoPadre', $idMenu);
+        $this->db->where('nombreObjeto <>', 'Salir');
+        $this->db->order_by('nombreObjeto', 'ASC');
         $query = $this->db->get(TBL_OBJETO);
 
         if ($query->num_rows > 0) {
@@ -258,9 +252,9 @@ class Objeto extends Model
      *
      * @return integer
      */
-    public function buscaSubMenus ($menus, $submenus)
+    public function buscaSubMenus($menus, $submenus)
     {
-        foreach($menus as $idMenu) {
+        foreach ($menus as $idMenu) {
             $query = $this->db->select('idObjeto');
             $query = $this->db->where('idObjetoPadre', $idMenu);
             $query = $this->db->where_in('idObjeto', $submenus);
@@ -282,7 +276,7 @@ class Objeto extends Model
      *
      * @return integer
      */
-    public function validaPermisosInternos ($idObjeto = 0)
+    public function validaPermisosInternos($idObjeto = 0)
     {
         $value = 0;
 
@@ -311,13 +305,13 @@ class Objeto extends Model
     public function cargaHijosCheckBox($idObjeto)
     {
         $query = $this->db->select('idObjeto');
-        $query = $this->db->where('idObjetoPadre',$idObjeto);
-        $query = $this->db->where('nombreObjeto <>','Salir');
-        $query = $this->db->order_by('orden','ASC');
+        $query = $this->db->where('idObjetoPadre', $idObjeto);
+        $query = $this->db->where('nombreObjeto <>', 'Salir');
+        $query = $this->db->order_by('orden', 'ASC');
         $query = $this->db->get(TBL_OBJETO);
 
         foreach ($query->result_array() as $fila) {
-            $this->hijos .= $fila['idObjeto']." ";
+            $this->hijos .= $fila['idObjeto'] . " ";
             $tieneHijos = $this->validaPermisosInternos($fila['idObjeto']);
             if ($tieneHijos == 1) {
                 $this->cargaHijosCheckBox($fila['idObjeto']);
@@ -336,9 +330,9 @@ class Objeto extends Model
     public function obtenTodosHijos($hijos)
     {
         $hijosArreglo = explode(",", $hijos);
-        $query = $this->db->select('idObjeto, nombreObjeto');
-        $query = $this->db->where_in('idObjeto', $hijosArreglo);
-        $query = $this->db->get(TBL_OBJETO);
+        $query        = $this->db->select('idObjeto, nombreObjeto');
+        $query        = $this->db->where_in('idObjeto', $hijosArreglo);
+        $query        = $this->db->get(TBL_OBJETO);
 
         if ($query->num_rows > 0) {
             foreach ($query->result_array() as $fila) {
@@ -359,9 +353,9 @@ class Objeto extends Model
      *
      * @return boolean
      */
-    public function verificaHijosConPermiso ($idPuesto, $idUsuario, $idObjeto)
+    public function verificaHijosConPermiso($idPuesto, $idUsuario, $idObjeto)
     {
-        $permisos = false;
+        $permisos   = false;
         $queryHijos = $this->db->select('idObjeto');
         $queryHijos = $this->db->where('idObjetoPadre', $idObjeto);
         $queryHijos = $this->db->get(TBL_OBJETO);
@@ -387,9 +381,9 @@ class Objeto extends Model
      *
      * @return boolean
      */
-    public function verificaEsMenu ($idObjeto)
+    public function verificaEsMenu($idObjeto)
     {
-        $esMenu = false;
+        $esMenu    = false;
         $queryMenu = $this->db->select('idObjeto');
         $queryMenu = $this->db->where('idObjeto', $idObjeto);
         $queryMenu = $this->db->where('idObjetoPadre', 0);
@@ -412,7 +406,7 @@ class Objeto extends Model
      *
      * @return array
      */
-    public function obtenArbolObjeto ($idObjeto)
+    public function obtenArbolObjeto($idObjeto)
     {
         settype($idObjeto, 'integer');
         $objetosHijos  = array();
@@ -423,14 +417,14 @@ class Objeto extends Model
             return $arbol;
         }
         $where = array('idObjeto' => $idObjeto);
-        $query =$this->db->select(
+        $query = $this->db->select(
             "idObjetoPadre, nombreObjeto"
         )->get_where(TBL_OBJETO, $where);
 
         if ($query->num_rows > 0) {
             $objetosHijos[] = array(
                 'idObjeto'     => $idObjeto,
-                'nombreObjeto' => $query->row()->nombreObjeto
+                'nombreObjeto' => $query->row()->nombreObjeto,
             );
             if ($query->row()->idObjetoPadre > 0) {
                 $objetosPadres = $this->obtenArbolObjeto($query->row()->idObjetoPadre);
@@ -449,13 +443,13 @@ class Objeto extends Model
      *
      * @return array
      */
-    public function obtenHijos ($idObjetoPadre)
+    public function obtenHijos($idObjetoPadre)
     {
         $data = array();
         $this->db->select('idObjeto, nombreObjeto');
-        $this->db->where('idObjetoPadre',$idObjetoPadre);
-        $this->db->where('nombreObjeto <>','Salir');
-        $this->db->order_by('nombreObjeto','ASC');
+        $this->db->where('idObjetoPadre', $idObjetoPadre);
+        $this->db->where('nombreObjeto <>', 'Salir');
+        $this->db->order_by('nombreObjeto', 'ASC');
         $query = $this->db->get(TBL_OBJETO);
 
         if ($query->num_rows > 0) {

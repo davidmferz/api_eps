@@ -1,8 +1,8 @@
 <?php
 
-namespace API_EPS\Http\Controllers\Auth;
+namespace App\Http\Controllers\Auth;
 
-use API_EPS\Http\Controllers\Controller;
+use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\VerifiesEmails;
 
 class VerificationController extends Controller
@@ -16,7 +16,7 @@ class VerificationController extends Controller
     | user that recently registered with the application. Emails may also
     | be re-sent if the user didn't receive the original email message.
     |
-    */
+     */
 
     use VerifiesEmails;
 

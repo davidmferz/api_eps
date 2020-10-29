@@ -1,9 +1,9 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use API_EPS\Models\CatRutinas;
-use API_EPS\Models\PersonaInbody;
+use App\Models\CatRutinas;
+use App\Models\PersonaInbody;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -424,8 +424,8 @@ class Menu extends Model
             self::where('idPersona', $idPersona)->update(['fechaEliminacion' => $hoy]);
             $menu = new self();
 
-            $menu->idPersona  = $idPersona;
-            $menu->idEmpleado = $idEmpleado;
+            $menu->idPersona     = $idPersona;
+            $menu->idEmpleado    = $idEmpleado;
             $menu->idUn          = $idUn;
             $menu->idRutina      = $idRutina;
             $menu->fecha_inicio  = $fechaInicio;

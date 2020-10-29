@@ -1,22 +1,18 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use Carbon\Carbon;
-use API_EPS\Models\CatRutinas;
-use API_EPS\Models\MenuActividad;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use App\Models\Permiso;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use API_EPS\Models\Permiso;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Membresia extends Model
 {
     use SoftDeletes;
     protected $connection = 'crm';
-    protected $table = 'crm.membresia';
+    protected $table      = 'crm.membresia';
     protected $primaryKey = 'idMembresia';
 
     const CREATED_AT = 'fechaRegistro';
@@ -34,11 +30,11 @@ class Membresia extends Model
     {
         settype($idSocioMensaje, 'integer');
 
-        $data = array('alertaEmitida'=> 1);
+        $data = array('alertaEmitida' => 1);
 
         $this->db->where('idSocioMensaje', $idSocioMensaje);
         $this->db->update('sociomensaje', $data);
-        if($this->db->affected_rows()>0) {
+        if ($this->db->affected_rows() > 0) {
             $regresa = 1;
         } else {
             $regresa = 0;
@@ -65,25 +61,25 @@ class Membresia extends Model
         $this->db->where('eliminado', 0);
         $query = $this->db->get();
 
-        if ($query->num_rows>0) {
-            $ci =& get_instance();
+        if ($query->num_rows > 0) {
+            $ci = &get_instance();
             $ci->load->model('mantenimientos_model');
 
             $nombre = $ci->convenios_model->obtieneNombreConvenio($idConvenioDetalle);
 
-            $n =  explode('(', $nombre);
+            $n = explode('(', $nombre);
             $t = '';
-            if (count($n)>0) {
-                $t = ' ('.trim($n[0]).')';
+            if (count($n) > 0) {
+                $t = ' (' . trim($n[0]) . ')';
             }
 
-            $fila = $query->row_array();
+            $fila        = $query->row_array();
             $idMembresia = $fila['idUnicoMembresia'];
-            $datos = array ('idConvenioDetalle' => $idConvenioDetalle);
+            $datos       = array('idConvenioDetalle' => $idConvenioDetalle);
             $this->db->where('idUnicoMembresia', $idMembresia);
             $this->db->where('eliminado', 0);
             $this->db->update(TBL_MEMBRESIA, $datos);
-            $this->permisos_model->log(utf8_decode("Se actualizó convenio (".date('Y-m-d').")".$t) , LOG_MEMBRESIA, $idUnicoMembresia);
+            $this->permisos_model->log(utf8_decode("Se actualizó convenio (" . date('Y-m-d') . ")" . $t), LOG_MEMBRESIA, $idUnicoMembresia);
             return true;
         } else {
             return false;
@@ -97,7 +93,7 @@ class Membresia extends Model
      *
      * @return void
      */
-    function actualizaConversionMtto($idConversion, $idMtto)
+    public function actualizaConversionMtto($idConversion, $idMtto)
     {
         settype($idConversion, 'integer');
         settype($idMtto, 'integer');
@@ -110,7 +106,7 @@ class Membresia extends Model
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $this->db->where('idMantenimientoConversion', $fila->idMantenimientoConversion);
-                $datos = array ('idMantenimientoNuevo' => $idMtto);
+                $datos = array('idMantenimientoNuevo' => $idMtto);
                 $this->db->update(TBL_MANTENIMIENTOCONVERSION, $datos);
             }
         }
@@ -118,7 +114,7 @@ class Membresia extends Model
         if ($total == 0) {
             return 0;
         } else {
-            $this->permisos_model->log('Se actualizo el mtto nuevo como conversion ('.$idConversion.')', LOG_MEMBRESIA);
+            $this->permisos_model->log('Se actualizo el mtto nuevo como conversion (' . $idConversion . ')', LOG_MEMBRESIA);
             return true;
         }
     }
@@ -135,21 +131,21 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
         settype($idDescuento, 'integer');
 
-        if ($idDescuento==DESCUENTO_ESPECIAL || $idDescuento==DESCUENTO_VACACIONAL || $idDescuento==DESCUENTO_VACACIONAL_2
-            || $idDescuento==DESCUENTO_VACACIONAL_3 || $idDescuento==DESCUENTO_VACACIONAL_4) {
-            $ci =& get_instance();
+        if ($idDescuento == DESCUENTO_ESPECIAL || $idDescuento == DESCUENTO_VACACIONAL || $idDescuento == DESCUENTO_VACACIONAL_2
+            || $idDescuento == DESCUENTO_VACACIONAL_3 || $idDescuento == DESCUENTO_VACACIONAL_4) {
+            $ci = &get_instance();
             $ci->load->model('mantenimientos_model');
 
             $anterior = $ci->mantenimientos_model->mesAnteriorPagado($idUnicoMembresia);
-            $v = $ci->mantenimientos_model->mesAnteriorVacacional($idUnicoMembresia);
+            $v        = $ci->mantenimientos_model->mesAnteriorVacacional($idUnicoMembresia);
 
-            if ($anterior==false || $v==true) {
+            if ($anterior == false || $v == true) {
                 return false;
             }
 
             $this->db->select('m.idMovimiento');
-            $this->db->from(TBL_MOVIMIENTODESCUENTOMTTO.' md');
-            $this->db->join(TBL_MOVIMIENTO.' m', 'md.idMovimiento = m.idMovimiento');
+            $this->db->from(TBL_MOVIMIENTODESCUENTOMTTO . ' md');
+            $this->db->join(TBL_MOVIMIENTO . ' m', 'md.idMovimiento = m.idMovimiento');
             $this->db->where_in('md.idMembresiaDescuentoMtto', array(DESCUENTO_ESPECIAL, DESCUENTO_VACACIONAL, DESCUENTO_VACACIONAL_2));
             $this->db->where('m.idUnicoMembresia', $idUnicoMembresia);
             $this->db->where('m.idUnicoMembresia <>', MOVIMIENTO_CANCELADO);
@@ -157,35 +153,35 @@ class Membresia extends Model
             $this->db->where('YEAR(m.fechaRegistro)', date('Y'));
             $query = $this->db->get();
 
-            if ($query->num_rows>=2) {
+            if ($query->num_rows >= 2) {
                 return false;
             }
 
-            if ($idDescuento==DESCUENTO_VACACIONAL || $idDescuento==DESCUENTO_VACACIONAL_2 ||
-                $idDescuento==DESCUENTO_VACACIONAL_3 || $idDescuento==DESCUENTO_VACACIONAL_4) {
+            if ($idDescuento == DESCUENTO_VACACIONAL || $idDescuento == DESCUENTO_VACACIONAL_2 ||
+                $idDescuento == DESCUENTO_VACACIONAL_3 || $idDescuento == DESCUENTO_VACACIONAL_4) {
                 $continuidad = 0;
-                $sql = 'SELECT fncContinuidad('.$idUnicoMembresia.') AS continuidad;';
-                $query = $this->db->query($sql);
+                $sql         = 'SELECT fncContinuidad(' . $idUnicoMembresia . ') AS continuidad;';
+                $query       = $this->db->query($sql);
                 if ($query->num_rows > 0) {
                     foreach ($query->result() as $fila) {
                         $continuidad = $fila->continuidad;
                     }
                 }
 
-                if ($continuidad<3) {
+                if ($continuidad < 3) {
                     $actual = $ci->mantenimientos_model->mesActualPagado($idUnicoMembresia);
 
-                    if ($actual==true) {
+                    if ($actual == true) {
                         return false;
                     }
                 }
 
-                $f_1 = date('Y-m').'-01';
+                $f_1 = date('Y-m') . '-01';
                 $f_1 = fecha_restar($f_1, 1);
                 $this->db->select('m.idMovimiento');
-                $this->db->from(TBL_MOVIMIENTODESCUENTOMTTO.' md');
-                $this->db->join(TBL_MOVIMIENTO.' m', 'md.idMovimiento = m.idMovimiento');
-                $this->db->join(TBL_SOCIOPAGOMTTO.' spm', "m.idMovimiento=spm.idMovimiento AND spm.fechafin='$f_1'");
+                $this->db->from(TBL_MOVIMIENTODESCUENTOMTTO . ' md');
+                $this->db->join(TBL_MOVIMIENTO . ' m', 'md.idMovimiento = m.idMovimiento');
+                $this->db->join(TBL_SOCIOPAGOMTTO . ' spm', "m.idMovimiento=spm.idMovimiento AND spm.fechafin='$f_1'");
                 $this->db->where_in('md.idMembresiaDescuentoMtto', array(DESCUENTO_ESPECIAL, DESCUENTO_VACACIONAL, DESCUENTO_VACACIONAL_2));
                 $this->db->where('m.idUnicoMembresia', $idUnicoMembresia);
                 $this->db->where('m.eliminado', 0);
@@ -193,7 +189,7 @@ class Membresia extends Model
                 $this->db->group_by('md.idMovimiento');
                 $query = $this->db->get();
 
-                if ($query->num_rows>=1) {
+                if ($query->num_rows >= 1) {
                     return false;
                 }
             }
@@ -205,8 +201,8 @@ class Membresia extends Model
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
 
-        if ($query->num_rows>0) {
-            $fila = $query->row_array();
+        if ($query->num_rows > 0) {
+            $fila        = $query->row_array();
             $descripcion = $fila['descripcion'];
         }
 
@@ -216,14 +212,14 @@ class Membresia extends Model
         $this->db->where('eliminado', 0);
         $query = $this->db->get();
 
-        if ($query->num_rows>0) {
-            $fila = $query->row_array();
+        if ($query->num_rows > 0) {
+            $fila        = $query->row_array();
             $idMembresia = $fila['idUnicoMembresia'];
-            $datos = array ('idMembresiaDescuentoMtto' => $idDescuento);
+            $datos       = array('idMembresiaDescuentoMtto' => $idDescuento);
             $this->db->where('idUnicoMembresia', $idMembresia);
             $this->db->where('eliminado', 0);
             $this->db->update(TBL_MEMBRESIA, $datos);
-            $this->permisos_model->log(utf8_decode("Se actualizó descuento ".$descripcion." (".date('Y-m-d').")") , LOG_MEMBRESIA, $idUnicoMembresia);
+            $this->permisos_model->log(utf8_decode("Se actualizó descuento " . $descripcion . " (" . date('Y-m-d') . ")"), LOG_MEMBRESIA, $idUnicoMembresia);
             return true;
         } else {
             return false;
@@ -241,7 +237,7 @@ class Membresia extends Model
     public function actualizaFechaInicioMtto($idUnicoMembresia, $fechaInicioMtto)
     {
         settype($idUnicoMembresia, 'integer');
-        $datos = array ('fechaInicioMtto'  => $fechaInicioMtto);
+        $datos = array('fechaInicioMtto' => $fechaInicioMtto);
 
         $this->db->select('idUnicoMembresia');
         $this->db->from(TBL_MEMBRESIA);
@@ -251,10 +247,10 @@ class Membresia extends Model
 
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
-            $id = $fila['idUnicoMembresia'];
+            $id   = $fila['idUnicoMembresia'];
             $this->db->where('idUnicoMembresia', $id);
             $this->db->update(TBL_MEMBRESIA, $datos);
-            $this->permisos_model->log('Se actualizo fecha de Inicio de Mtto. a '.$fechaInicioMtto.' ', LOG_MEMBRESIA,$idUnicoMembresia);
+            $this->permisos_model->log('Se actualizo fecha de Inicio de Mtto. a ' . $fechaInicioMtto . ' ', LOG_MEMBRESIA, $idUnicoMembresia);
             return 1;
         } else {
             return 0;
@@ -275,20 +271,20 @@ class Membresia extends Model
 
         $this->db->select('idMembresiaTraspaso');
         $this->db->from(TBL_MEMBRESIATRASPASO);
-        $where=array('idMembresiaTraspaso'=> $idMembresiaTraspaso,'fechaEliminacion'=> '0000-00-00 00:00:00');
+        $where = array('idMembresiaTraspaso' => $idMembresiaTraspaso, 'fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
 
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
             $this->db->where('idMembresiaTraspaso', $fila['idMembresiaTraspaso']);
-            $datos = array ('formato'  => $activo);
+            $datos = array('formato' => $activo);
             $this->db->update(TBL_MEMBRESIATRASPASO, $datos);
-            $this->permisos_model->log(utf8_decode("Se generó formato de traspaso (".date('Y-m-d').")"), LOG_MEMBRESIA, $unico);
+            $this->permisos_model->log(utf8_decode("Se generó formato de traspaso (" . date('Y-m-d') . ")"), LOG_MEMBRESIA, $unico);
             return true;
-       } else {
-           return false;
-       }
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -300,7 +296,7 @@ class Membresia extends Model
      */
     public function actualizaManttoSocio($idMantenimiento, $idUnicoMembresia)
     {
-        $CI =& get_instance();
+        $CI = &get_instance();
         $CI->load->model('mantenimientos_model');
 
         $resultado = false;
@@ -308,21 +304,21 @@ class Membresia extends Model
         settype($idMantenimiento, 'integer');
         settype($idUnicoMembresia, 'integer');
 
-        if (($idMantenimiento == 0)or ($idUnicoMembresia == 0)) {
+        if (($idMantenimiento == 0) or ($idUnicoMembresia == 0)) {
             return $resultado;
         }
         $mantenimiento = $CI->mantenimientos_model->obtenMantenimientoNombre($idMantenimiento);
 
         $where = array(
-            'idUnicoMembresia' => $idUnicoMembresia
+            'idUnicoMembresia' => $idUnicoMembresia,
         );
         $set = array(
-            'idMantenimiento' => $idMantenimiento
+            'idMantenimiento' => $idMantenimiento,
         );
         $resultado = $this->db->update(TBL_SOCIO, $set, $where);
 
         if ($resultado) {
-            $this->permisos_model->log('Cambia tipo de mantenimiento a '.$mantenimiento, LOG_MEMBRESIA, $idUnicoMembresia);
+            $this->permisos_model->log('Cambia tipo de mantenimiento a ' . $mantenimiento, LOG_MEMBRESIA, $idUnicoMembresia);
         }
         return $resultado;
     }
@@ -334,7 +330,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function actualizaMembresia ($idUnicoMembresia, $idUn, $idMembresia)
+    public function actualizaMembresia($idUnicoMembresia, $idUn, $idMembresia)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idUn, 'integer');
@@ -346,10 +342,10 @@ class Membresia extends Model
         $this->db->where('eliminado', 0);
         $query = $this->db->get();
 
-        if ($query->num_rows>0) {
-            $fila = $query->row_array();
+        if ($query->num_rows > 0) {
+            $fila             = $query->row_array();
             $idUnicoMembresia = $fila['idUnicoMembresia'];
-            $datos = array ('idUn' => $idUn, 'idMembresia'=>$idMembresia);
+            $datos            = array('idUn' => $idUn, 'idMembresia' => $idMembresia);
             $this->db->where('idUnicoMembresia', $idUnicoMembresia);
             $this->db->where('eliminado', 0);
             $this->db->update(TBL_MEMBRESIA, $datos);
@@ -383,12 +379,12 @@ class Membresia extends Model
             'alerta'             => $alerta,
             'fechaAlerta'        => $fechaAlerta,
             'enviarAcceso'       => $macceso,
-            'fechaActualizacion' => date('Y-m-d H:i:s')
+            'fechaActualizacion' => date('Y-m-d H:i:s'),
         );
 
         $this->db->where('idSocioMensaje', $idSocioMensaje);
         $this->db->update('sociomensaje', $data);
-        if ($this->db->affected_rows()>0) {
+        if ($this->db->affected_rows() > 0) {
             $regresa = 1;
         } else {
             $regresa = 0;
@@ -414,10 +410,10 @@ class Membresia extends Model
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
-            $id = $fila['idMovimiento'];
+            $id   = $fila['idMovimiento'];
             $this->db->where('idMovimiento', $id);
             $this->db->update(TBL_MOVIMIENTO, $datosMovimiento);
-            $this->permisos_model->log('Se actualizo movimiento '.$movimiento.' ('.date('Y-m-d').')', LOG_MEMBRESIA,$unico);
+            $this->permisos_model->log('Se actualizo movimiento ' . $movimiento . ' (' . date('Y-m-d') . ')', LOG_MEMBRESIA, $unico);
             return true;
         } else {
             return false;
@@ -445,7 +441,7 @@ class Membresia extends Model
                 $this->db->where('idMovimientoCtaContable', $fila->idMovimientoCtaContable);
                 $this->db->update(TBL_MOVIMIENTOCTACONTABLE, $datosCtaContable);
             }
-            $this->permisos_model->log('Se actualizo movimiento cuenta contable  con movimiento '.$movimiento.' ('.date('Y-m-d').')', LOG_MEMBRESIA,$unico);
+            $this->permisos_model->log('Se actualizo movimiento cuenta contable  con movimiento ' . $movimiento . ' (' . date('Y-m-d') . ')', LOG_MEMBRESIA, $unico);
             return true;
         } else {
             return false;
@@ -474,7 +470,7 @@ class Membresia extends Model
             foreach ($query->result() as $fila) {
                 $this->db->where('idSocioPagoMtto', $fila->idSocioPagoMtto);
                 $idUnico = $fila->idUnicoMembresia;
-                $datos = array ('idPersona' => $idPersona, 'idSocio' => $idSocio);
+                $datos   = array('idPersona' => $idPersona, 'idSocio' => $idSocio);
                 $this->db->update(TBL_SOCIOPAGOMTTO, $datos);
             }
         }
@@ -482,7 +478,7 @@ class Membresia extends Model
         if ($total == 0) {
             return 0;
         } else {
-            $this->permisos_model->log('Se actualizo el nombre del socio en pago de mantenimiento  ('.$idPersona.')', LOG_MEMBRESIA, $idUnico);
+            $this->permisos_model->log('Se actualizo el nombre del socio en pago de mantenimiento  (' . $idPersona . ')', LOG_MEMBRESIA, $idUnico);
             return true;
         }
     }
@@ -496,48 +492,48 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function actualizaPagoMtto($opciones,$idSocioPagoMtto)
+    public function actualizaPagoMtto($opciones, $idSocioPagoMtto)
     {
         $datos = array();
-        if (isset ($opciones['idMovimiento']) && $opciones['idMovimiento'] != '') {
+        if (isset($opciones['idMovimiento']) && $opciones['idMovimiento'] != '') {
             settype($opciones['idMovimiento'], 'integer');
-            $datos = array ('idMovimiento' => $opciones['idMovimiento']);
+            $datos = array('idMovimiento' => $opciones['idMovimiento']);
         }
 
-        if (isset ($opciones['idEsquemaPago'])&& $opciones['idEsquemaPago'] != '') {
+        if (isset($opciones['idEsquemaPago']) && $opciones['idEsquemaPago'] != '') {
             settype($opciones['idEsquemaPago'], 'integer');
-            $datos = array ('idEsquemaPago' => $opciones['idEsquemaPago']);
+            $datos = array('idEsquemaPago' => $opciones['idEsquemaPago']);
         }
 
-        if (isset ($opciones['idMantenimiento']) && $opciones['idMantenimiento'] > 0) {
+        if (isset($opciones['idMantenimiento']) && $opciones['idMantenimiento'] > 0) {
             settype($opciones['idMantenimiento'], 'integer');
-            $datos = array ('idMantenimiento' => $opciones['idMantenimiento']);
+            $datos = array('idMantenimiento' => $opciones['idMantenimiento']);
         }
 
-        if (isset ($opciones['activo']) && $opciones['activo'] != '') {
+        if (isset($opciones['activo']) && $opciones['activo'] != '') {
             settype($opciones['activo'], 'integer');
-            $datos = array ('activo' => $opciones['activo']);
+            $datos = array('activo' => $opciones['activo']);
         }
-         if (isset ($opciones['fechaInicio']) && $opciones['fechaInicio'] != '') {
+        if (isset($opciones['fechaInicio']) && $opciones['fechaInicio'] != '') {
             settype($opciones['fechaInicio'], 'string');
-            $datos = array ('fechaInicio' => $opciones['fechaInicio']);
+            $datos = array('fechaInicio' => $opciones['fechaInicio']);
         }
-         if (isset ($opciones['fechaFin']) && $opciones['fechaFin'] != '') {
+        if (isset($opciones['fechaFin']) && $opciones['fechaFin'] != '') {
             settype($opciones['fechaFin'], 'string');
-            $datos = array ('fechaFin' => $opciones['fechaFin']);
+            $datos = array('fechaFin' => $opciones['fechaFin']);
         }
 
-        if (isset ($opciones['porcentaje']) && $opciones['porcentaje'] != '') {
+        if (isset($opciones['porcentaje']) && $opciones['porcentaje'] != '') {
             settype($opciones['porcentaje'], 'float');
-            $datos = array ('porcentaje' => $opciones['porcentaje']);
+            $datos = array('porcentaje' => $opciones['porcentaje']);
         }
-        if (isset ($opciones['idSocio']) && $opciones['idSocio'] != 0) {
+        if (isset($opciones['idSocio']) && $opciones['idSocio'] != 0) {
             settype($opciones['idSocio'], 'integer');
-            $datos = array ('idSocio' => $opciones['idSocio']);
+            $datos = array('idSocio' => $opciones['idSocio']);
         }
-        if (isset ($opciones['idPersona']) && $opciones['idPersona'] != 0) {
+        if (isset($opciones['idPersona']) && $opciones['idPersona'] != 0) {
             settype($opciones['idPersona'], 'integer');
-            $datos = array ('idPersona' => $opciones['idPersona']);
+            $datos = array('idPersona' => $opciones['idPersona']);
         }
 
         $this->db->select('idSocioPagoMtto,idUnicoMembresia');
@@ -546,10 +542,10 @@ class Membresia extends Model
         $this->db->where('eliminado', 0);
         $query = $this->db->get();
 
-        if ( $query->num_rows > 0 ) {
-            $fila = $query->row_array();
+        if ($query->num_rows > 0) {
+            $fila             = $query->row_array();
             $idUnicoMembresia = $fila['idUnicoMembresia'];
-            $this->db->where('idSocioPagoMtto',$fila['idSocioPagoMtto']);
+            $this->db->where('idSocioPagoMtto', $fila['idSocioPagoMtto']);
             $this->db->update(TBL_SOCIOPAGOMTTO, $datos);
             $this->permisos_model->log(utf8_decode('Se actualizó el registro pago mtto (' . $idSocioPagoMtto . ')'), LOG_SISTEMAS, $idUnicoMembresia);
             return true;
@@ -576,10 +572,10 @@ class Membresia extends Model
         $this->db->where('eliminado', 0);
         $query = $this->db->get();
 
-        if ($query->num_rows>0) {
-            $fila = $query->row_array();
+        if ($query->num_rows > 0) {
+            $fila        = $query->row_array();
             $idMembresia = $fila['idUnicoMembresia'];
-            $datos = array ('idPersona' => $idPersona);
+            $datos       = array('idPersona' => $idPersona);
             $this->db->where('idUnicoMembresia', $idMembresia);
             $this->db->where('eliminado', 0);
             $this->db->update(TBL_MEMBRESIA, $datos);
@@ -606,10 +602,10 @@ class Membresia extends Model
         $query = $this->db->query($sql);
 
         $u = 0;
-        if ($query->num_rows()>0) {
+        if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $diasTotales = $fila->dias_totales;
-                $u = $fila->idUnicoMembresia;
+                $u           = $fila->idUnicoMembresia;
             }
         }
 
@@ -634,7 +630,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    function actualizaSocioPagoMtto($idSocioPagoMtto, $datosSocioMtto, $unico)
+    public function actualizaSocioPagoMtto($idSocioPagoMtto, $datosSocioMtto, $unico)
     {
         settype($idSocioPagoMtto, 'integer');
         settype($unico, 'integer');
@@ -646,10 +642,10 @@ class Membresia extends Model
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
-            $id = $fila['idSocioPagoMtto'];
+            $id   = $fila['idSocioPagoMtto'];
             $this->db->where('idSocioPagoMtto', $id);
             $this->db->update(TBL_SOCIOPAGOMTTO, $datosSocioMtto);
-            $this->permisos_model->log('Se actualizo pago de mantenimiento  ('.date('Y-m-d').')', LOG_MEMBRESIA, $unico);
+            $this->permisos_model->log('Se actualizo pago de mantenimiento  (' . date('Y-m-d') . ')', LOG_MEMBRESIA, $unico);
             return true;
         } else {
             return false;
@@ -670,10 +666,10 @@ class Membresia extends Model
      */
     public function agregarCesionParticipante($idUnicoMembresia, $id, $idPropietarioNuevo, $tipo)
     {
-        $datos = array (
+        $datos = array(
             'idMembresiaCesion' => $id,
             'tipoParticipante'  => $tipo,
-            'idPersona'         => $idPropietarioNuevo
+            'idPersona'         => $idPropietarioNuevo,
         );
         $this->db->insert(TBL_MEMBRESIACESIONPARTICIPANTE, $datos);
 
@@ -698,7 +694,7 @@ class Membresia extends Model
 
         $sql = "SELECT sm.idSocioMensaje FROM sociomensaje sm
             LEFT JOIN socio s ON s.idsocio=sm.idSocio
-            WHERE s.idunicoMembresia=".$idUnicoMembresia." AND  sm.fechaAlerta='".date('Y-m-d')."'
+            WHERE s.idunicoMembresia=" . $idUnicoMembresia . " AND  sm.fechaAlerta='" . date('Y-m-d') . "'
             AND sm.fechaEliminacion='0000-00-00 00:00:00' AND enviarAcceso=0 AND alertaEmitida=0";
         $query = $this->db->query($sql);
         $total = $query->num_rows();
@@ -722,13 +718,13 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
         settype($idPersona, 'integer');
         settype($idTipoContacto, 'integer');
-        $data = array (
+        $data = array(
             'idUnicoMembresia'  => $idUnicoMembresia,
             'idPersona'         => $idPersona,
             'idTipoInvolucrado' => TIPO_INVOLUCRADO_BENEFICIARIO,
-            'idTipoContacto'    => $idTipoContacto
+            'idTipoContacto'    => $idTipoContacto,
         );
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $nombre = strtoupper($ci->persona_model->nombre($idPersona));
         $this->db->insert(TBL_MEMBRESIAINVOLUCRADO, $data);
@@ -743,26 +739,26 @@ class Membresia extends Model
     }
 
     /**
-    *Realiza la baja de Propietario al decidir cambiarlo o ingresarlo en caso de no existir
-    *
-    * @param integer $idUnicoMembresia Identificador unico de la membresia
-    * @param integer $idPersona        Identificador de la persona propietaria de la membresia
-    * @param integer $permiso          Indicador que permite saltarse los permisos
-    *
-    * @author Santa Garcia
-    *
-    * @return array
-    */
-    public function altaPropietario($idUnicoMembresia, $idPersona,$permiso = 0)
+     *Realiza la baja de Propietario al decidir cambiarlo o ingresarlo en caso de no existir
+     *
+     * @param integer $idUnicoMembresia Identificador unico de la membresia
+     * @param integer $idPersona        Identificador de la persona propietaria de la membresia
+     * @param integer $permiso          Indicador que permite saltarse los permisos
+     *
+     * @author Santa Garcia
+     *
+     * @return array
+     */
+    public function altaPropietario($idUnicoMembresia, $idPersona, $permiso = 0)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idPersona, 'integer');
-        $data = array (
-                'idUnicoMembresia' => $idUnicoMembresia,
-                'idPersona' => $idPersona,
-                'idTipoInvolucrado' => INVOLUCRADO_PROPIETARIO
-            );
-        $ci =& get_instance();
+        $data = array(
+            'idUnicoMembresia'  => $idUnicoMembresia,
+            'idPersona'         => $idPersona,
+            'idTipoInvolucrado' => INVOLUCRADO_PROPIETARIO,
+        );
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $nombre = strtoupper($ci->persona_model->nombre($idPersona));
         $this->db->insert(TBL_MEMBRESIAINVOLUCRADO, $data);
@@ -781,7 +777,6 @@ class Membresia extends Model
         }
     }
 
-
     /**
      * [arrayDatosGenerales description]
      *
@@ -793,7 +788,7 @@ class Membresia extends Model
     {
         settype($idUnicoMembresia, 'integer');
 
-        $res = array();
+        $res   = array();
         $fecha = date('Y-m-d');
 
         $sql = "SELECT
@@ -885,7 +880,6 @@ class Membresia extends Model
         return $res;
     }
 
-
     /**
      * funcion que lista los descuentos de mtto vigentes
      *
@@ -896,8 +890,8 @@ class Membresia extends Model
     public function arrayDescuento($nombre)
     {
         $permisoMttoDescuento = $this->permisos_model->validaTodosPermisos($this->_especialMttoDescuento);
-        $p = ' AND m.requierePermiso=0';
-        if ($permisoMttoDescuento==true) {
+        $p                    = ' AND m.requierePermiso=0';
+        if ($permisoMttoDescuento == true) {
             $p = '';
         }
 
@@ -905,10 +899,10 @@ class Membresia extends Model
             FROM membresiadescuentomtto m
             WHERE m.activo=1
             AND (m.finVigencia > DATE(NOW()) OR (m.inicioVigencia='0000-00-00' AND m.finVigencia='0000-00-00'))
-            AND m.descripcion LIKE '%".$nombre."%' AND m.fechaEliminacion='0000-00-00 00:00:00' $p";
+            AND m.descripcion LIKE '%" . $nombre . "%' AND m.fechaEliminacion='0000-00-00 00:00:00' $p";
         $query = $this->db->query($sql);
 
-        $data  = array();
+        $data = array();
 
         if ($query->num_rows() > 0) {
             foreach ($query->result_array() as $fila) {
@@ -939,7 +933,7 @@ class Membresia extends Model
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
             $this->db->where('idUnicoMembresia', $fila['idUnicoMembresia']);
-            $datos = array ('inicioVigencia' => $inicioVigencia,'finVigencia'=> $finVigencia);
+            $datos = array('inicioVigencia' => $inicioVigencia, 'finVigencia' => $finVigencia);
             $this->db->update(TBL_MEMBRESIA, $datos);
         }
         $total = $this->db->affected_rows();
@@ -961,7 +955,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function asignaIntransferible($idUnicoMembresia,$opcion)
+    public function asignaIntransferible($idUnicoMembresia, $opcion)
     {
         settype($idUnicoMembresia, 'integer');
         $this->db->select('idUnicoMembresia');
@@ -971,7 +965,7 @@ class Membresia extends Model
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
             $this->db->where('idUnicoMembresia', $fila['idUnicoMembresia']);
-            $datos = array ('intransferible' => $opcion);
+            $datos = array('intransferible' => $opcion);
             $this->db->update(TBL_MEMBRESIA, $datos);
         }
         $total = $this->db->affected_rows();
@@ -993,7 +987,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function asignaInvitado($idUnicoMembresia,$opcion)
+    public function asignaInvitado($idUnicoMembresia, $opcion)
     {
         settype($idUnicoMembresia, 'integer');
         $this->db->select('idUnicoMembresia');
@@ -1003,7 +997,7 @@ class Membresia extends Model
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
             $this->db->where('idUnicoMembresia', $fila['idUnicoMembresia']);
-            $datos = array ('invitado' => $opcion);
+            $datos = array('invitado' => $opcion);
             $this->db->update(TBL_MEMBRESIA, $datos);
         }
         $total = $this->db->affected_rows();
@@ -1036,41 +1030,41 @@ class Membresia extends Model
      *
      * @return [type]                          [description]
      */
-    public function asignar($club, $producto, $persona, $precio=0, $descuento=0, $convenio=0, $forma=0, $periodo=0,$codigo=0, $intransferible = 0, $memAnterior = 0, $clubAlterno=0, $certificado=0, $fechaInicioMttoPaquete = '0000-00-00', $limiteInicioMtto = 0)
+    public function asignar($club, $producto, $persona, $precio = 0, $descuento = 0, $convenio = 0, $forma = 0, $periodo = 0, $codigo = 0, $intransferible = 0, $memAnterior = 0, $clubAlterno = 0, $certificado = 0, $fechaInicioMttoPaquete = '0000-00-00', $limiteInicioMtto = 0)
     {
-        settype($club,      'integer');
-        settype($producto,  'integer');
-        settype($persona,   'integer');
-        settype($precio,    'float');
+        settype($club, 'integer');
+        settype($producto, 'integer');
+        settype($persona, 'integer');
+        settype($precio, 'float');
         settype($descuento, 'float');
-        settype($convenio,  'integer');
-        settype($forma,     'integer');
-        settype($periodo,   'integer');
-        settype($codigo,    'integer');
+        settype($convenio, 'integer');
+        settype($forma, 'integer');
+        settype($periodo, 'integer');
+        settype($codigo, 'integer');
         settype($certificado, 'integer');
         settype($clubAlterno, 'integer');
         settype($fechaInicioMttoPaquete, 'string');
         settype($limiteInicioMtto, 'integer');
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $ci->load->model('un_model');
-        $nombreClub = $ci->un_model->nombre($club);
+        $nombreClub    = $ci->un_model->nombre($club);
         $nombrePersona = $ci->persona_model->nombre($persona);
-        if ($club==0) {
+        if ($club == 0) {
             return 0;
         }
-        if ($producto==0) {
+        if ($producto == 0) {
             return 0;
         }
 
-        $qry_u = $this->db->query('SELECT MAX(idUnicoMembresia) AS unico FROM '.TBL_MEMBRESIA);
+        $qry_u = $this->db->query('SELECT MAX(idUnicoMembresia) AS unico FROM ' . TBL_MEMBRESIA);
         $row_u = $qry_u->row();
         $unico = $row_u->unico;
         $unico++;
 
-        $query = $this->db->query('SELECT MAX(idMembresia) AS maxid FROM '.TBL_MEMBRESIA.' WHERE idUn='.$club);
-        $row = $query->row();
+        $query  = $this->db->query('SELECT MAX(idMembresia) AS maxid FROM ' . TBL_MEMBRESIA . ' WHERE idUn=' . $club);
+        $row    = $query->row();
         $max_id = $row->maxid;
         $max_id++;
 
@@ -1107,7 +1101,7 @@ class Membresia extends Model
             ORDER BY b.idAgendaActividad";
         $this->db->query($sql);
 
-        $datos = array (
+        $datos = array(
             'idMembresia'            => $max_id,
             'idUn'                   => $club,
             'idPersona'              => $persona,
@@ -1123,7 +1117,7 @@ class Membresia extends Model
             'nueva'                  => 1,
             'certificado'            => $certificado,
             'fechaInicioMtto'        => $fechaInicioMttoPaquete,
-            'limiteInicioMtto'       => $limiteInicioMtto
+            'limiteInicioMtto'       => $limiteInicioMtto,
         );
         $this->db->insert(TBL_MEMBRESIA, $datos);
         $idMembresia = $this->db->insert_id();
@@ -1132,8 +1126,8 @@ class Membresia extends Model
         if ($total == 0) {
             return 0;
         }
-        if ($memAnterior >0) {
-            $this->permisos_model->log(utf8_decode("Se creó nueva membresia # $max_id en el club de $nombreClub a nombre de $nombrePersona (".date('Y-m-d').")") , LOG_MEMBRESIA, $memAnterior);
+        if ($memAnterior > 0) {
+            $this->permisos_model->log(utf8_decode("Se creó nueva membresia # $max_id en el club de $nombreClub a nombre de $nombrePersona (" . date('Y-m-d') . ")"), LOG_MEMBRESIA, $memAnterior);
         } else {
             $this->permisos_model->log("Se agrego membresia $max_id en el club de $nombreClub", LOG_MEMBRESIA, $idMembresia);
         }
@@ -1160,18 +1154,18 @@ class Membresia extends Model
         $query = $this->db->get();
 
         if ($query->num_rows() > 0) {
-            $fila = $query->row_array();
-            $idPersona=$fila['idPersona'];
+            $fila      = $query->row_array();
+            $idPersona = $fila['idPersona'];
 
-            $ci =& get_instance();
+            $ci = &get_instance();
             $ci->load->model('persona_model');
             $nombre = strtoupper($ci->persona_model->nombre($idPersona));
         }
         if ($query->num_rows() > 0) {
-            $fila = $query->row_array();
-            $idPersona=$fila['idPersona'];
+            $fila      = $query->row_array();
+            $idPersona = $fila['idPersona'];
             $this->db->where('idMembresiaInvolucrado', $fila['idMembresiaInvolucrado']);
-            $datos = array ('fechaEliminacion' => date("Y-m-d H:i:s"));
+            $datos = array('fechaEliminacion' => date("Y-m-d H:i:s"));
             $this->db->update(TBL_MEMBRESIAINVOLUCRADO, $datos);
         }
 
@@ -1203,23 +1197,23 @@ class Membresia extends Model
         $this->db->distinct();
         $this->db->select('idMembresiaInvolucrado,idPersona');
         $this->db->from(TBL_MEMBRESIAINVOLUCRADO);
-        $where = array('idUnicoMembresia' => $membresia, 'idTipoInvolucrado' => INVOLUCRADO_PROPIETARIO,'fechaEliminacion'=>'0000-00-00 00:00:00');
+        $where = array('idUnicoMembresia' => $membresia, 'idTipoInvolucrado' => INVOLUCRADO_PROPIETARIO, 'fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
 
         if ($query->num_rows() > 0) {
-            $fila = $query->row_array();
-            $idPersona=$fila['idPersona'];
-            $ci =& get_instance();
+            $fila      = $query->row_array();
+            $idPersona = $fila['idPersona'];
+            $ci        = &get_instance();
             $ci->load->model('persona_model');
             $nombre = strtoupper(utf8_decode($ci->persona_model->nombre($idPersona)));
         }
 
         if ($query->num_rows() > 0) {
-            $fila = $query->row_array();
-            $idPersona=$fila['idPersona'];
+            $fila      = $query->row_array();
+            $idPersona = $fila['idPersona'];
             $this->db->where('idMembresiaInvolucrado', $fila['idMembresiaInvolucrado']);
-            $datos = array ('fechaEliminacion' => date("Y-m-d H:i:s"));
+            $datos = array('fechaEliminacion' => date("Y-m-d H:i:s"));
             $this->db->update(TBL_MEMBRESIAINVOLUCRADO, $datos);
         }
         $total = $this->db->affected_rows();
@@ -1238,7 +1232,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function buscaSocioNombre($opciones, $totales=0, $posicion=0, $registros=25, $orden = '')
+    public function buscaSocioNombre($opciones, $totales = 0, $posicion = 0, $registros = 25, $orden = '')
     {
         settype($opciones['idUn'], 'integer');
         settype($opciones['idEmpresa'], 'integer');
@@ -1246,23 +1240,23 @@ class Membresia extends Model
         settype($registros, 'integer');
 
         $sql = "SELECT s.idPersona,m.idMembresia, CONCAT_WS(' ', p.nombre, p.paterno,p.materno) AS nombre ,u.nombre AS club
-            FROM ".TBL_SOCIO." s
-            INNER JOIN ".TBL_PERSONA." p on p.idPersona = s.idPersona
-            INNER JOIN ".TBL_MEMBRESIA." m on m.idUnicoMembresia = s.idUnicoMembresia
-            INNER JOIN ".TBL_UN." u on u.idUn = m.idUn
-            WHERE s.eliminado=0 AND CONCAT_WS(' ', p.nombre, p.paterno,p.materno) LIKE '%".
-            $this->db->escape_like_str($opciones['nombre'])."%'";
+            FROM " . TBL_SOCIO . " s
+            INNER JOIN " . TBL_PERSONA . " p on p.idPersona = s.idPersona
+            INNER JOIN " . TBL_MEMBRESIA . " m on m.idUnicoMembresia = s.idUnicoMembresia
+            INNER JOIN " . TBL_UN . " u on u.idUn = m.idUn
+            WHERE s.eliminado=0 AND CONCAT_WS(' ', p.nombre, p.paterno,p.materno) LIKE '%" .
+        $this->db->escape_like_str($opciones['nombre']) . "%'";
 
         if ($opciones['idUn'] != 0) {
-            $sql .= " AND m.idUn = ".$opciones['idUn'];
+            $sql .= " AND m.idUn = " . $opciones['idUn'];
         }
         if ($opciones['idEmpresa'] != 0) {
-            $sql .= " AND u.idEmpresa = ".$opciones['idEmpresa'];
+            $sql .= " AND u.idEmpresa = " . $opciones['idEmpresa'];
         }
         if ($orden == '') {
             $sql .= " ORDER BY m.idMembresia";
         } else {
-            $sql .= " ORDER BY ".$this->db->escape($orden);
+            $sql .= " ORDER BY " . $this->db->escape($orden);
         }
         if ($totales == 0) {
             if ($posicion == '') {
@@ -1282,7 +1276,6 @@ class Membresia extends Model
         }
     }
 
-
     /**
      * [calculaMtto2 description]
      *
@@ -1300,16 +1293,15 @@ class Membresia extends Model
      *
      * @return [type]                   [description]
      */
-    public function calculaMtto2($idUn, $idMembresia, $idPersona=0, $fecha="0000-00-00", $idMantenimiento=0, $idTipoRolSocio=0,
-        $idEsquemaPago=0, $idTipoMembresia=0, $ausencia=0, $numIntegrantes=0, $fidelidad = 0)
-    {
-        $sql1 = "CALL crm.spCalculaMtto2(   ".$idUn.", ".$idMembresia.", ".$idPersona.", '".$fecha."', ".
-            $idMantenimiento.", ".$idTipoRolSocio.", ".$idEsquemaPago.", ".
-            $idTipoMembresia.", ".$ausencia.",".$numIntegrantes.", ".$fidelidad.", ".
+    public function calculaMtto2($idUn, $idMembresia, $idPersona = 0, $fecha = "0000-00-00", $idMantenimiento = 0, $idTipoRolSocio = 0,
+        $idEsquemaPago = 0, $idTipoMembresia = 0, $ausencia = 0, $numIntegrantes = 0, $fidelidad = 0) {
+        $sql1 = "CALL crm.spCalculaMtto2(   " . $idUn . ", " . $idMembresia . ", " . $idPersona . ", '" . $fecha . "', " .
+            $idMantenimiento . ", " . $idTipoRolSocio . ", " . $idEsquemaPago . ", " .
+            $idTipoMembresia . ", " . $ausencia . "," . $numIntegrantes . ", " . $fidelidad . ", " .
             "@des, @imp, @iva, @cuenta, @producto)";
         $query1 = $this->db->query($sql1);
 
-        $sql2 = "SELECT IF(@imp IS NULL, '0.00', @imp) AS resp";
+        $sql2   = "SELECT IF(@imp IS NULL, '0.00', @imp) AS resp";
         $query2 = $this->db->query($sql2);
 
         $row = $query2->row();
@@ -1331,8 +1323,8 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
         settype($idTipoEstatusMembresia, 'integer');
 
-        $datos = array (
-            'idTipoEstatusMembresia'  => $idTipoEstatusMembresia
+        $datos = array(
+            'idTipoEstatusMembresia' => $idTipoEstatusMembresia,
         );
 
         $this->db->select('idUnicoMembresia');
@@ -1348,16 +1340,16 @@ class Membresia extends Model
             $query = $this->db->get();
             if ($query->num_rows() > 0) {
                 $fila = $query->row_array();
-                $e = $fila['descripcion'];
+                $e    = $fila['descripcion'];
             }
 
             $this->db->where('idUnicoMembresia', $idUnicoMembresia);
             $this->db->update(TBL_MEMBRESIA, $datos);
-            $this->permisos_model->log('Cambia estatus de membresia a '.$e, LOG_MEMBRESIA, $idUnicoMembresia);
+            $this->permisos_model->log('Cambia estatus de membresia a ' . $e, LOG_MEMBRESIA, $idUnicoMembresia);
 
             if ($idTipoEstatusMembresia == ESTATUS_MEMBRESIA_ACTIVA) {
-                $s = array (
-                    'idTipoEstatusSocio' => ESTATUS_SOCIO_ACTIVO
+                $s = array(
+                    'idTipoEstatusSocio' => ESTATUS_SOCIO_ACTIVO,
                 );
 
                 $this->db->where('eliminado', 0);
@@ -1368,9 +1360,9 @@ class Membresia extends Model
             }
 
             if ($idTipoEstatusMembresia == ESTATUS_MEMBRESIA_INACTIVA ||
-                $idTipoEstatusMembresia ==ESTATUS_MEMBRESIA_PASIVA) {
-                $s = array (
-                    'idTipoEstatusSocio' => ESTATUS_SOCIO_INACTIVO
+                $idTipoEstatusMembresia == ESTATUS_MEMBRESIA_PASIVA) {
+                $s = array(
+                    'idTipoEstatusSocio' => ESTATUS_SOCIO_INACTIVO,
                 );
 
                 $this->db->where('eliminado', 0);
@@ -1402,32 +1394,31 @@ class Membresia extends Model
         settype($idMantenimiento, 'integer');
 
         $respuesta = 0;
-        $sql1  = "SELECT p.idProducto, p.nombre
-            FROM ".TBL_PRODUCTO." P
-            INNER JOIN ".TBL_PRODUCTOMANTENIMIENTO." pm ON pm.idProducto=p.idProducto AND pm.idMantenimiento=".$idMantenimiento;
+        $sql1      = "SELECT p.idProducto, p.nombre
+            FROM " . TBL_PRODUCTO . " P
+            INNER JOIN " . TBL_PRODUCTOMANTENIMIENTO . " pm ON pm.idProducto=p.idProducto AND pm.idMantenimiento=" . $idMantenimiento;
         $query = $this->db->query($sql1);
-         if ( $query->num_rows > 0 ) {
-            $datosMtto =$query->result_array();
-            $sql2  = "UPDATE membresia SET idProducto=43, idConvenioDetalle=0 WHERE idUnicoMembresia=".$idUnicoMembresia;
+        if ($query->num_rows > 0) {
+            $datosMtto = $query->result_array();
+            $sql2      = "UPDATE membresia SET idProducto=43, idConvenioDetalle=0 WHERE idUnicoMembresia=" . $idUnicoMembresia;
             $this->db->query($sql2);
-            if(intval($this->db->affected_rows())>0)
-            {
-                $sql3  = "UPDATE crm.socio s
-                    SET s.idMantenimiento=".$idMantenimiento."
-                    WHERE s.idUnicoMembresia=".$idUnicoMembresia." AND s.eliminado=0
+            if (intval($this->db->affected_rows()) > 0) {
+                $sql3 = "UPDATE crm.socio s
+                    SET s.idMantenimiento=" . $idMantenimiento . "
+                    WHERE s.idUnicoMembresia=" . $idUnicoMembresia . " AND s.eliminado=0
                         AND s.idTipoEstatusSocio IN (81)";
                 $this->db->query($sql3);
             }
-            if (intval($this->db->affected_rows())>0) {
-                $sql4  = "UPDATE crm.socio s
+            if (intval($this->db->affected_rows()) > 0) {
+                $sql4 = "UPDATE crm.socio s
                     SET s.idTipoRolCliente=12
-                    WHERE s.idUnicoMembresia=".$idUnicoMembresia."
+                    WHERE s.idUnicoMembresia=" . $idUnicoMembresia . "
                         AND s.idTipoRolCliente IN (17,18) AND s.eliminado=0 AND s.idTipoEstatusSocio IN (81)";
                 $this->db->query($sql4);
             }
-            if (intval($this->db->affected_rows())>0) {
-                $this->permisos_model->log('Se genera cambio de membresia de individual a grupal con mantenimiento: '.
-                    $datosMtto[0]['nombre'].' y rol de socios a COTITULAR GRUPAL', LOG_MEMBRESIA,$idUnicoMembresia);
+            if (intval($this->db->affected_rows()) > 0) {
+                $this->permisos_model->log('Se genera cambio de membresia de individual a grupal con mantenimiento: ' .
+                    $datosMtto[0]['nombre'] . ' y rol de socios a COTITULAR GRUPAL', LOG_MEMBRESIA, $idUnicoMembresia);
                 $respuesta = 1;
             }
         }
@@ -1449,7 +1440,7 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
         settype($idMembresia, 'integer');
 
-        if ($idUnicoMembresia>0 && $idMembresia>0) {
+        if ($idUnicoMembresia > 0 && $idMembresia > 0) {
             $sql = "UPDATE membresia SET idMembresia=$idMembresia WHERE idUnicoMembresia=$idUnicoMembresia";
             $this->db->query($sql);
         }
@@ -1471,19 +1462,18 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
         settype($idTitular, 'integer');
         settype($idCotitular, 'integer');
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('socio_model');
 
-
-        $nombre1 = $ci->socio_model->obtenNombre($idCotitular);
-        $nombre2 = $ci->socio_model->obtenNombre($idTitular);
-        $datosSocio = $ci->socio_model->obtenSocios($idUnicoMembresia,$idCotitular);
-        foreach($datosSocio as $valor){
-            $idTipoRolCliente=$valor->idTipoRolCliente;
+        $nombre1    = $ci->socio_model->obtenNombre($idCotitular);
+        $nombre2    = $ci->socio_model->obtenNombre($idTitular);
+        $datosSocio = $ci->socio_model->obtenSocios($idUnicoMembresia, $idCotitular);
+        foreach ($datosSocio as $valor) {
+            $idTipoRolCliente = $valor->idTipoRolCliente;
         }
 
-        $data = array('idTipoRolCliente'=> ROL_CLIENTE_TITULAR);
-        $dato = array('idTipoRolCliente'=> $idTipoRolCliente);
+        $data = array('idTipoRolCliente' => ROL_CLIENTE_TITULAR);
+        $dato = array('idTipoRolCliente' => $idTipoRolCliente);
 
         $this->db->where('idUnicoMembresia', $idUnicoMembresia);
         $this->db->where('eliminado', 0);
@@ -1492,7 +1482,7 @@ class Membresia extends Model
         $this->permisos_model->log(utf8_decode("Cambio de Cotitular $nombre1 a Titular"), LOG_MEMBRESIA, $idUnicoMembresia);
         $total = $this->db->affected_rows();
         if ($total == 0) {
-            $datos=0;
+            $datos = 0;
         } else {
             $this->db->where('idUnicoMembresia', $idUnicoMembresia);
             $this->db->where('eliminado', 0);
@@ -1501,9 +1491,9 @@ class Membresia extends Model
             $this->permisos_model->log(utf8_decode("Cambio de Titular $nombre2 a Cotitular"), LOG_MEMBRESIA, $idUnicoMembresia);
             $total = $this->db->affected_rows();
             if ($total == 0) {
-                $datos=0;
+                $datos = 0;
             } else {
-                $datos=1;
+                $datos = 1;
             }
         }
         return $datos;
@@ -1522,19 +1512,18 @@ class Membresia extends Model
 
         $res = false;
 
-        if ($idUnicoMembresia>0) {
+        if ($idUnicoMembresia > 0) {
             $this->db->query("DELETE m FROM membresiamayoabril m WHERE m.idUnicoMembresia=$idUnicoMembresia");
             $total = $this->db->affected_rows();
 
-            if ($total>0) {
-                $this->permisos_model->log(utf8_decode("Se cancela mantenimiento especial para membresia Abril-Mayo 2017  (".date('Y-m-d').")"), LOG_MEMBRESIA, $idUnicoMembresia);
+            if ($total > 0) {
+                $this->permisos_model->log(utf8_decode("Se cancela mantenimiento especial para membresia Abril-Mayo 2017  (" . date('Y-m-d') . ")"), LOG_MEMBRESIA, $idUnicoMembresia);
                 return $res = true;
             }
         }
 
         return $res;
     }
-
 
     /**
      * Funcion que realiza la cancelacion de la membresía
@@ -1547,23 +1536,23 @@ class Membresia extends Model
      *
      * @return boolean
      */
-    public function cancelacion($idUnicoMembresia, $idPropietario, $motivo='')
+    public function cancelacion($idUnicoMembresia, $idPropietario, $motivo = '')
     {
         settype($idUnicoMembresia, 'integer');
         settype($idPropietario, 'integer');
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('empleados_model');
         $ci->load->model('un_model');
 
-        $data = array (
+        $data = array(
             'idUnicoMembresia' => $idUnicoMembresia,
             'idPersona'        => $idPropietario,
             'idEmpleado'       => $ci->empleados_model->obtenIdEmpleado($this->session->userdata('idPersona')),
-            'motivo'           => $motivo
+            'motivo'           => $motivo,
         );
         $datosGral = $this->obtenerDatosGeneralesMem($idUnicoMembresia);
-        $club = $ci->un_model->nombre($datosGral[0]->idUn);
+        $club      = $ci->un_model->nombre($datosGral[0]->idUn);
         $membresia = $datosGral[0]->idMembresia;
         $this->db->insert(TBL_MEMBRESIACANCELACION, $data);
         $total = $this->db->affected_rows();
@@ -1627,23 +1616,23 @@ class Membresia extends Model
     public function cantidadMembresiaReactivacion($idUnicoMembresia, $autorizacionEspecial = 0)
     {
         settype($idUnicoMembresia, 'integer');
-        $mes = date('m');
+        $mes       = date('m');
         $condicion = '';
-        $m = '01';
+        $m         = '01';
         if ($mes <= 6) {
-            $contador = '0';
-            $dia = strftime("%d", mktime(0, 0, 0, 6+1, 0, date('Y')));
-            $condicion = date('Y').'-06-'.$dia;
-            $m = '01';
+            $contador  = '0';
+            $dia       = strftime("%d", mktime(0, 0, 0, 6 + 1, 0, date('Y')));
+            $condicion = date('Y') . '-06-' . $dia;
+            $m         = '01';
         } else {
-            $contador = '1';
-            $dia = strftime("%d", mktime(0, 0, 0, 12+1, 0, date('Y')));
-            $condicion = date('Y').'-12-'.$dia;
-            $m = '07';
+            $contador  = '1';
+            $dia       = strftime("%d", mktime(0, 0, 0, 12 + 1, 0, date('Y')));
+            $condicion = date('Y') . '-12-' . $dia;
+            $m         = '07';
         }
         $this->db->select('idMembresiaReactivacion');
         $this->db->from(TBL_MEMBRESIAREACTIVACION);
-        $where = array('idUnicoMembresia' => $idUnicoMembresia, 'fechaEliminacion'=>'0000-00-00 00:00:00' , 'fechaRegistro >='=> date('Y').'-'.$m.'-01', 'fechaRegistro <='=> $condicion);
+        $where = array('idUnicoMembresia' => $idUnicoMembresia, 'fechaEliminacion' => '0000-00-00 00:00:00', 'fechaRegistro >=' => date('Y') . '-' . $m . '-01', 'fechaRegistro <=' => $condicion);
         $this->db->where($where);
         $query = $this->db->get();
 
@@ -1694,12 +1683,12 @@ class Membresia extends Model
      */
     public function cesion($idUnicoMembresia, $idUn, $folio, $idActualPropietario, $idNuevoPropietario)
     {
-        $data = array (
-                'idUnicoMembresia' => $idUnicoMembresia,
-                'idUn' => $idUn,
-                'folio' => $folio
-            );
-        $ci =& get_instance();
+        $data = array(
+            'idUnicoMembresia' => $idUnicoMembresia,
+            'idUn'             => $idUn,
+            'folio'            => $folio,
+        );
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $nombre1 = strtoupper($ci->persona_model->nombre($idActualPropietario));
         $nombre2 = strtoupper($ci->persona_model->nombre($idNuevoPropietario));
@@ -1757,18 +1746,18 @@ class Membresia extends Model
      */
     public function clubExtraAccesos($idSocio, $idUn, $idEmpleado, $activo, $idUnicoMmebresia = 0)
     {
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('un_model');
         $ci->load->model('socio_model');
 
-        $club = $ci->un_model->nombre($idUn);
+        $club   = $ci->un_model->nombre($idUn);
         $nombre = $ci->socio_model->obtenNombre($idSocio);
 
         $data = array(
-            'idSocio'=> $idSocio,
-            'idUn'=> $idUn,
-            'idPersona'=> $idEmpleado,
-            'activo'=> $activo,
+            'idSocio'   => $idSocio,
+            'idUn'      => $idUn,
+            'idPersona' => $idEmpleado,
+            'activo'    => $activo,
         );
 
         $this->db->select('idSocioUnExtra');
@@ -1781,7 +1770,7 @@ class Membresia extends Model
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
             $this->db->where('idSocioUnExtra', $fila['idSocioUnExtra']);
-            $datos = array('activo'=> $activo);
+            $datos = array('activo' => $activo);
             $this->db->update(TBL_SOCIOUNEXTRA, $datos);
             if ($activo == 1) {
                 $this->permisos_model->log(utf8_decode("Se permitió el acceso a $nombre en el club de $club"), LOG_MEMBRESIA, $idUnicoMmebresia);
@@ -1809,14 +1798,14 @@ class Membresia extends Model
      *
      * @return void
      */
-    function configuracionMttoMSIBusqueda($idUN=0, $idProducto=0, $idEstatus=2, $id=0)
+    public function configuracionMttoMSIBusqueda($idUN = 0, $idProducto = 0, $idEstatus = 2, $id = 0)
     {
         settype($idUN, 'integer');
         settype($idProducto, 'integer');
         settype($idEstatus, 'integer');
         settype($id, 'integer');
 
-        $configuraciones=array();
+        $configuraciones = array();
 
         $this->db->select("
             mm.idFinanzasConfigMttoMSI,
@@ -1834,22 +1823,22 @@ class Membresia extends Model
         #$this->db->join("productoUN pun", "pun.idProductoUN=mm.idProducto AND pun.idUN=mm.idUN", "LEFT");
         $this->db->join("producto p", "p.idProducto=mm.idProducto", "LEFT");
         $this->db->join("producto pmtto", "pmtto.idProducto=mm.idMantenimiento", "LEFT");
-        if( $idUN!=0 && $idProducto!=0 ){
-            $this->db->where("mm.idUN IN (".$idUN.") AND mm.idProducto IN (".$idProducto.") ");
-        }else if( $idUN!=0 && $idProducto==0 ){
-            $this->db->where("mm.idUN IN (".$idUN.") ");
+        if ($idUN != 0 && $idProducto != 0) {
+            $this->db->where("mm.idUN IN (" . $idUN . ") AND mm.idProducto IN (" . $idProducto . ") ");
+        } else if ($idUN != 0 && $idProducto == 0) {
+            $this->db->where("mm.idUN IN (" . $idUN . ") ");
         }
-        if( $idEstatus!=2 ){
-            $this->db->where("mm.activo IN (".$idEstatus.") ");
+        if ($idEstatus != 2) {
+            $this->db->where("mm.activo IN (" . $idEstatus . ") ");
         }
-        if( $id!=0 ){
-            $this->db->where("mm.idFinanzasConfigMttoMSI IN (".$id.") ");
+        if ($id != 0) {
+            $this->db->where("mm.idFinanzasConfigMttoMSI IN (" . $id . ") ");
         }
         $this->db->order_by("mm.idUN, mm.idProducto, mm.mesesMtto, mm.mesesMSI");
-        $qryListaConfiguraciones=$this->db->get();
-        if( $qryListaConfiguraciones->num_rows()>0 ){
-            foreach( $qryListaConfiguraciones->result_array() as $row ){
-                $configuraciones[$row["idFinanzasConfigMttoMSI"]]=$row;
+        $qryListaConfiguraciones = $this->db->get();
+        if ($qryListaConfiguraciones->num_rows() > 0) {
+            foreach ($qryListaConfiguraciones->result_array() as $row) {
+                $configuraciones[$row["idFinanzasConfigMttoMSI"]] = $row;
             }
         }
 
@@ -1863,33 +1852,33 @@ class Membresia extends Model
      *
      * @return void
      */
-    function configuracionMttoMSIGuardar($datos)
+    public function configuracionMttoMSIGuardar($datos)
     {
         settype($datos["id"], 'integer');
 
-        $resultado="";
+        $resultado = "";
 
-        $datosActualizar=array(
-            "idUN"=>$datos["idUN"],
-            "idProducto"=>$datos["idProducto"],
-            "mesesMtto"=>$datos["mesesMtto"],
-            "mesesMSI"=>$datos["mesesMSI"],
-            "descuento"=>$datos["descuento"],
-            "activo"=>$datos["activo"],
-            "idEsquemaPago"=>$datos["idEsquemaPago"],
-            "vigencia"=>$datos["vigencia"],
-            "fechaInicio"=>$datos["fechaInicio"],
-            "fechaFin"=>$datos["fechaFin"],
-            "pases"=>$datos["pases"],
-            "pasesDias"=>$datos["pasesDias"],
-            "sesionNutritionCenter"=>$datos["sesionNutritionCenter"]
+        $datosActualizar = array(
+            "idUN"                  => $datos["idUN"],
+            "idProducto"            => $datos["idProducto"],
+            "mesesMtto"             => $datos["mesesMtto"],
+            "mesesMSI"              => $datos["mesesMSI"],
+            "descuento"             => $datos["descuento"],
+            "activo"                => $datos["activo"],
+            "idEsquemaPago"         => $datos["idEsquemaPago"],
+            "vigencia"              => $datos["vigencia"],
+            "fechaInicio"           => $datos["fechaInicio"],
+            "fechaFin"              => $datos["fechaFin"],
+            "pases"                 => $datos["pases"],
+            "pasesDias"             => $datos["pasesDias"],
+            "sesionNutritionCenter" => $datos["sesionNutritionCenter"],
         );
-        $this->db->update("finanzasConfigMttoMSI", $datosActualizar, array("idFinanzasConfigMttoMSI"=>$datos["id"]));
+        $this->db->update("finanzasConfigMttoMSI", $datosActualizar, array("idFinanzasConfigMttoMSI" => $datos["id"]));
         $total = $this->db->affected_rows();
-        if( $total>0 ){
-            $resultado="Actualizado.";
-        }else{
-            $resultado="Error al actualizar el ID #".$datos["id"].", no hubo cambios o hay un error en la consulta.";
+        if ($total > 0) {
+            $resultado = "Actualizado.";
+        } else {
+            $resultado = "Error al actualizar el ID #" . $datos["id"] . ", no hubo cambios o hay un error en la consulta.";
         }
 
         return $resultado;
@@ -1908,7 +1897,7 @@ class Membresia extends Model
 
         $query = $this->db->query("SELECT COUNT(*) as total
             from socio
-            where idUnicoMembresia=".$idUnicoMembresia." and (idTipoRolCliente=1 or idTipoRolCliente=2)
+            where idUnicoMembresia=" . $idUnicoMembresia . " and (idTipoRolCliente=1 or idTipoRolCliente=2)
                 and eliminado=0");
         if ($query->num_rows() > 0) {
             $row = $query->row();
@@ -1975,9 +1964,9 @@ class Membresia extends Model
     {
         settype($idUnicoMembresia, 'integer');
 
-        $fecha = date('Y-m').'-01';
-        list($year,$mon,$day) = explode('-', $fecha);
-        $fecha = date('Y-m-d', mktime(0, 0, 0, $mon,$day-1, $year));
+        $fecha                  = date('Y-m') . '-01';
+        list($year, $mon, $day) = explode('-', $fecha);
+        $fecha                  = date('Y-m-d', mktime(0, 0, 0, $mon, $day - 1, $year));
 
         $sql = "SELECT meses FROM crm_estadisticas.continuidad
             WHERE idUnicoMembresia=$idUnicoMembresia AND fechaCorte='$fecha' LIMIT 1";
@@ -2003,7 +1992,7 @@ class Membresia extends Model
 
         $tpm = $this->membresia_model->obtenerTipoMembresia($idUnicoMembresia);
 
-        if ($tpm['idProducto']==1) {
+        if ($tpm['idProducto'] == 1) {
             $sql = "CREATE TEMPORARY TABLE tmp_indv_agre
                 SELECT s.idPersona, s.idTipoEstatusSocio, s.fechaRegistro, spm.fechaInicio, spm.fechaFin
                 FROM socio s
@@ -2044,7 +2033,7 @@ class Membresia extends Model
             WHERE t.idTipoEstatusSocio=84";
         $this->db->query($sql);
 
-        $sql = "SELECT * FROM tmp_indv_agre";
+        $sql   = "SELECT * FROM tmp_indv_agre";
         $query = $this->db->query($sql);
 
         return $query->num_rows();
@@ -2064,19 +2053,19 @@ class Membresia extends Model
 
         $data = array();
 
-        $sql="SELECT DISTINCT b.idMembresiaConfigMtto, a.idMantenimiento, a.nombre, b.idmantenimiento as mntto, b.activo, b.default FROM (
-                SELECT m.idMantenimiento, p.nombre FROM ".TBL_MANTENIMIENTO." m
-                INNER JOIN ".TBL_PRODUCTOMANTENIMIENTO." pm ON pm.idMantenimiento=m.idMantenimiento
-                INNER JOIN ".TBL_PRODUCTO." p ON p.idProducto=pm.idProducto
-                INNER JOIN ".TBL_PRODUCTOUN." pu ON pu.idProducto=p.idProducto
+        $sql = "SELECT DISTINCT b.idMembresiaConfigMtto, a.idMantenimiento, a.nombre, b.idmantenimiento as mntto, b.activo, b.default FROM (
+                SELECT m.idMantenimiento, p.nombre FROM " . TBL_MANTENIMIENTO . " m
+                INNER JOIN " . TBL_PRODUCTOMANTENIMIENTO . " pm ON pm.idMantenimiento=m.idMantenimiento
+                INNER JOIN " . TBL_PRODUCTO . " p ON p.idProducto=pm.idProducto
+                INNER JOIN " . TBL_PRODUCTOUN . " pu ON pu.idProducto=p.idProducto
                 WHERE p.activo=1 AND p.fechaEliminacion='0000-00-00 00:00:00'
                 AND pu.activo=1 AND pu.fechaEliminacion='0000-00-00 00:00:00'
-                AND pu.idUn=".$idUn.") a
+                AND pu.idUn=" . $idUn . ") a
             LEFT JOIN (
                 SELECT mcm.idMembresiaConfigMtto, mcm.idMantenimiento, mcm.activo, mcm.default
-                FROM ".TBL_MEMBRESIACONFIGURACION." mc
-                INNER JOIN ".TBL_MEMBRESIACONFIGMTTO." mcm ON mcm.idMembresiaConfiguracion=mc.idMembresiaConfiguracion
-                WHERE mc.idProductoUn=".$idProductoUn." AND mc.fechaEliminacion='0000-00-00 00:00:00'
+                FROM " . TBL_MEMBRESIACONFIGURACION . " mc
+                INNER JOIN " . TBL_MEMBRESIACONFIGMTTO . " mcm ON mcm.idMembresiaConfiguracion=mc.idMembresiaConfiguracion
+                WHERE mc.idProductoUn=" . $idProductoUn . " AND mc.fechaEliminacion='0000-00-00 00:00:00'
                 ) b ON b.idMantenimiento=a.idMantenimiento
             ORDER BY a.nombre";
         $query = $this->db->query($sql);
@@ -2109,9 +2098,9 @@ class Membresia extends Model
         $this->db->select('idUnicoMembresia, idMembresiaTraspaso, idMovimiento, formato');
         $this->db->from(TBL_MEMBRESIATRASPASO);
         $where = array(
-            'idMembresia' => $membresia,
-            'idUn' => $club,
-            'fechaEliminacion' => '0000-00-00 00:00:00'
+            'idMembresia'      => $membresia,
+            'idUn'             => $club,
+            'fechaEliminacion' => '0000-00-00 00:00:00',
         );
         $this->db->where($where);
         $query = $this->db->get();
@@ -2129,15 +2118,15 @@ class Membresia extends Model
      *
      * @return array
      */
-    function datosSocioPagoMtto($idPersona, $idUnico, $fecha = '', $activo=1, $movimiento=0)
+    public function datosSocioPagoMtto($idPersona, $idUnico, $fecha = '', $activo = 1, $movimiento = 0)
     {
         settype($idUnico, 'integer');
         settype($idPersona, 'integer');
 
         $this->db->select('s.activo, s.idSocioPagoMtto, s.idUnicoMembresia, s.idMovimiento,m.idTipoEstatusMovimiento, s.fechaInicio, s.fechaFin, s.idMantenimiento, s.idEsquemaPago');
-        $this->db->from(TBL_SOCIOPAGOMTTO.' s');
-        $this->db->join(TBL_MOVIMIENTO." m", "m.idMovimiento = s.idMovimiento");
-        if($movimiento != 0){
+        $this->db->from(TBL_SOCIOPAGOMTTO . ' s');
+        $this->db->join(TBL_MOVIMIENTO . " m", "m.idMovimiento = s.idMovimiento");
+        if ($movimiento != 0) {
             $this->db->where('s.idMovimiento', $movimiento);
         }
         $this->db->where('s.idPersona', $idPersona);
@@ -2145,12 +2134,12 @@ class Membresia extends Model
         $this->db->where('s.activo', $activo);
         $this->db->where('s.eliminado', 0);
         $this->db->where('m.eliminado', 0);
-        if($fecha != ''){
+        if ($fecha != '') {
             $this->db->where('s.fechaInicio <=', $fecha);
             $this->db->where('s.fechaFin >=', $fecha);
         }
         $query = $this->db->get();
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return 0;
@@ -2164,12 +2153,12 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function datosTraspaso ($idUnicoMembresia)
+    public function datosTraspaso($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
 
         $sql = "SELECT MAX(fechaRegistro) AS fecha, idUn, idMembresia, idMovimiento
-            FROM ".TBL_MEMBRESIATRASPASO."
+            FROM " . TBL_MEMBRESIATRASPASO . "
             WHERE idUnicoMembresia=$idUnicoMembresia
             AND fechaEliminacion = '0000-00-00 00:00:00'
             GROUP BY idUn, idMembresia, idMovimiento
@@ -2198,9 +2187,9 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
 
         $this->db->select('te.descripcion');
-        $this->db->from(TBL_TIPOESTATUSMEMBRESIA.' te');
-        $this->db->join(TBL_MEMBRESIA.' m', 'm.idTipoEstatusMembresia = te.idTipoEstatusMembresia');
-        $where = array('m.idUnicoMembresia' => $idUnicoMembresia, 'm.eliminado'=>0,'te.activo'=>1);
+        $this->db->from(TBL_TIPOESTATUSMEMBRESIA . ' te');
+        $this->db->join(TBL_MEMBRESIA . ' m', 'm.idTipoEstatusMembresia = te.idTipoEstatusMembresia');
+        $where = array('m.idUnicoMembresia' => $idUnicoMembresia, 'm.eliminado' => 0, 'te.activo' => 1);
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
@@ -2227,21 +2216,21 @@ class Membresia extends Model
      */
     public function detalleAdeudosRangoMeses($data)
     {
-        if ($data['periodo']=='1') {
+        if ($data['periodo'] == '1') {
             $periodo = "AND amm.idTipoEstatusMovimiento IN (65) AND (EXTRACT(YEAR_MONTH FROM NOW()) BETWEEN EXTRACT(YEAR_MONTH FROM amm.fechaAplica) AND EXTRACT(YEAR_MONTH FROM amm.fechaAplicaFin))";
         }
-        if ($data['periodo']=='2') {
+        if ($data['periodo'] == '2') {
             $periodo = "AND IF( amm.idTipoEstatusMovimiento IN (65) AND (EXTRACT(YEAR_MONTH FROM (NOW()- INTERVAL 1 MONTH)) BETWEEN EXTRACT(YEAR_MONTH FROM amm.fechaAplica) AND EXTRACT(YEAR_MONTH FROM amm.fechaAplicaFin)),amm.importePorUsuario,0)";
         }
-        if ($data['periodo']=='3') {
+        if ($data['periodo'] == '3') {
             $periodo = "AND IF( amm.idTipoEstatusMovimiento IN (65) AND (EXTRACT(YEAR_MONTH FROM (NOW()- INTERVAL 2 MONTH)) BETWEEN EXTRACT(YEAR_MONTH FROM amm.fechaAplica) AND EXTRACT(YEAR_MONTH FROM amm.fechaAplicaFin)),amm.importePorUsuario,0)";
         }
-        if ($data['periodo']=='4') {
+        if ($data['periodo'] == '4') {
             $periodo = "AND IF( amm.idTipoEstatusMovimiento IN (65) AND (EXTRACT(YEAR_MONTH FROM DATE(NOW() - INTERVAL 3 MONTH)) >= EXTRACT(YEAR_MONTH FROM amm.fechaAplica)) ,amm.importePorUsuario,0)";
         }
         $sql = "SELECT amm.idMovimiento, amm.descripcion, ROUND(amm.importePorUsuario,2) AS importe
            FROM adeudosmttomontos amm
-           WHERE amm.idPersona=".$data['idPersona']." AND amm.idSocio=".$data['idSocio']." ".$periodo;
+           WHERE amm.idPersona=" . $data['idPersona'] . " AND amm.idSocio=" . $data['idSocio'] . " " . $periodo;
         $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
@@ -2267,32 +2256,32 @@ class Membresia extends Model
      */
     public function devolucionXTesoreriaAgregar($datos)
     {
-        $resultado="Error desconocido";
-        $idDevolucion=0;
+        $resultado    = "Error desconocido";
+        $idDevolucion = 0;
 
-        $devolucion = array("idUn"=>$this->session->userdata("idUn"), "idUnicoMembresia"=>$datos["idUnicoMembresia"], "idFactura"=>$datos["idFactura"],
-            "importe"=>$datos["importeADevolver"], "importeFactura"=>$datos["importeFactura"], "comentarios"=>$datos["comentarios"],
-            "comparaNumeroOperacion"=>$datos["comparaNumeroOperacion"], "comparaIdFactura"=>$datos["comparaIdFactura"],
-            "fechaRegistro"=>date("Y-m-d h:i:s"));
+        $devolucion = array("idUn" => $this->session->userdata("idUn"), "idUnicoMembresia" => $datos["idUnicoMembresia"], "idFactura" => $datos["idFactura"],
+            "importe"                  => $datos["importeADevolver"], "importeFactura"         => $datos["importeFactura"], "comentarios" => $datos["comentarios"],
+            "comparaNumeroOperacion"   => $datos["comparaNumeroOperacion"], "comparaIdFactura" => $datos["comparaIdFactura"],
+            "fechaRegistro"            => date("Y-m-d h:i:s"));
         $devolucionDetalle = $datos["devoluciones"];
 
         # Insertando solicitud de devolucion
         $this->db->insert("crm.finanzasDevolucionTesoreria", $devolucion);
-        $idDevolucion=$this->db->insert_id();
+        $idDevolucion = $this->db->insert_id();
 
-        if ( $idDevolucion>0 ) {
+        if ($idDevolucion > 0) {
             # Insertando detalle de la solicitud
-            $contadorDetalle=0;
-            foreach( $devolucionDetalle as $detalle ){
-                $detalle["idDevolucion"]=$idDevolucion;
+            $contadorDetalle = 0;
+            foreach ($devolucionDetalle as $detalle) {
+                $detalle["idDevolucion"] = $idDevolucion;
                 $this->db->insert("crm.finanzasDevolucionTesoreriaDetalle", $detalle);
                 $contadorDetalle++;
             }
-            if ( $contadorDetalle==count($devolucionDetalle) ) {
-                $resultado="OK|".$idDevolucion;
+            if ($contadorDetalle == count($devolucionDetalle)) {
+                $resultado = "OK|" . $idDevolucion;
             }
         } else {
-            $resultado="Error, no se inserto correctamente la solicitud.";
+            $resultado = "Error, no se inserto correctamente la solicitud.";
         }
 
         return $resultado;
@@ -2311,23 +2300,23 @@ class Membresia extends Model
      */
     public function devolucionXTesoreriaBuscarCobroCP($datos)
     {
-        $datosCobro="";
+        $datosCobro = "";
 
         $this->db->select("mit.*, IFNULL(devtesdet.idDevolucion, 0) AS idDevolucion", false);
         $this->db->from("crm.finanzasHistoricoCobros mit");
-        $this->db->join("crm.finanzasdevoluciontesoreriadetalle devtesdet", "devtesdet.".$datos["campo"]."=mit.".$datos["campo"]." AND YEAR(devtesdet.fechaEliminacion)='0000'", "left");
-        $this->db->where("mit.".$datos["campo"], $datos["valor"]);
+        $this->db->join("crm.finanzasdevoluciontesoreriadetalle devtesdet", "devtesdet." . $datos["campo"] . "=mit." . $datos["campo"] . " AND YEAR(devtesdet.fechaEliminacion)='0000'", "left");
+        $this->db->where("mit." . $datos["campo"], $datos["valor"]);
         $this->db->where("mit.respuesta", "approved");
         $this->db->having("idDevolucion=0");
-        $rs=$this->db->get();
+        $rs = $this->db->get();
         #echo "<pre>".$this->db->last_query()."</pre>";
 
-        if( $rs->num_rows()>0 ){
-            foreach( $rs->result_array() as $row ){
-                $datosCobro=$row["numeroOperacion"]."|".
-                    $row["referencia"]."|".$row["importe"]."|".$row["numeroTarjeta"]."|".$row["nombre"]."|".$row["autorizacion"]."|".
-                    substr($row["registro"], 0, strlen($row["registro"])-(strlen($row["registro"])>19?2:0)).
-                    "|".$row["afiliacion"].'|'.$row["instrumento"].'|'.$row["tp"];
+        if ($rs->num_rows() > 0) {
+            foreach ($rs->result_array() as $row) {
+                $datosCobro = $row["numeroOperacion"] . "|" .
+                $row["referencia"] . "|" . $row["importe"] . "|" . $row["numeroTarjeta"] . "|" . $row["nombre"] . "|" . $row["autorizacion"] . "|" .
+                substr($row["registro"], 0, strlen($row["registro"]) - (strlen($row["registro"]) > 19 ? 2 : 0)) .
+                    "|" . $row["afiliacion"] . '|' . $row["instrumento"] . '|' . $row["tp"];
             }
         }
 
@@ -2347,21 +2336,21 @@ class Membresia extends Model
      */
     public function devolucionXTesoreriaBuscarCobroFactura($referencia)
     {
-        $datosCobro="";
+        $datosCobro = "";
 
         $this->db->select("fac.idFactura, CONCAT(fac.prefijoFactura, fac.folioFactura) AS folioFactura", false);
-        $this->db->from(TBL_FACTURACORTECAJA." faccc");
-        $this->db->join(TBL_FACTURA." fac", "fac.idFactura=faccc.idFactura", "inner");
+        $this->db->from(TBL_FACTURACORTECAJA . " faccc");
+        $this->db->join(TBL_FACTURA . " fac", "fac.idFactura=faccc.idFactura", "inner");
         $this->db->where("referencia", $referencia);
-        $rs=$this->db->get();
+        $rs = $this->db->get();
 
-        if( $rs->num_rows()>0 ){
-            foreach( $rs->result_array() as $row ){
-                $datosCobro="OK|".$row["idFactura"]."|".$row["folioFactura"];
+        if ($rs->num_rows() > 0) {
+            foreach ($rs->result_array() as $row) {
+                $datosCobro = "OK|" . $row["idFactura"] . "|" . $row["folioFactura"];
             }
         }
 
-       return $datosCobro;
+        return $datosCobro;
     }
 
     /**
@@ -2378,25 +2367,25 @@ class Membresia extends Model
     {
         settype($idUnicoMembresia, "integer");
 
-        $lista=array();
+        $lista = array();
 
-        if( $idUnicoMembresia==0 ){
+        if ($idUnicoMembresia == 0) {
             return $lista;
         }
 
         $this->db->select("fac.idFactura, CONCAT(fac.prefijoFactura, fac.folioFactura) AS folioFactura, IFNULL(devtes.idDevolucion, 0) AS idDevolucion", false);
-        $this->db->from(TBL_FACTURA." fac");
-        $this->db->join(TBL_FACTURAMOVIMIENTO." facmov", "facmov.idFactura=fac.idFactura", "inner");
-        $this->db->join(TBL_MOVIMIENTO." mov ", "mov.idMovimiento=facmov.idMovimiento AND mov.idUnicoMembresia IN (".$idUnicoMembresia.")", "inner");
+        $this->db->from(TBL_FACTURA . " fac");
+        $this->db->join(TBL_FACTURAMOVIMIENTO . " facmov", "facmov.idFactura=fac.idFactura", "inner");
+        $this->db->join(TBL_MOVIMIENTO . " mov ", "mov.idMovimiento=facmov.idMovimiento AND mov.idUnicoMembresia IN (" . $idUnicoMembresia . ")", "inner");
         $this->db->join("crm.finanzasDevolucionTesoreria devtes", "devtes.idFactura=fac.idFactura AND YEAR(devtes.fechaEliminacion)='0000'", "left");
         $this->db->group_by("fac.idFactura");
         $this->db->having("idDevolucion=0");
         $this->db->order_by("fac.idFactura");
-        $rs=$this->db->get();
+        $rs = $this->db->get();
 
-        if( $rs->num_rows()>0 ){
-            foreach( $rs->result_array() as $row ){
-                $lista[$row["idFactura"]]=$row["folioFactura"];
+        if ($rs->num_rows() > 0) {
+            foreach ($rs->result_array() as $row) {
+                $lista[$row["idFactura"]] = $row["folioFactura"];
             }
         }
 
@@ -2416,26 +2405,25 @@ class Membresia extends Model
      */
     public function devolucionXTesoreriaListaMovimientosCC($idFactura)
     {
-        $lista=array();
+        $lista = array();
 
         $this->db->select("fac.idFactura, mov.idMovimiento, mov.importe AS importeMov, movcc.idMovimientoCtaContable, movcc.importe AS importeMovCC", false);
-        $this->db->from(TBL_FACTURA." fac");
-        $this->db->join(TBL_FACTURAMOVIMIENTO." facmov", "facmov.idFactura=fac.idFactura", "inner");
-        $this->db->join(TBL_MOVIMIENTO." mov", "mov.idMovimiento=facmov.idMovimiento", "inner");
-        $this->db->join(TBL_MOVIMIENTOCTACONTABLE." movcc", "movcc.idMovimiento=mov.idMovimiento", "inner");
+        $this->db->from(TBL_FACTURA . " fac");
+        $this->db->join(TBL_FACTURAMOVIMIENTO . " facmov", "facmov.idFactura=fac.idFactura", "inner");
+        $this->db->join(TBL_MOVIMIENTO . " mov", "mov.idMovimiento=facmov.idMovimiento", "inner");
+        $this->db->join(TBL_MOVIMIENTOCTACONTABLE . " movcc", "movcc.idMovimiento=mov.idMovimiento", "inner");
         $this->db->where("fac.idFactura", $idFactura);
         $this->db->order_by("movcc.idMovimientoCtaContable");
-        $rs=$this->db->get();
+        $rs = $this->db->get();
 
-        if( $rs->num_rows()>0 ){
-            foreach( $rs->result_array() as $row ){
-                $lista[]=$row;
+        if ($rs->num_rows() > 0) {
+            foreach ($rs->result_array() as $row) {
+                $lista[] = $row;
             }
         }
 
         return $lista;
     }
-
 
     /**
      * Regresa el dia de cargo para la membresia especificada
@@ -2450,15 +2438,14 @@ class Membresia extends Model
     {
         settype($idUnicoMembresia, 'integer');
 
-        if ($idUnicoMembresia>0) {
-            $sql = "SELECT fncDiaCorte(".$idUnicoMembresia.") AS dia";
+        if ($idUnicoMembresia > 0) {
+            $sql   = "SELECT fncDiaCorte(" . $idUnicoMembresia . ") AS dia";
             $query = $this->db->query($sql);
-            $row = $query->row();
+            $row   = $query->row();
             return $row->dia;
         }
         return 5;
     }
-
 
     /**
      * Cuenta el numero de dias trancurridos desde el registro de la membresia
@@ -2472,7 +2459,7 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
         $res = -1;
 
-        if ($idUnicoMembresia>0) {
+        if ($idUnicoMembresia > 0) {
             $sql = "SELECT DATEDIFF(DATE(NOW()), DATE(m.fechaRegistro)) AS dias
                 FROM membresia m
                 WHERE m.idUnicoMembresia=$idUnicoMembresia AND m.eliminado=0";
@@ -2502,18 +2489,17 @@ class Membresia extends Model
                 AND m.idTipoEstatusMovimiento IN (66, 70)
             INNER JOIN membresia mem ON mem.idUnicoMembresia=m.idUnicoMembresia
             WHERE pi.idPaquete IN (300, 299, 298, 297, 296, 295, 294, 292)
-                AND mem.idUnicoMembresia=".$idUnicoMembresia;
+                AND mem.idUnicoMembresia=" . $idUnicoMembresia;
         $query = $this->db->query($sql);
 
         $fila = $query->row_array();
 
-        if ($fila['total']>0) {
+        if ($fila['total'] > 0) {
             return true;
         } else {
             return false;
         }
     }
-
 
     /**
      * Revisa si es invitado
@@ -2541,7 +2527,7 @@ class Membresia extends Model
             $fila = $query->row_array();
         }
         if (isset($fila)) {
-            if ($fila['invitado']>0) {
+            if ($fila['invitado'] > 0) {
                 return true;
             } else {
                 return false;
@@ -2565,11 +2551,11 @@ class Membresia extends Model
         settype($idPersona, 'integer');
 
         $this->db->select('m.idUnicoMembresia');
-        $this->db->from(TBL_MEMBRESIA. ' m');
-        $this->db->join(TBL_MEMBRESIAINVOLUCRADO .' mi', 'm.idUnicoMembresia=mi.idUnicoMembresia');
+        $this->db->from(TBL_MEMBRESIA . ' m');
+        $this->db->join(TBL_MEMBRESIAINVOLUCRADO . ' mi', 'm.idUnicoMembresia=mi.idUnicoMembresia');
         $this->db->where('m.idPersona', $idPersona);
         $this->db->where('m.eliminado', 0);
-        $this->db->where('mi.idTipoInvolucrado', INVOLUCRADO_PROPIETARIO );
+        $this->db->where('mi.idTipoInvolucrado', INVOLUCRADO_PROPIETARIO);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             return $query->num_rows();
@@ -2591,8 +2577,8 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
 
         $this->db->select('tc.idTipoRolCliente');
-        $this->db->from(TBL_TIPOROLCLIENTE.' tc');
-        $this->db->join(TBL_SOCIO .' s', 's.idTipoRolCliente=tc.idTipoRolCliente');
+        $this->db->from(TBL_TIPOROLCLIENTE . ' tc');
+        $this->db->join(TBL_SOCIO . ' s', 's.idTipoRolCliente=tc.idTipoRolCliente');
         $this->db->where('s.idUnicoMembresia', $idUnicoMembresia);
         $this->db->where('s.eliminado', 0);
         $this->db->where('s.idTipoEstatusSocio <>', TIPOESTAUSSOCIOBAJA);
@@ -2626,10 +2612,10 @@ class Membresia extends Model
         $query = $this->db->get();
 
         if ($query->num_rows() > 0) {
-            $fila      = $query->row_array();
+            $fila = $query->row_array();
         }
         if (isset($fila)) {
-            if ($fila['intransferible']>0) {
+            if ($fila['intransferible'] > 0) {
                 return true;
             } else {
                 return false;
@@ -2646,27 +2632,27 @@ class Membresia extends Model
      *
      * @return integer
      */
-    function eliminarConvenio($unico, $idConvenioDetalle)
+    public function eliminarConvenio($unico, $idConvenioDetalle)
     {
         settype($unico, 'integer');
         settype($idConvenioDetalle, 'integer');
 
         $this->db->select('idUnicoMembresia');
         $this->db->from(TBL_MEMBRESIA);
-        $where=array('idUnicoMembresia'=> $unico,'eliminado'=> 0);
+        $where = array('idUnicoMembresia' => $unico, 'eliminado' => 0);
         $this->db->where($where);
         $query = $this->db->get();
 
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
             $this->db->where('idUnicoMembresia', $fila['idUnicoMembresia']);
-            $datos = array ('idConvenioDetalle'  => 0);
+            $datos = array('idConvenioDetalle' => 0);
             $this->db->update(TBL_MEMBRESIA, $datos);
-            $this->permisos_model->log(utf8_decode("Se eliminó convenio (".date('Y-m-d').")"), LOG_MEMBRESIA, $unico);
+            $this->permisos_model->log(utf8_decode("Se eliminó convenio (" . date('Y-m-d') . ")"), LOG_MEMBRESIA, $unico);
             return true;
-       } else {
-           return false;
-       }
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -2676,14 +2662,14 @@ class Membresia extends Model
      *
      * @return boolean
      */
-    function eliminarDescuentoMtto($unico)
+    public function eliminarDescuentoMtto($unico)
     {
         settype($unico, 'integer');
 
         $this->db->select('m.idUnicoMembresia,md.descripcion');
-        $this->db->from(TBL_MEMBRESIA. ' m');
-        $this->db->join(TBL_MEMBRESIADESCUENTOMTTO. ' md','md.idMembresiaDescuentoMtto=m.idMembresiaDescuentoMtto ');
-        $where=array('m.idUnicoMembresia'=> $unico,'m.eliminado'=> 0,'md.fechaEliminacion'=> '0000-00-00 00:00:00');
+        $this->db->from(TBL_MEMBRESIA . ' m');
+        $this->db->join(TBL_MEMBRESIADESCUENTOMTTO . ' md', 'md.idMembresiaDescuentoMtto=m.idMembresiaDescuentoMtto ');
+        $where = array('m.idUnicoMembresia' => $unico, 'm.eliminado' => 0, 'md.fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
 
@@ -2691,12 +2677,12 @@ class Membresia extends Model
             $fila = $query->row_array();
             $this->db->where('idUnicoMembresia', $fila['idUnicoMembresia']);
             $descuento = $fila['descripcion'];
-            $datos = array ('idMembresiaDescuentoMtto'  => 0);
+            $datos     = array('idMembresiaDescuentoMtto' => 0);
             $this->db->update(TBL_MEMBRESIA, $datos);
-            $this->permisos_model->log(utf8_decode("Se eliminó descuento ".$descuento." (".date('Y-m-d').")"), LOG_MEMBRESIA, $unico);
+            $this->permisos_model->log(utf8_decode("Se eliminó descuento " . $descuento . " (" . date('Y-m-d') . ")"), LOG_MEMBRESIA, $unico);
             return true;
         } else {
-           return false;
+            return false;
         }
     }
 
@@ -2707,22 +2693,22 @@ class Membresia extends Model
      *
      * @return boolean
      */
-    function eliminarDescuentoMttoConf($opciones)
+    public function eliminarDescuentoMttoConf($opciones)
     {
         $this->db->select('idMembresiaDescuentoMtto');
         $this->db->from(TBL_MEMBRESIADESCUENTOMTTO);
-        $where=array('idMembresiaDescuentoMtto'=> $opciones['idMembresiaDescuentoMtto'],'fechaEliminacion'=> '0000-00-00 00:00:00');
+        $where = array('idMembresiaDescuentoMtto' => $opciones['idMembresiaDescuentoMtto'], 'fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
             $this->db->where('idMembresiaDescuentoMtto', $fila['idMembresiaDescuentoMtto']);
-            $datos = array ('fechaEliminacion'  => date("Y-m-d H:i:s"));
+            $datos = array('fechaEliminacion' => date("Y-m-d H:i:s"));
             $this->db->update(TBL_MEMBRESIADESCUENTOMTTO, $datos);
-            $this->permisos_model->log(utf8_decode("Se eliminó configuracion descuento de mantenimiento (".date('Y-m-d').")"), LOG_MEMBRESIA);
+            $this->permisos_model->log(utf8_decode("Se eliminó configuracion descuento de mantenimiento (" . date('Y-m-d') . ")"), LOG_MEMBRESIA);
             return true;
         } else {
-           return false;
+            return false;
         }
     }
 
@@ -2739,10 +2725,10 @@ class Membresia extends Model
 
         $this->db->where('idSocioMensaje', $idSocioMensaje);
         $this->db->update('sociomensaje', $data);
-        if($this->db->affected_rows()>0) {
-            $regresa=1;
+        if ($this->db->affected_rows() > 0) {
+            $regresa = 1;
         } else {
-            $regresa=0;
+            $regresa = 0;
         }
 
         return $regresa;
@@ -2760,17 +2746,17 @@ class Membresia extends Model
     public function eliminaPagoMtto($idSocioPagoMtto)
     {
         settype($idSocioPagoMtto, 'integer');
-        $datos = array ('fechaEliminacion' => date("Y-m-d H:i:s"));
+        $datos = array('fechaEliminacion' => date("Y-m-d H:i:s"));
         $this->db->select('idSocioPagoMtto, idUnicoMembresia');
         $this->db->from(TBL_SOCIOPAGOMTTO);
         $this->db->where('idSocioPagoMtto', $idSocioPagoMtto);
         $this->db->where('eliminado', 0);
         $query = $this->db->get();
 
-        if ( $query->num_rows > 0 ) {
-            $fila = $query->row_array();
+        if ($query->num_rows > 0) {
+            $fila             = $query->row_array();
             $idUnicoMembresia = $fila['idUnicoMembresia'];
-            $this->db->where('idSocioPagoMtto',$fila['idSocioPagoMtto']);
+            $this->db->where('idSocioPagoMtto', $fila['idSocioPagoMtto']);
             $this->db->update(TBL_SOCIOPAGOMTTO, $datos);
             $this->permisos_model->log(utf8_decode('Se eliminó el registro pago mtto (' . $idSocioPagoMtto . ')'), LOG_MEMBRESIA, $idUnicoMembresia);
             return true;
@@ -2790,21 +2776,21 @@ class Membresia extends Model
     {
         $this->db->select('idMembresiaPromoMtto, idUnicoMembresia');
         $this->db->from(TBL_MEMBRESIAPROMOMTTO);
-        $where = array('idMembresiaPromoMtto' => $idMembresiaPromoMtto,'fechaEliminacion'=>'0000-00-00 00:00:00');
+        $where = array('idMembresiaPromoMtto' => $idMembresiaPromoMtto, 'fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $this->db->where('idMembresiaPromoMtto', $fila->idMembresiaPromoMtto);
-                $datos = array ('fechaEliminacion' => date("Y-m-d H:i:s"));
+                $datos = array('fechaEliminacion' => date("Y-m-d H:i:s"));
                 $this->db->update(TBL_MEMBRESIAPROMOMTTO, $datos);
             }
         }
-       $total = $this->db->affected_rows();
+        $total = $this->db->affected_rows();
         if ($total == 0) {
             return 0;
         } else {
-            $this->permisos_model->log('Se elimino a el promocion ('.$idMembresiaPromoMtto.') de la membresía ('.$fila->idUnicoMembresia.')('.date('Y-m-d').')', LOG_MEMBRESIA,$fila->idUnicoMembresia);
+            $this->permisos_model->log('Se elimino a el promocion (' . $idMembresiaPromoMtto . ') de la membresía (' . $fila->idUnicoMembresia . ')(' . date('Y-m-d') . ')', LOG_MEMBRESIA, $fila->idUnicoMembresia);
             return true;
         }
     }
@@ -2823,9 +2809,9 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
 
         $this->db->select('te.idTipoEstatusMembresia');
-        $this->db->from(TBL_TIPOESTATUSMEMBRESIA.' te');
-        $this->db->join(TBL_MEMBRESIA.' m', 'm.idTipoEstatusMembresia = te.idTipoEstatusMembresia');
-        $where = array('m.idUnicoMembresia' => $idUnicoMembresia, 'm.eliminado'=>0,'te.activo'=>1);
+        $this->db->from(TBL_TIPOESTATUSMEMBRESIA . ' te');
+        $this->db->join(TBL_MEMBRESIA . ' m', 'm.idTipoEstatusMembresia = te.idTipoEstatusMembresia');
+        $where = array('m.idUnicoMembresia' => $idUnicoMembresia, 'm.eliminado' => 0, 'te.activo' => 1);
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
@@ -2853,18 +2839,18 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
         settype($idMovimiento, 'integer');
 
-        $data = Array();
+        $data = array();
         $sql  = "SELECT CONCAT_WS(' ',per.nombre, per.paterno, per.materno) AS nombreCompleto,
             IFNULL(GROUP_CONCAT(ma.mail),'') AS mail, acv.envioMail1, acv.envioMail2, acv.envioMail3, acvr.codigo, acv.idAnualidadesCodigosViajes, acv.idPersona
             FROM crm.anualidadescodigosviajes acv
             INNER JOIN crm.anualidadescodigosviajesreales acvr ON acvr.idAnualidadesCodigosViajesReales=acv.consecutivo
             INNER JOIN crm.persona per ON per.idPersona=acv.idPersona
             LEFT JOIN crm.mail ma ON ma.idPersona=per.idPersona
-            WHERE acv.idMovimiento IN (".$idMovimiento.") AND acv.idUnicoMembresia IN (".$idUnicoMembresia.") AND acv.fechaEliminacion='0000-00-00 00:00:00'
+            WHERE acv.idMovimiento IN (" . $idMovimiento . ") AND acv.idUnicoMembresia IN (" . $idUnicoMembresia . ") AND acv.fechaEliminacion='0000-00-00 00:00:00'
             GROUP BY per.idPersona";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows()>0) {
+        if ($query->num_rows() > 0) {
             $data = $query->result_array();
         }
         return $data;
@@ -2886,12 +2872,12 @@ class Membresia extends Model
         $sql = "SELECT IF(b.agregados=0, 1, IF(a.activos>b.agregados, 1, 0)) AS evalua
             FROM (
                 SELECT COUNT(*) AS activos
-                FROM ".TBL_SOCIO." s
+                FROM " . TBL_SOCIO . " s
                 WHERE s.idUnicoMembresia=$idUnicoMembresia AND s.eliminado=0
                     AND s.idTipoEstatusSocio=81 AND s.idTipoRolCliente NOT IN (1, 17, 5)
             ) a, (
                 SELECT COUNT(*) AS agregados
-                FROM ".TBL_SOCIO." s
+                FROM " . TBL_SOCIO . " s
                 WHERE s.idUnicoMembresia=$idUnicoMembresia AND s.eliminado=0
                     AND s.idTipoRolCliente=17 AND s.idTipoEstatusSocio<>82
             ) b";
@@ -2917,16 +2903,16 @@ class Membresia extends Model
 
         $sql = "SELECT IF(a.nuevos>0 AND b.anteriores=0, 1, 0) AS resultado FROM (
                 SELECT COUNT(*) AS nuevos
-                FROM ".TBL_SOCIO." s
-                INNER JOIN ".TBL_SOCIOPAGOMTTO." spm ON spm.idSocio=s.idSocio AND spm.eliminado=0
+                FROM " . TBL_SOCIO . " s
+                INNER JOIN " . TBL_SOCIOPAGOMTTO . " spm ON spm.idSocio=s.idSocio AND spm.eliminado=0
                     AND LAST_DAY(NOW()) BETWEEN spm.fechaInicio AND spm.fechaFin
-                INNER JOIN ".TBL_MOVIMIENTO." mv1 ON mv1.idMovimiento=spm.idMovimiento AND mv1.idTipoEstatusMovimiento=65
+                INNER JOIN " . TBL_MOVIMIENTO . " mv1 ON mv1.idMovimiento=spm.idMovimiento AND mv1.idTipoEstatusMovimiento=65
                 WHERE s.idUnicoMembresia=$idUnicoMembresia AND s.eliminado=0
                     AND DATE(s.fechaRegistro) >= DATE(CONCAT(YEAR(NOW()),'-',MONTH(NOW()),'-01')) AND s.idTipoRolCliente<>17
             ) a, (
                 SELECT COUNT(*) AS anteriores
-                FROM ".TBL_SOCIO." s
-                INNER JOIN ".TBL_SOCIOPAGOMTTO." spm ON spm.idSocio=s.idSocio AND spm.eliminado=0
+                FROM " . TBL_SOCIO . " s
+                INNER JOIN " . TBL_SOCIOPAGOMTTO . " spm ON spm.idSocio=s.idSocio AND spm.eliminado=0
                     AND LAST_DAY(NOW()) BETWEEN spm.fechaInicio AND spm.fechaFin AND spm.activo=0
                 WHERE s.idUnicoMembresia=$idUnicoMembresia AND s.eliminado=0
                     AND date(s.fechaRegistro) < DATE(CONCAT(YEAR(NOW()),'-',MONTH(NOW()),'-01')) AND s.idTipoRolCliente<>17
@@ -2954,7 +2940,7 @@ class Membresia extends Model
         $this->db->from(TBL_MEMBRESIA);
         $where = array(
             'idUnicoMembresia' => $idUnicoMembresia,
-            'eliminado' => 0
+            'eliminado'        => 0,
         );
         $this->db->where($where);
         $query = $this->db->get();
@@ -3010,7 +2996,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function guardaCambioMembresia ($idUnicoMembresia, $idProductoNuevo, $importe, $idPersona, $idProductoActual, $idMantenimientoActual, $idMantenimientoNuevo, $idUn, $socios, $correccion = 0)
+    public function guardaCambioMembresia($idUnicoMembresia, $idProductoNuevo, $importe, $idPersona, $idProductoActual, $idMantenimientoActual, $idMantenimientoNuevo, $idUn, $socios, $correccion = 0)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idProductoNuevo, 'integer');
@@ -3020,19 +3006,19 @@ class Membresia extends Model
 
         $mensaje = 'Cambio tipo de producto de';
 
-        if (! $idUnicoMembresia) {
+        if (!$idUnicoMembresia) {
             return 6;
         }
         if ($correccion) {
             $mensaje = 'Correccion cambio tipo de producto de';
         }
 
-        $set   = array ('idProducto'      => $idProductoNuevo);
+        $set   = array('idProducto' => $idProductoNuevo);
         $where = array('idUnicoMembresia' => $idUnicoMembresia);
         $res   = $this->db->update(TBL_MEMBRESIA, $set, $where);
 
         if (count($socios) and $res) {
-            $ci =& get_instance();
+            $ci = &get_instance();
             $ci->load->model('producto_model');
             $ci->load->model('mantenimientos_model');
 
@@ -3044,19 +3030,19 @@ class Membresia extends Model
             //$this->permisos_model->log(utf8_decode('Cambio de tipo membresia ('.$membresiaActual.') a ('.$membresiaNuevo.')'), LOG_MEMBRESIA, $idUnicoMembresia);
 
             $idMantenimiento = $this->obtenerIdMantenimiento($idUnicoMembresia, $idUn);
-            if($idMantenimiento == null){
+            if ($idMantenimiento == null) {
                 $idMantenimiento = SINGLE_CLUB;
             }
             $where = array(
                 'idUnicoMembresia' => $idUnicoMembresia,
-                'eliminado' => 0
+                'eliminado'        => 0,
             );
-            $set = array('idMantenimiento'  => $idMantenimiento);
+            $set = array('idMantenimiento' => $idMantenimiento);
             $res = $this->db->update(TBL_SOCIO, $set, $where);
-            $this->permisos_model->log(utf8_decode('Cambio de tipo mantenimiento de '.$mttoActual.' a '.$mttoNuevo.' por cambio de membresia'), LOG_MEMBRESIA, $idUnicoMembresia);
+            $this->permisos_model->log(utf8_decode('Cambio de tipo mantenimiento de ' . $mttoActual . ' a ' . $mttoNuevo . ' por cambio de membresia'), LOG_MEMBRESIA, $idUnicoMembresia);
 
-            if ( ! $correccion) {
-                $datos = array (
+            if (!$correccion) {
+                $datos = array(
                     'idUnicoMembresia'      => $idUnicoMembresia,
                     'idEmpleado'            => $this->session->userdata('idPersona'),
                     'idPersona'             => $idPersona,
@@ -3067,7 +3053,7 @@ class Membresia extends Model
                     'idMantenimientoNuevo'  => $idMantenimientoNuevo,
                 );
                 $res = $this->db->insert(TBL_MEMBRESIAAMPLIACION, $datos);
-                $this->permisos_model->log(utf8_decode($mensaje." ".$membresiaActual."(".$mttoActual.") a ".$membresiaNuevo."(".$mttoNuevo.")"), LOG_MEMBRESIA, $idUnicoMembresia);
+                $this->permisos_model->log(utf8_decode($mensaje . " " . $membresiaActual . "(" . $mttoActual . ") a " . $membresiaNuevo . "(" . $mttoNuevo . ")"), LOG_MEMBRESIA, $idUnicoMembresia);
 
                 if ($importe > 0 and $res) {
                     $ci->load->model('movimientos_model');
@@ -3075,7 +3061,7 @@ class Membresia extends Model
                     $iva = $ci->un_model->iva($this->session->userdata('idUn'));
                 }
             } else {
-                $this->permisos_model->log(utf8_decode($mensaje." ".$membresiaActual."(".$mttoActual.") a ".$membresiaNuevo."(".$mttoNuevo.")"), LOG_MEMBRESIA, $idUnicoMembresia);
+                $this->permisos_model->log(utf8_decode($mensaje . " " . $membresiaActual . "(" . $mttoActual . ") a " . $membresiaNuevo . "(" . $mttoNuevo . ")"), LOG_MEMBRESIA, $idUnicoMembresia);
                 return 1;
             }
         } else {
@@ -3093,13 +3079,13 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function guardaComprobante($idPersona, $idTipoDocumento, $idTipoDocumentoActual, $unico=0)
+    public function guardaComprobante($idPersona, $idTipoDocumento, $idTipoDocumentoActual, $unico = 0)
     {
         settype($idTipoDocumento, 'integer');
         settype($idTipoDocumentoActual, 'integer');
         settype($idPersona, 'integer');
 
-        $datos = array ('idPersona' => $idPersona, 'idTipoDocumento' => $idTipoDocumento);
+        $datos = array('idPersona' => $idPersona, 'idTipoDocumento' => $idTipoDocumento);
 
         $this->db->select('idPersonaDocumento');
         $this->db->from(TBL_PERSONADOCUMENTO);
@@ -3108,17 +3094,17 @@ class Membresia extends Model
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
 
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             $fila = $query->row_array();
-            $id = $fila['idPersonaDocumento'];
+            $id   = $fila['idPersonaDocumento'];
             $this->db->where('idPersonaDocumento', $id);
             $this->db->update(TBL_PERSONADOCUMENTO, $datos);
-            $this->permisos_model->log(utf8_decode("Se actualizo comprobante para socio (".date('Y-m-d').")") , LOG_MEMBRESIA, $unico);
+            $this->permisos_model->log(utf8_decode("Se actualizo comprobante para socio (" . date('Y-m-d') . ")"), LOG_MEMBRESIA, $unico);
             return true;
         } else {
             $this->db->insert(TBL_PERSONADOCUMENTO, $datos);
             $id = $this->db->insert_id();
-            $this->permisos_model->log(utf8_decode("Se inserto comprobante para socio (".date('Y-m-d').")") , LOG_MEMBRESIA, $unico);
+            $this->permisos_model->log(utf8_decode("Se inserto comprobante para socio (" . date('Y-m-d') . ")"), LOG_MEMBRESIA, $unico);
             return true;
         }
     }
@@ -3130,11 +3116,11 @@ class Membresia extends Model
      *
      * @return boolean
      */
-    function guardaDescuentoMttoConf($opciones)
+    public function guardaDescuentoMttoConf($opciones)
     {
-        $modificacion=0;
-        if (isset ($opciones['descripcion'])) {
-            $data = array (
+        $modificacion = 0;
+        if (isset($opciones['descripcion'])) {
+            $data = array(
                 'descripcion'         => $opciones['descripcion'],
                 'activo'              => $opciones['activo'],
                 'requierePermiso'     => $opciones['permiso'],
@@ -3143,11 +3129,11 @@ class Membresia extends Model
                 'idMantenimiento'     => $opciones['idMantenimiento'],
                 'idEsquemaPago'       => $opciones['idEsquemaPago'],
                 'inicioVigencia'      => $opciones['inicio'],
-                'finVigencia'         => $opciones['fin']
+                'finVigencia'         => $opciones['fin'],
             );
             $modificacion++;
         } else {
-            $data = array ('activo' => $opciones['activo']);
+            $data = array('activo' => $opciones['activo']);
             $modificacion++;
         }
 
@@ -3181,7 +3167,7 @@ class Membresia extends Model
      *
      * @author Jonathan Alcantara
      */
-    public function guardaExtras ($idUnicoMembresia, $idTipoMembresiaExtras, $valor = '')
+    public function guardaExtras($idUnicoMembresia, $idTipoMembresiaExtras, $valor = '')
     {
         settype($idUnicoMembresia, 'integer');
         settype($idTipoMembresiaExtras, 'integer');
@@ -3190,24 +3176,24 @@ class Membresia extends Model
         $datos = array(
             'error'             => 1,
             'mensaje'           => 'Error faltan datos',
-            'idMembresiaExtras' => 0
+            'idMembresiaExtras' => 0,
         );
-        if ( ! $idUnicoMembresia or ! $idTipoMembresiaExtras) {
+        if (!$idUnicoMembresia or !$idTipoMembresiaExtras) {
             return $datos;
         }
         $datos['mensaje'] = '';
         $datos['error']   = 0;
-        $set              = array (
+        $set              = array(
             'valor'                 => $valor,
             'idUnicoMembresia'      => $idUnicoMembresia,
-            'idTipoMembresiaExtras' => $idTipoMembresiaExtras
+            'idTipoMembresiaExtras' => $idTipoMembresiaExtras,
 
         );
         if ($this->db->insert(TBL_MEMBRESIAEXTRAS, $set)) {
             $datos['idMembresiaExtras'] = $this->db->insert_id();
         }
         if ($datos['idMembresiaExtras']) {
-            $this->permisos_model->log(utf8_decode("Usuario ".$this->session->userdata('usuario')." marca membresia con actualizacion de datos"), LOG_MEMBRESIA, $idUnicoMembresia);
+            $this->permisos_model->log(utf8_decode("Usuario " . $this->session->userdata('usuario') . " marca membresia con actualizacion de datos"), LOG_MEMBRESIA, $idUnicoMembresia);
         }
         return $datos;
     }
@@ -3231,12 +3217,12 @@ class Membresia extends Model
 
         $resultado = 0;
         $this->db->select('tf.descripcion');
-        $this->db->from(TBL_MEMBRESIAFIDELIDAD.' mf');
-        $this->db->join(TBL_TIPOFIDELIDAD.' tf ', 'tf.idTipoFidelidad=mf.idTipoFidelidad');
+        $this->db->from(TBL_MEMBRESIAFIDELIDAD . ' mf');
+        $this->db->join(TBL_TIPOFIDELIDAD . ' tf ', 'tf.idTipoFidelidad=mf.idTipoFidelidad');
         $this->db->where('mf.idMembresiaFidelidad', $idMembresiaFidelidad);
         $rs0 = $this->db->get();
-        if ( $rs0->num_rows()>0 ) {
-            $row = $rs0->row();
+        if ($rs0->num_rows() > 0) {
+            $row               = $rs0->row();
             $fidelidadAnterior = $row->descripcion;
         }
 
@@ -3244,8 +3230,8 @@ class Membresia extends Model
         $this->db->from(TBL_MEMBRESIAFIDELIDAD);
         $this->db->where('idMembresiaFidelidad', $idMembresiaFidelidad);
         $rs9 = $this->db->get();
-        if ( $rs9->num_rows()>0 ) {
-            $row = $rs9->row();
+        if ($rs9->num_rows() > 0) {
+            $row                       = $rs9->row();
             $mesesConsecutivosAnterior = $row->mesesConsecutivos;
         }
 
@@ -3253,28 +3239,28 @@ class Membresia extends Model
         $this->db->from(TBL_TIPOFIDELIDAD);
         $this->db->where('idTipoFidelidad', $idTipoFidelidad);
         $rs1 = $this->db->get();
-        if ( $rs1->num_rows()>0 ) {
-            $row = $rs1->row();
+        if ($rs1->num_rows() > 0) {
+            $row            = $rs1->row();
             $fidelidadNueva = $row->descripcion;
         }
 
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->where('idMembresiaFidelidad', $idMembresiaFidelidad);
-        $datos = array ('fechaEliminacion' => date("Y-m-d H:i:s"));
+        $datos = array('fechaEliminacion' => date("Y-m-d H:i:s"));
         $this->db->update(TBL_MEMBRESIAFIDELIDAD, $datos);
 
-        if ( $this->db->affected_rows()>0 ) {
-            $set = array (
+        if ($this->db->affected_rows() > 0) {
+            $set = array(
                 'idUnicoMembresia'     => $idUnicoMembresia,
                 'idTipoFidelidad'      => $idTipoFidelidad,
                 'mesesConsecutivos'    => $mesesConsecutivos,
                 'autorizacionEspecial' => 1,
-                'fechaRegistro'        => date("Y-m-d H:i:s")
+                'fechaRegistro'        => date("Y-m-d H:i:s"),
             );
             $this->db->insert(TBL_MEMBRESIAFIDELIDAD, $set);
 
-            if ( $this->db->affected_rows()>0 ) {
-                $this->permisos_model->log("Cambio de fidelidad de ".$fidelidadAnterior." (".$mesesConsecutivosAnterior." meses) a ".$fidelidadNueva." (".$mesesConsecutivos." meses)", LOG_MEMBRESIA, $idUnicoMembresia);
+            if ($this->db->affected_rows() > 0) {
+                $this->permisos_model->log("Cambio de fidelidad de " . $fidelidadAnterior . " (" . $mesesConsecutivosAnterior . " meses) a " . $fidelidadNueva . " (" . $mesesConsecutivos . " meses)", LOG_MEMBRESIA, $idUnicoMembresia);
                 $resultado = 1;
             }
         }
@@ -3295,20 +3281,20 @@ class Membresia extends Model
         settype($alerta, 'integer');
         settype($macceso, 'integer');
 
-        $datos = array (
+        $datos = array(
             'idSocio'      => $idSocio,
             'idPersona'    => $this->session->userdata('idPersona'),
             'titulo'       => utf8_decode($titulo),
             'mensaje'      => utf8_decode($descripcion),
             'alerta'       => $alerta,
             'fechaAlerta'  => $fechaAlerta,
-            'enviarAcceso' => $macceso
+            'enviarAcceso' => $macceso,
         );
         $this->db->insert('sociomensaje', $datos);
-        if ( $this->db->affected_rows() > 0 ) {
-            $regresa=1;
+        if ($this->db->affected_rows() > 0) {
+            $regresa = 1;
         } else {
-            $regresa=0;
+            $regresa = 0;
         }
 
         return $regresa;
@@ -3324,16 +3310,16 @@ class Membresia extends Model
      *
      * @return boolean
      */
-    function guardaUnAlterno ($idUnicoMembresia, $idUnAlterno = 0)
+    public function guardaUnAlterno($idUnicoMembresia, $idUnAlterno = 0)
     {
         settype($idUnAlterno, 'integer');
         settype($idUnAlterno, 'integer');
 
-        if ( ! $idUnicoMembresia) {
+        if (!$idUnicoMembresia) {
             return false;
         }
         $where = array('idUnicoMembresia' => $idUnicoMembresia);
-        $set   = array('idUnAlterno'      => $idUnAlterno);
+        $set   = array('idUnAlterno' => $idUnAlterno);
 
         $r = $this->db->update(TBL_MEMBRESIA, $set, $where);
         $this->permisos_model->log('Asigna club alterno a la membresia', LOG_SISTEMAS, $idUnicoMembresia);
@@ -3369,10 +3355,10 @@ class Membresia extends Model
             return false;
         }
 
-        $datos = array (
+        $datos = array(
             'idUnicoMembresia'  => $membresia,
             'idPersona'         => $persona,
-            'idTipoInvolucrado' => $tipo
+            'idTipoInvolucrado' => $tipo,
         );
 
         $this->db->select('idMembresiaInvolucrado');
@@ -3382,7 +3368,7 @@ class Membresia extends Model
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
-            $id = $fila['idMembresiaInvolucrado'];
+            $id   = $fila['idMembresiaInvolucrado'];
             $this->db->where('idMembresiaInvolucrado', $id);
             $this->db->update(TBL_MEMBRESIAINVOLUCRADO, $datos);
             $this->permisos_model->log('Se actualiza involucrado en la membresia', LOG_SISTEMAS, $membresia);
@@ -3406,7 +3392,7 @@ class Membresia extends Model
     {
         settype($idUnicoMebresia, 'integer');
 
-        $datos  = array();
+        $datos = array();
 
         $sql = "SELECT
                 unca.clave AS unClave, unca.nombre AS unNombre,
@@ -3424,12 +3410,12 @@ class Membresia extends Model
                 IF(ca.estatus IN (2), 'Sin respuesta del banco', REPLACE(SUBSTRING_INDEX(ca.descEstatus, ']', -1), '|', '')) AS estatusProcesoDesc
             FROM crm.finanzascahistoricocobros ca
                 INNER JOIN crm.un unca ON unca.idUn=ca.idUN
-            WHERE ca.idUnicoMembresia IN (".$idUnicoMembresia.")
+            WHERE ca.idUnicoMembresia IN (" . $idUnicoMembresia . ")
             ORDER BY ca.fechaCobro DESC";
-        $rs     = $this->db->query($sql);
-        if( $rs->num_rows()>0 ){
-            foreach ( $rs->result_array() as $id=>$row ) {
-                $datos[$id]=$row;
+        $rs = $this->db->query($sql);
+        if ($rs->num_rows() > 0) {
+            foreach ($rs->result_array() as $id => $row) {
+                $datos[$id] = $row;
             }
         }
 
@@ -3443,13 +3429,13 @@ class Membresia extends Model
      *
      * @return string
      */
-    function insertaLeyendaSocFree($idSocioPagoMtto)
+    public function insertaLeyendaSocFree($idSocioPagoMtto)
     {
         settype($idSocioPagoMtto, 'integer');
 
         $sql = "SELECT idSocioPagoMtto, origen, idUnicoMembresia
             FROM (sociopagomtto)
-            WHERE idSocioPagoMtto = ".$idSocioPagoMtto."
+            WHERE idSocioPagoMtto = " . $idSocioPagoMtto . "
             AND eliminado  = 0
             AND  (origen NOT LIKE '%SOC-FREE%' or origen is null)";
         $query = $this->db->query($sql);
@@ -3457,8 +3443,8 @@ class Membresia extends Model
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
             $this->db->where('idSocioPagoMtto', $fila['idSocioPagoMtto']);
-            $origen = $fila['origen'].' SOC-FREE';
-            $datos = array('origen'=> $origen);
+            $origen = $fila['origen'] . ' SOC-FREE';
+            $datos  = array('origen' => $origen);
             $this->db->update(TBL_SOCIOPAGOMTTO, $datos);
             $this->permisos_model->log('Marcando pago mtto con leyenda SOC-FREE', LOG_SISTEMAS, $fila['idUnicoMembresia']);
         }
@@ -3474,71 +3460,71 @@ class Membresia extends Model
      */
     public function insertaPagoMtto($opciones, $pagoGratis = 0, $validaAusencia = 1, $numeroIntegrantes = 0)
     {
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $ci->load->model('movimientos_model');
         $nombre = $ci->persona_model->nombre($opciones['idPersona']);
-        $fecha = explode('-',$opciones['inicio']);
-        if($opciones['idEsquemaPago'] == ESQUEMA_PAGO_ANUAL){
-            $fechaFin = $fecha[0].'-'.'12-'.'31';
+        $fecha  = explode('-', $opciones['inicio']);
+        if ($opciones['idEsquemaPago'] == ESQUEMA_PAGO_ANUAL) {
+            $fechaFin = $fecha[0] . '-' . '12-' . '31';
         } else {
-            $fecha = explode('-',$opciones['inicio']);
-            $fechaFin = $fecha[0].'-'.$fecha[1].'-'.date("d",(mktime(0,0,0,$fecha[1]+1,1,$fecha[0])-1));
+            $fecha    = explode('-', $opciones['inicio']);
+            $fechaFin = $fecha[0] . '-' . $fecha[1] . '-' . date("d", (mktime(0, 0, 0, $fecha[1] + 1, 1, $fecha[0]) - 1));
         }
         $origen = utf8_decode('MembresiaPagoMtto');
 
-        if($opciones['idMovimiento']==0 && $pagoGratis!= 1){
-            $sql = "CALL spCalculaMtto2(".$opciones['un'].", ".$opciones['membresia'].", ".$opciones['idPersona'].", '".$opciones['inicio']."', ".$opciones['idMantenimiento'].", 0, ".$opciones['idEsquemaPago'].", 0, ".$validaAusencia.",".$numeroIntegrantes.", 0, @des, @imp, @iva, @cuenta, @producto)";
+        if ($opciones['idMovimiento'] == 0 && $pagoGratis != 1) {
+            $sql   = "CALL spCalculaMtto2(" . $opciones['un'] . ", " . $opciones['membresia'] . ", " . $opciones['idPersona'] . ", '" . $opciones['inicio'] . "', " . $opciones['idMantenimiento'] . ", 0, " . $opciones['idEsquemaPago'] . ", 0, " . $validaAusencia . "," . $numeroIntegrantes . ", 0, @des, @imp, @iva, @cuenta, @producto)";
             $query = $this->db->query($sql);
 
-            $sql = "SELECT @des AS descripcion, @imp AS importe, @iva AS iva, @cuenta AS cuenta, @producto AS producto, IF('".$opciones['inicio']."'>LAST_DAY(DATE(NOW())), 1, 0) AS adelantado ";
+            $sql   = "SELECT @des AS descripcion, @imp AS importe, @iva AS iva, @cuenta AS cuenta, @producto AS producto, IF('" . $opciones['inicio'] . "'>LAST_DAY(DATE(NOW())), 1, 0) AS adelantado ";
             $query = $this->db->query($sql);
 
             $fila = $query->row_array();
-            if($opciones['ausencia'] == 1){
+            if ($opciones['ausencia'] == 1) {
                 if ($opciones['un'] == 26) {
-                    $importe = $fila['importe']/4;
+                    $importe = $fila['importe'] / 4;
                 } else {
-                    $importe = $fila['importe']/2;
+                    $importe = $fila['importe'] / 2;
                 }
                 $auseuncia = ' Ausencia';
             } else {
-                $importe = $fila['importe'];
+                $importe   = $fila['importe'];
                 $auseuncia = '';
             }
 
             if ($fila['adelantado'] == 1) {
-                $origen = utf8_decode('MembresiaPagoMtto').' MTTOADE ';
+                $origen = utf8_decode('MembresiaPagoMtto') . ' MTTOADE ';
             }
-            if(isset ($opciones['descripcion'])){
+            if (isset($opciones['descripcion'])) {
                 $descripcion = $opciones['descripcion'];
             } else {
-                $descripcion = 'Mantenimiento '.utf8_decode($fila['descripcion']).$auseuncia;
+                $descripcion = 'Mantenimiento ' . utf8_decode($fila['descripcion']) . $auseuncia;
             }
-            if (isset ($opciones['origen'])) {
+            if (isset($opciones['origen'])) {
                 $origen = $opciones['origen'];
             }
-            if (isset ($opciones['generaMovimiento'])) {
+            if (isset($opciones['generaMovimiento'])) {
 
             } else {
                 $opciones['generaMovimiento'] = 0;
             }
             $movimiento = 0;
-            if($opciones['generaMovimiento'] == 0){
-                $datosMovimiento = array (
-                    'fecha'       => $opciones['inicio'],
-                    'tipo'        => MOVIMIENTO_TIPO_MANTENIMIENTO,
-                    'descripcion' => $descripcion,
-                    'importe'     => number_format($importe, 2, '.', ''),
-                    'iva'         => $fila['iva'],
-                    'membresia'   => $opciones['unico'],
-                    'producto'    => $fila['producto'],
-                    'persona'     => $opciones['idPersona'],
-                    'numeroCuenta'=> $fila['cuenta'],
-                    'origen'      => $origen,
-                    'idUn'        => $opciones['un']
+            if ($opciones['generaMovimiento'] == 0) {
+                $datosMovimiento = array(
+                    'fecha'        => $opciones['inicio'],
+                    'tipo'         => MOVIMIENTO_TIPO_MANTENIMIENTO,
+                    'descripcion'  => $descripcion,
+                    'importe'      => number_format($importe, 2, '.', ''),
+                    'iva'          => $fila['iva'],
+                    'membresia'    => $opciones['unico'],
+                    'producto'     => $fila['producto'],
+                    'persona'      => $opciones['idPersona'],
+                    'numeroCuenta' => $fila['cuenta'],
+                    'origen'       => $origen,
+                    'idUn'         => $opciones['un'],
                 );
-                if (isset ($opciones['movimiento1'])) {
+                if (isset($opciones['movimiento1'])) {
                     $movimiento = 0;
                 } else {
                     $movimiento = $ci->movimientos_model->inserta($datosMovimiento);
@@ -3550,12 +3536,12 @@ class Membresia extends Model
             $movimiento = $opciones['idMovimiento'];
         }
 
-        if (isset ($opciones['porcentaje'])) {
+        if (isset($opciones['porcentaje'])) {
             $porcentaje = $opciones['porcentaje'];
         } else {
-            $porcentaje ='100.00';
+            $porcentaje = '100.00';
         }
-        $datos = array (
+        $datos = array(
             'fechaInicio'      => $opciones['inicio'],
             'fechaFin'         => $fechaFin,
             'idMovimiento'     => $movimiento,
@@ -3567,7 +3553,7 @@ class Membresia extends Model
             'origen'           => $origen,
             'porcentaje'       => $porcentaje,
             'idSocio'          => $opciones['idSocio'],
-            'ausencia'         => $opciones['ausencia']
+            'ausencia'         => $opciones['ausencia'],
         );
         $this->db->insert(TBL_SOCIOPAGOMTTO, $datos);
         $idpagoMtto = $this->db->insert_id();
@@ -3576,7 +3562,7 @@ class Membresia extends Model
         if ($total == 0) {
             return 0;
         } else {
-            $this->permisos_model->log('Se ingreso pago de mantenimiento '.$opciones['mantenimiento'].' a '.$nombre.' ('.date('Y-m-d').')', LOG_MEMBRESIA,$opciones['unico']);
+            $this->permisos_model->log('Se ingreso pago de mantenimiento ' . $opciones['mantenimiento'] . ' a ' . $nombre . ' (' . date('Y-m-d') . ')', LOG_MEMBRESIA, $opciones['unico']);
             return true;
         }
     }
@@ -3588,32 +3574,32 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function insertaPromocion($unico, $idPromoMttoUn, $fechaInicio,$fechafin , $indeterminado,  $cliente)
+    public function insertaPromocion($unico, $idPromoMttoUn, $fechaInicio, $fechafin, $indeterminado, $cliente)
     {
         settype($unico, 'integer');
         settype($idPromoMttoUn, 'integer');
         settype($indeterminado, 'integer');
         settype($cliente, 'integer');
 
-        $datos = array (
-            'idPromoMttoUn'     => $idPromoMttoUn,
-            'idUnicoMembresia'  => $unico,
-            'idTipoRolCliente'  => $cliente,
-            'indeterminado'     => $indeterminado,
-            'fechaInicio'       => $fechaInicio,
-            'fechaFin'          => $fechafin,
-            'idPersona'         => $this->session->userdata('idPersona')
+        $datos = array(
+            'idPromoMttoUn'    => $idPromoMttoUn,
+            'idUnicoMembresia' => $unico,
+            'idTipoRolCliente' => $cliente,
+            'indeterminado'    => $indeterminado,
+            'fechaInicio'      => $fechaInicio,
+            'fechaFin'         => $fechafin,
+            'idPersona'        => $this->session->userdata('idPersona'),
         );
         $this->db->select('idMembresiaPromoMtto');
         $this->db->from(TBL_MEMBRESIAPROMOMTTO);
-        $where = array('idPromoMttoUn' => $idPromoMttoUn, 'idUnicoMembresia'=>$unico,'idTipoRolCliente'=>$cliente,'fechaEliminacion'=>'0000-00-00 00:00:00');
+        $where = array('idPromoMttoUn' => $idPromoMttoUn, 'idUnicoMembresia' => $unico, 'idTipoRolCliente' => $cliente, 'fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $this->db->where('idMembresiaPromoMtto', $fila->idMembresiaPromoMtto);
                 $this->db->update(TBL_MEMBRESIAPROMOMTTO, $datos);
-                $this->permisos_model->log('Se actuliaza promocion mtto a la membresia ('.$unico.') ('.date('Y-m-d').')', LOG_MEMBRESIA, $unico);
+                $this->permisos_model->log('Se actuliaza promocion mtto a la membresia (' . $unico . ') (' . date('Y-m-d') . ')', LOG_MEMBRESIA, $unico);
 
                 return $fila->idMembresiaPromoMtto;
             }
@@ -3625,7 +3611,7 @@ class Membresia extends Model
         if ($total == 0) {
             return 0;
         } else {
-            $this->permisos_model->log('Se registro una nueva promocion a la membresia ('.$unico.') ('.date('Y-m-d').')', LOG_MEMBRESIA, $unico);
+            $this->permisos_model->log('Se registro una nueva promocion a la membresia (' . $unico . ') (' . date('Y-m-d') . ')', LOG_MEMBRESIA, $unico);
             return $id;
         }
     }
@@ -3643,10 +3629,10 @@ class Membresia extends Model
         settype($idMovimiento, 'integer');
         settype($tipo, 'integer');
 
-        $movimiento = array (
+        $movimiento = array(
             'idMembresiaReactivacion' => $reactivacion,
             'idMovimiento'            => $idMovimiento,
-            'clasificacionMovimiento' => $tipo
+            'clasificacionMovimiento' => $tipo,
         );
         $this->db->insert(TBL_MEMBRESIAREACTIVACIONMOVIMIENTO, $movimiento);
         $idMemReactivacionMovimiento = $this->db->insert_id();
@@ -3655,12 +3641,12 @@ class Membresia extends Model
         if ($total == 0) {
             return 0;
         } else {
-            if ($tipo==1) {
-                $mensaje='Reactivacion';
+            if ($tipo == 1) {
+                $mensaje = 'Reactivacion';
             } else {
-                $mensaje='Mantenimiento';
+                $mensaje = 'Mantenimiento';
             }
-            $this->permisos_model->log('Se registro movimiento de '.$mensaje , LOG_SISTEMAS, $unico);
+            $this->permisos_model->log('Se registro movimiento de ' . $mensaje, LOG_SISTEMAS, $unico);
             return true;
         }
     }
@@ -3678,10 +3664,10 @@ class Membresia extends Model
         settype($idPersona, 'integer');
         settype($tipo, 'integer');
 
-        $participante = array (
+        $participante = array(
             'idMembresiaReactivacion' => $reactivacion,
             'idPersona'               => $idPersona,
-            'tipoParticipantes'       => $tipo
+            'tipoParticipantes'       => $tipo,
         );
         $this->db->insert(TBL_MEMBRESIAREACTIVACIONPARTICIPANTES, $participante);
         $idMemReactivacionparticipante = $this->db->insert_id();
@@ -3690,16 +3676,16 @@ class Membresia extends Model
         if ($total == 0) {
             return 0;
         } else {
-            if ($tipo==1) {
-                $mensaje='Empleado';
+            if ($tipo == 1) {
+                $mensaje = 'Empleado';
             } else {
-                if ($tipo==2) {
-                    $mensaje='Titular';
+                if ($tipo == 2) {
+                    $mensaje = 'Titular';
                 } else {
-                    $mensaje='Vendedor';
+                    $mensaje = 'Vendedor';
                 }
             }
-            $this->permisos_model->log('Se registro '.$mensaje.' ('.$idPersona.') como participante en reactivacion', LOG_SISTEMAS, $unico);
+            $this->permisos_model->log('Se registro ' . $mensaje . ' (' . $idPersona . ') como participante en reactivacion', LOG_SISTEMAS, $unico);
             return true;
         }
     }
@@ -3711,15 +3697,15 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaAltaSocios($opciones)
+    public function listaAltaSocios($opciones)
     {
-        $opcion='';
-        if($opciones['idUn'] != 0){
-            $opcion = " and m.idUn=".$opciones['idUn'];
+        $opcion = '';
+        if ($opciones['idUn'] != 0) {
+            $opcion = " and m.idUn=" . $opciones['idUn'];
         }
-        $membresia ='';
-        if($opciones['idMembresia'] != 0){
-            $membresia = " and m.idMembresia=".$opciones['idMembresia'];
+        $membresia = '';
+        if ($opciones['idMembresia'] != 0) {
+            $membresia = " and m.idMembresia=" . $opciones['idMembresia'];
         }
         $sql = "SELECT u.nombre as Club, m.idMembresia AS Membresia,  pr.nombre as TipoMantenimiento, concat_ws(' ',p.nombre,p.paterno,p.materno) as Socio,
                 date(s.fechaRegistro) as Fecha
@@ -3730,7 +3716,7 @@ class Membresia extends Model
             inner join productomantenimiento pm on pm.idMantenimiento = s.idMantenimiento
             inner join producto pr on pr.idProducto = pm.idProducto and pr.activo=1
             where
-            date(s.fechaRegistro) between  '".$opciones['fechaInicio']."' and '".$opciones['fechaFin']."' $opcion $membresia  and m.idUnicoMembresia not in(3,5442) order by 1 desc ";
+            date(s.fechaRegistro) between  '" . $opciones['fechaInicio'] . "' and '" . $opciones['fechaFin'] . "' $opcion $membresia  and m.idUnicoMembresia not in(3,5442) order by 1 desc ";
         $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
@@ -3747,15 +3733,15 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaAmpliaciones($opciones)
+    public function listaAmpliaciones($opciones)
     {
-        $opcion ='';
-        if($opciones['idUn'] != 0){
-            $opcion = " AND m.idUn = ".$opciones['idUn'];
+        $opcion = '';
+        if ($opciones['idUn'] != 0) {
+            $opcion = " AND m.idUn = " . $opciones['idUn'];
         }
-        $membresia ='';
-         if($opciones['idMembresia'] != 0){
-            $membresia = " AND m.idMembresia = ".$opciones['idMembresia'];
+        $membresia = '';
+        if ($opciones['idMembresia'] != 0) {
+            $membresia = " AND m.idMembresia = " . $opciones['idMembresia'];
         }
         $sql = "
             SELECT u.nombre as club, m.idMembresia, pr.descripcion as tipomembresia, CONCAT_WS(' ',per.nombre,per.paterno,per.materno) as propietario,
@@ -3766,7 +3752,7 @@ class Membresia extends Model
             INNER JOIN un u ON u.idUn = m.idUn and u.activo = 1
             INNER JOIN producto pr ON pr.idProducto = m.idProducto and pr.activo=1
             INNER JOIN membresiainvolucrado mi ON mi.idUnicoMembresia = m.idUnicoMembresia AND mi.fechaEliminacion = '0000-00-00 00:00:00'
-            INNER JOIN persona per ON per.idPersona = mi.idPersona AND mi.idTipoInvolucrado = ".INVOLUCRADO_PROPIETARIO."
+            INNER JOIN persona per ON per.idPersona = mi.idPersona AND mi.idTipoInvolucrado = " . INVOLUCRADO_PROPIETARIO . "
             INNER JOIN persona per2 ON per2.idPersona = ma.idEmpleado
             INNER JOIN producto prod ON prod.idProducto = ma.idTipoActual
             INNER JOIN producto prod2 ON prod2.idProducto = ma.idTipoNuevo
@@ -3774,7 +3760,7 @@ class Membresia extends Model
             LEFT JOIN productomantenimiento pm2 ON pm2.idMantenimiento = ma.idMantenimientoNuevo
             LEFT JOIN producto prod3 ON prod3.idProducto = pm.idProducto
             LEFT JOIN producto prod4 ON prod4.idProducto = pm2.idProducto
-            WHERE  DATE(ma.fechaRegistro) BETWEEN '".$opciones['fechaInicio']."' AND '".$opciones['fechaFin']."'  $opcion  $membresia AND ma.idUnicoMembresia NOT IN(3,5442)
+            WHERE  DATE(ma.fechaRegistro) BETWEEN '" . $opciones['fechaInicio'] . "' AND '" . $opciones['fechaFin'] . "'  $opcion  $membresia AND ma.idUnicoMembresia NOT IN(3,5442)
             GROUP BY ma.idUnicoMembresia, ma.fechaRegistro DESC";
 
         $query = $this->db->query($sql);
@@ -3793,16 +3779,16 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaAusencias($opciones)
+    public function listaAusencias($opciones)
     {
         $opcion = '';
-        if($opciones['idUn'] != 0){
-            $opcion = " and m.idUn=".$opciones['idUn'];
+        if ($opciones['idUn'] != 0) {
+            $opcion = " and m.idUn=" . $opciones['idUn'];
 
         }
-        $membresia ='';
-        if($opciones['idMembresia'] != 0){
-            $membresia = " and m.idMembresia=".$opciones['idMembresia'];
+        $membresia = '';
+        if ($opciones['idMembresia'] != 0) {
+            $membresia = " and m.idMembresia=" . $opciones['idMembresia'];
         }
         $sql = "SELECT u.nombre as club, m.idMembresia, concat_ws(' ',p.nombre,p.paterno,p.materno) as socio,
                 date(s.fechaAusencia) as fecha
@@ -3811,7 +3797,7 @@ class Membresia extends Model
             inner join membresia m on m.idUnicoMembresia = so.idUnicoMembresia and m.eliminado=0
             inner join persona p on p.idPersona = so.idPersona
             inner join un u on u.idUn = m.idUn and u.activo = 1
-            where date(s.fechaAusencia) between '".$opciones['fechaInicio']."' and '".$opciones['fechaFin']."' and s.fechaEliminacion = '0000-00-00 00:00:00'
+            where date(s.fechaAusencia) between '" . $opciones['fechaInicio'] . "' and '" . $opciones['fechaFin'] . "' and s.fechaEliminacion = '0000-00-00 00:00:00'
                 $opcion $membresia and m.idUnicoMembresia not in(3,5442)
                 order  by 1 desc";
 
@@ -3831,15 +3817,15 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaBajaSocios($opciones)
+    public function listaBajaSocios($opciones)
     {
-        $opcion='';
-        if($opciones['idUn'] != 0){
-            $opcion = " and m.idUn=".$opciones['idUn'];
+        $opcion = '';
+        if ($opciones['idUn'] != 0) {
+            $opcion = " and m.idUn=" . $opciones['idUn'];
         }
-        $membresia ='';
-        if($opciones['idMembresia'] != 0){
-            $membresia = " and m.idMembresia=".$opciones['idMembresia'];
+        $membresia = '';
+        if ($opciones['idMembresia'] != 0) {
+            $membresia = " and m.idMembresia=" . $opciones['idMembresia'];
         }
         $sql = "SELECT u.nombre as Club, m.idMembresia AS Membresia,  pr.nombre as TipoMantenimiento,
                 concat_ws(' ',p.nombre,p.paterno,p.materno) as Socio, date(s.fechaEliminacion) as Fecha
@@ -3849,7 +3835,7 @@ class Membresia extends Model
             inner join un u on u.idUn = m.idUn and u.activo = 1
             inner join productomantenimiento pm on pm.idMantenimiento = s.idMantenimiento
             inner join producto pr on pr.idProducto = pm.idProducto and pr.activo=1
-            where date(s.fechaEliminacion) between '".$opciones['fechaInicio']."' and '".$opciones['fechaFin']."' $opcion $membresia and m.idUnicoMembresia not in(3,5442)  order by 1 desc ";
+            where date(s.fechaEliminacion) between '" . $opciones['fechaInicio'] . "' and '" . $opciones['fechaFin'] . "' $opcion $membresia and m.idUnicoMembresia not in(3,5442)  order by 1 desc ";
         $query = $this->db->query($sql);
         if ($query->num_rows() > 0) {
             return $query->result_array();
@@ -3865,16 +3851,16 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaCAT($opciones)
+    public function listaCAT($opciones)
     {
         $opcion = '';
-        if($opciones['idUn'] != 0){
-            $opcion = " and m.idUn=".$opciones['idUn'];
+        if ($opciones['idUn'] != 0) {
+            $opcion = " and m.idUn=" . $opciones['idUn'];
 
         }
-        $membresia ='';
-        if($opciones['idMembresia'] != 0){
-            $membresia = " and m.idMembresia=".$opciones['idMembresia'];
+        $membresia = '';
+        if ($opciones['idMembresia'] != 0) {
+            $membresia = " and m.idMembresia=" . $opciones['idMembresia'];
         }
         $sql = "SELECT u.nombre as club, m.idMembresia, concat_ws(' ',p.nombre,p.paterno,p.materno) as socio,
                 tt.descripcion, date(s.fechaRegistro) as fecha from sociodatostarjeta s
@@ -3883,7 +3869,7 @@ class Membresia extends Model
             inner join membresia m on m.idUnicoMembresia = so.idUnicoMembresia and m.eliminado=0
             inner join persona p on p.idPersona = so.idPersona
             inner join un u on u.idUn = m.idUn and u.activo = 1
-            where date(s.fechaRegistro) between '".$opciones['fechaInicio']."' and '".$opciones['fechaFin']."' and s.activo=1
+            where date(s.fechaRegistro) between '" . $opciones['fechaInicio'] . "' and '" . $opciones['fechaFin'] . "' and s.activo=1
                 $opcion $membresia and m.idUnicoMembresia not in(3,5442)
             order  by 1 desc";
         $query = $this->db->query($sql);
@@ -3901,16 +3887,16 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaCancelacionCAT($opciones)
+    public function listaCancelacionCAT($opciones)
     {
         $opcion = '';
-        if($opciones['idUn'] != 0){
-            $opcion = " and m.idUn=".$opciones['idUn'];
+        if ($opciones['idUn'] != 0) {
+            $opcion = " and m.idUn=" . $opciones['idUn'];
 
         }
-        $membresia ='';
-        if($opciones['idMembresia'] != 0){
-            $membresia = " and m.idMembresia=".$opciones['idMembresia'];
+        $membresia = '';
+        if ($opciones['idMembresia'] != 0) {
+            $membresia = " and m.idMembresia=" . $opciones['idMembresia'];
         }
         $sql = "select u.nombre as club, m.idMembresia, concat_ws(' ',p.nombre,p.paterno,p.materno) as socio, tt.descripcion,
         date(s.fechaEliminacion) as fecha from sociodatostarjeta s
@@ -3919,7 +3905,7 @@ class Membresia extends Model
             inner join membresia m on m.idUnicoMembresia = so.idUnicoMembresia and m.eliminado=0
             inner join persona p on p.idPersona = so.idPersona
             inner join un u on u.idUn = m.idUn and u.activo = 1
-                where date(s.fechaEliminacion) between '".$opciones['fechaInicio']."' and '".$opciones['fechaFin']."' and s.activo=0
+                where date(s.fechaEliminacion) between '" . $opciones['fechaInicio'] . "' and '" . $opciones['fechaFin'] . "' and s.activo=0
                 $opcion $membresia and m.idUnicoMembresia not in(3,5442)
                 order  by 1 desc";
         $query = $this->db->query($sql);
@@ -3938,17 +3924,17 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaCesionDerechos($opciones)
+    public function listaCesionDerechos($opciones)
     {
-        $opcion ='';
-        $opcion2 ='';
-        if($opciones['idUn'] != 0){
-            $opcion = " and mi.idUn=".$opciones['idUn'];
-            $opcion2 = " and ma.idUn=".$opciones['idUn'];
+        $opcion  = '';
+        $opcion2 = '';
+        if ($opciones['idUn'] != 0) {
+            $opcion  = " and mi.idUn=" . $opciones['idUn'];
+            $opcion2 = " and ma.idUn=" . $opciones['idUn'];
         }
-        $membresia ='';
-        if($opciones['idMembresia'] != 0){
-            $membresia = " and m.idMembresia=".$opciones['idMembresia'];
+        $membresia = '';
+        if ($opciones['idMembresia'] != 0) {
+            $membresia = " and m.idMembresia=" . $opciones['idMembresia'];
         }
         $sql = "SELECT u.nombre as club, m.idMembresia, t.nombre as cedente, t2.nombre as cesionario, date(ma.fechaRegistro) as fecha from membresiacesion ma
             inner join membresia m on m.idUnicoMembresia = ma.idUnicoMembresia and m.eliminado=0
@@ -3969,7 +3955,7 @@ class Membresia extends Model
              where mp.tipoParticipante in (2) and mp.tipoParticipante not in (1,3,4)  $opcion
              group by mi.idMembresiaCesion
                 ) as t2 on t2.idMembresiaCesion = ma.idMembresiaCesion
-            where   date(ma.fechaRegistro) between '".$opciones['fechaInicio']."' and '".$opciones['fechaFin']."' $opcion2 $membresia order  by 5 desc";
+            where   date(ma.fechaRegistro) between '" . $opciones['fechaInicio'] . "' and '" . $opciones['fechaFin'] . "' $opcion2 $membresia order  by 5 desc";
 
         $query = $this->db->query($sql);
         if ($query->num_rows() > 0) {
@@ -3991,13 +3977,13 @@ class Membresia extends Model
         settype($idPromoMttoUn, 'integer');
 
         $this->db->select('prc.idTipoRolCliente, trc.descripcion');
-        $this->db->from(TBL_PROMOMTTOUNROLCLIENTE.' prc');
-        $this->db->join(TBL_TIPOROLCLIENTE.' trc', 'trc.idTipoRolCliente = prc.idTipoRolCliente');
+        $this->db->from(TBL_PROMOMTTOUNROLCLIENTE . ' prc');
+        $this->db->join(TBL_TIPOROLCLIENTE . ' trc', 'trc.idTipoRolCliente = prc.idTipoRolCliente');
         $this->db->where('prc.idPromoMttoUn', $idPromoMttoUn);
         $this->db->where('trc.fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
 
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return 0;
@@ -4016,7 +4002,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function listaClubMembresia($idUn, $numIntegrantes = 0, $opcion = 0, $tipoMembresia = 0, $idUnicoMembresia=0)
+    public function listaClubMembresia($idUn, $numIntegrantes = 0, $opcion = 0, $tipoMembresia = 0, $idUnicoMembresia = 0)
     {
         settype($idUn, 'integer');
         settype($numIntegrantes, 'integer');
@@ -4024,14 +4010,14 @@ class Membresia extends Model
 
         $this->db->distinct();
         $this->db->select('p.idProducto,p.nombre', false);
-        $this->db->from(TBL_PRODUCTO .' p');
-        $this->db->join(TBL_CATEGORIA .' c', 'c.idCategoria = p.idCategoria');
-        $this->db->join(TBL_PRODUCTOUN .' pu', 'pu.idProducto = p.idProducto');
-        $this->db->join(TBL_TIPOPRODUCTO.' tp', 'tp.idTipoProducto = p.idTipoProducto');
-        $this->db->join(TBL_MEMBRESIACONFIGURACION.' mc', 'mc.idProductoUn = pu.idProductoUn');
-        $this->db->join(TBL_MEMBRESIAOPCIONES." mo", "mc.idMembresiaConfiguracion = mo.idMembresiaConfiguracion");
+        $this->db->from(TBL_PRODUCTO . ' p');
+        $this->db->join(TBL_CATEGORIA . ' c', 'c.idCategoria = p.idCategoria');
+        $this->db->join(TBL_PRODUCTOUN . ' pu', 'pu.idProducto = p.idProducto');
+        $this->db->join(TBL_TIPOPRODUCTO . ' tp', 'tp.idTipoProducto = p.idTipoProducto');
+        $this->db->join(TBL_MEMBRESIACONFIGURACION . ' mc', 'mc.idProductoUn = pu.idProductoUn');
+        $this->db->join(TBL_MEMBRESIAOPCIONES . " mo", "mc.idMembresiaConfiguracion = mo.idMembresiaConfiguracion");
         if ($tipoMembresia != 0) {
-            $this->db->join(TBL_TIPOMEMBRESIA.' tm', 'tm.idTipoMembresia = mc.idTipoMembresia');
+            $this->db->join(TBL_TIPOMEMBRESIA . ' tm', 'tm.idTipoMembresia = mc.idTipoMembresia');
             $this->db->where('tm.idTipoMembresia', $tipoMembresia);
         }
         if ($idUn != 0) {
@@ -4049,26 +4035,26 @@ class Membresia extends Model
         }
         $this->db->order_by("p.nombre");
         $query = $this->db->get();
-        if ($query->num_rows()>0) {
+        if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $datos[0] = utf8_decode('Seleccione una opción');
                 if ($idUnicoMembresia == 0) {
                     $datos[$fila->idProducto] = utf8_encode($fila->nombre);
                 } else {
-                if ($opcion == 0) {
-                    if ($fila->idProducto != PRODUCTO_MEMBRESIACOLLEGE) {
-                        $permiso  = $this->tieneAtributo($idUnicoMembresia, $idUn, MEM_ATRIB_SEL_AMPLIAR, $fila->idProducto);
+                    if ($opcion == 0) {
+                        if ($fila->idProducto != PRODUCTO_MEMBRESIACOLLEGE) {
+                            $permiso = $this->tieneAtributo($idUnicoMembresia, $idUn, MEM_ATRIB_SEL_AMPLIAR, $fila->idProducto);
+                            if ($permiso == true) {
+                                $datos[$fila->idProducto] = $fila->nombre;
+                            }
+                        }
+                    } else {
+                        $permiso = $this->tieneAtributo($idUnicoMembresia, $idUn, MEM_ATRIB_SEL_AMPLIAR, $fila->idProducto);
                         if ($permiso == true) {
-                            $datos[$fila->idProducto] = $fila->nombre;
+                            $datos[$fila->idProducto] = utf8_encode($fila->nombre);
                         }
                     }
-                } else {
-                    $permiso  = $this->tieneAtributo($idUnicoMembresia, $idUn, MEM_ATRIB_SEL_AMPLIAR, $fila->idProducto);
-                    if ($permiso == true) {
-                        $datos[$fila->idProducto] = utf8_encode($fila->nombre);
-                    }
                 }
-               }
             }
         }
         if (isset($datos)) {
@@ -4085,18 +4071,18 @@ class Membresia extends Model
      *
      * @return void
      */
-    function listaConversionMtto($opciones, $totales=0, $posicion=0, $registros=25, $orden = '')
+    public function listaConversionMtto($opciones, $totales = 0, $posicion = 0, $registros = 25, $orden = '')
     {
         if ($registros == 0) {
             $registros = REGISTROS_POR_PAGINA;
         }
-        $m='';
-        $p='';
+        $m = '';
+        $p = '';
         if ($totales == 0) {
             if ($posicion == '') {
                 $posicion = 0;
             }
-            $m=" limit $posicion,$registros ";
+            $m = " limit $posicion,$registros ";
         }
         if ($orden == '') {
             $orden = 'p.nombre, m.titular,
@@ -4111,12 +4097,12 @@ class Membresia extends Model
             inner join un u on u.idUn = m.idUn and u.activo = 1
             inner join productomantenimiento pm on pm.idMantenimiento=m.idMantenimiento
             inner join producto p2 on p2.idProducto = pm.idProducto and p2.fechaEliminacion='0000-00-00 00:00:00'
-            inner join productoun pu on pu.idProducto = p.idProducto and pu.fechaEliminacion= '0000-00-00 00:00:00' and pu.idUn=".$opciones["idUn"]."
+            inner join productoun pu on pu.idProducto = p.idProducto and pu.fechaEliminacion= '0000-00-00 00:00:00' and pu.idUn=" . $opciones["idUn"] . "
             inner join membresiaconfiguracion mc on mc.idProductoUn = pu.idProductoUn   and mc.fechaEliminacion = '0000-00-00 00:00:00'
             inner join tipomembresia t on t.idTipoMembresia = mc.idTipoMembresia and t.activo = 1
             #left  join productomantenimiento pm2 on pm2.idMantenimiento=m.idMantenimientoNuevo
             left join producto p3 on p3.idProducto = m.idMantenimientoNuevo and p3.fechaEliminacion='0000-00-00 00:00:00' and p3.idProducto>0
-            where m.idUn = ".$opciones["idUn"]." and t.idTipoMembresia=".$opciones["tipo_mtto"]."
+            where m.idUn = " . $opciones["idUn"] . " and t.idTipoMembresia=" . $opciones["tipo_mtto"] . "
             order by $orden $m";
 
         $query = $this->db->query($sql);
@@ -4137,7 +4123,7 @@ class Membresia extends Model
      *
      * @return boolean
      */
-    function listaDescuentosMtto()
+    public function listaDescuentosMtto()
     {
         $sql = "SELECT m.idMembresiaDescuentoMtto,m.descripcion,m.porcentajeDescuento,m.inicioVigencia,
                 m.finVigencia, m.activo, m.idMantenimiento, m.idEsquemaPago, p.nombre AS mantenimiento,
@@ -4165,7 +4151,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaEstatusMembresia ()
+    public function listaEstatusMembresia()
     {
         $datos = array();
         $where = array('activo' => 1);
@@ -4191,9 +4177,9 @@ class Membresia extends Model
     {
         settype($idUnicoMembresia, 'integer');
 
-        $lista = array();
+        $lista      = array();
         $lista['0'] = 'Selecciona una persona...';
-        $sql = "SELECT s.idSocio, CONCAT(p.nombre,' ',p.paterno,' ',p.materno) AS nombrec
+        $sql        = "SELECT s.idSocio, CONCAT(p.nombre,' ',p.paterno,' ',p.materno) AS nombrec
             FROM socio s
             LEFT JOIN persona p ON s.idPersona=p.idPersona
             WHERE s.idunicoMembresia=$idUnicoMembresia AND s.eliminado=0";
@@ -4222,16 +4208,16 @@ class Membresia extends Model
         settype($venta, 'integer');
 
         $a = '';
-        if($idUn != 0){
+        if ($idUn != 0) {
             $a = " pu.idUn=$idUn";
         }
-        $c='';
-        if($idProducto != 0){
+        $c = '';
+        if ($idProducto != 0) {
             $c = " AND pu.idProducto=$idProducto";
         }
-        $b='';
-        if($venta != 0){
-            $b = " AND pu.automatico=$venta";
+        $b = '';
+        if ($venta != 0) {
+            $b   = " AND pu.automatico=$venta";
             $sql = "SELECT * FROM (
                     SELECT pu.idUn,pu.idPromoMttoUn, tp.descripcion
                     FROM promomttoun pu
@@ -4257,7 +4243,7 @@ class Membresia extends Model
             foreach ($query->result() as $fila) {
                 $lista[$fila->idPromoMttoUn] = $fila->descripcion;
             }
-             return $lista;
+            return $lista;
         } else {
             return 0;
         }
@@ -4270,7 +4256,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function listaPromocionesRegistradas($idUnicoMembresia=0, $idMembresiaPromoMtto=0)
+    public function listaPromocionesRegistradas($idUnicoMembresia = 0, $idMembresiaPromoMtto = 0)
     {
         settype($idUnicoMembresia, 'integer');
 
@@ -4305,15 +4291,15 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaReactivaciones($opciones)
+    public function listaReactivaciones($opciones)
     {
-        $opcion ='';
+        $opcion = '';
         if ($opciones['idUn'] != 0) {
-            $opcion = " AND m.idUn=".$opciones['idUn'];
+            $opcion = " AND m.idUn=" . $opciones['idUn'];
         }
-        $membresia ='';
+        $membresia = '';
         if ($opciones['idMembresia'] != 0) {
-            $membresia = " AND m.idMembresia=".$opciones['idMembresia'];
+            $membresia = " AND m.idMembresia=" . $opciones['idMembresia'];
         }
         $sql = "SELECT u.nombre AS club, m.idMembresia, pr.nombre AS tipomembresia,
                 CONCAT_WS(' ',p.nombre,p.paterno,p.materno) AS propietario,
@@ -4331,12 +4317,12 @@ class Membresia extends Model
                 INNER JOIN membresiareactivacionparticipantes mi ON mi.idMembresiaReactivacion=mr.idMembresiaReactivacion
                 INNER JOIN persona pe ON pe.idPersona = mi.idPersona
                 INNER JOIN membresia m ON m.idUnicoMembresia = mr.idUnicoMembresia $opcion
-                WHERE mi.tipoParticipantes=3 AND DATE(mr.fechaRegistro) BETWEEN '".$opciones['fechaInicio']."' AND '".$opciones['fechaFin']."'
+                WHERE mi.tipoParticipantes=3 AND DATE(mr.fechaRegistro) BETWEEN '" . $opciones['fechaInicio'] . "' AND '" . $opciones['fechaFin'] . "'
                 GROUP BY mr.idUnicoMembresia
             ) as t3 on t3.idUnicoMembresia = ma.idUnicoMembresia
             INNER JOIN persona p ON p.idPersona = mi.idPersona
-            WHERE DATE(ma.fechaRegistro) BETWEEN '".$opciones['fechaInicio']."' AND '".$opciones['fechaFin'].
-                "' $opcion $membresia AND ma.idUnicoMembresia NOT IN (3,5442)
+            WHERE DATE(ma.fechaRegistro) BETWEEN '" . $opciones['fechaInicio'] . "' AND '" . $opciones['fechaFin'] .
+            "' $opcion $membresia AND ma.idUnicoMembresia NOT IN (3,5442)
             GROUP BY ma.idUnicoMembresia ORDER BY 1 DESC";
         $query = $this->db->query($sql);
 
@@ -4354,15 +4340,15 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaRegresoAusencias($opciones)
+    public function listaRegresoAusencias($opciones)
     {
         $opcion = '';
         if ($opciones['idUn'] != 0) {
-            $opcion = " and m.idUn=".$opciones['idUn'];
+            $opcion = " and m.idUn=" . $opciones['idUn'];
         }
-        $membresia ='';
+        $membresia = '';
         if ($opciones['idMembresia'] != 0) {
-            $membresia = " and m.idMembresia=".$opciones['idMembresia'];
+            $membresia = " and m.idMembresia=" . $opciones['idMembresia'];
         }
         $sql = "SELECT u.nombre AS club, m.idMembresia, CONCAT_WS(' ',p.nombre,p.paterno,p.materno) AS socio,
                 DATE(s.fechaRegresoAusencia) AS fecha
@@ -4372,7 +4358,7 @@ class Membresia extends Model
                 AND m.eliminado=0
             INNER JOIN persona p ON p.idPersona = so.idPersona
             INNER JOIN un u ON u.idUn = m.idUn AND u.activo = 1
-            WHERE DATE(s.fechaRegresoAusencia) BETWEEN '".$opciones['fechaInicio']."' AND '".$opciones['fechaFin']."'
+            WHERE DATE(s.fechaRegresoAusencia) BETWEEN '" . $opciones['fechaInicio'] . "' AND '" . $opciones['fechaFin'] . "'
                 AND s.fechaEliminacion = '0000-00-00 00:00:00' $opcion $membresia AND m.idUnicoMembresia NOT IN (3,5442)
             ORDER BY 1 DESC";
         $query = $this->db->query($sql);
@@ -4390,19 +4376,19 @@ class Membresia extends Model
      *
      * @return array
      */
-    function listaTraspasos($opciones)
+    public function listaTraspasos($opciones)
     {
-        $opcion  ='';
-        $opcion2 ='';
-        $opcion3 ='';
-        if($opciones['idUn'] != 0){
-            $opcion = " AND mi.idUn=".$opciones['idUn'];
-            $opcion2 = " AND ma.idUn=".$opciones['idUn'];
-            $opcion3 = " AND mt.idUn=".$opciones['idUn'];
+        $opcion  = '';
+        $opcion2 = '';
+        $opcion3 = '';
+        if ($opciones['idUn'] != 0) {
+            $opcion  = " AND mi.idUn=" . $opciones['idUn'];
+            $opcion2 = " AND ma.idUn=" . $opciones['idUn'];
+            $opcion3 = " AND mt.idUn=" . $opciones['idUn'];
         }
-        $membresia ='';
-        if($opciones['idMembresia'] != 0){
-            $membresia = ' AND m.idMembresia='.$opciones['idMembresia'];
+        $membresia = '';
+        if ($opciones['idMembresia'] != 0) {
+            $membresia = ' AND m.idMembresia=' . $opciones['idMembresia'];
         }
         $sql = "SELECT round(mov.importe,3) AS importe,u.nombre AS unOrigen, ma.idMembresia AS origen,
                 t2.idMembresia AS destino, t2.nombre AS unDestino, pr.nombre AS tipomembresia,
@@ -4428,9 +4414,9 @@ class Membresia extends Model
                 FROM membresiatraspaso mi
                 INNER JOIN membresia m ON m.idUnicoMembresia = mi.idUnicoMembresia $opcion $membresia
                 INNER JOIN un u ON u.idUn = m.idUn AND u.activo = 1
-                WHERE DATE(mi.fechaTraspaso) BETWEEN '".$opciones['fechaInicio']."' AND '".$opciones['fechaFin']."'
+                WHERE DATE(mi.fechaTraspaso) BETWEEN '" . $opciones['fechaInicio'] . "' AND '" . $opciones['fechaFin'] . "'
             ) AS t2 ON t2.idUnicoMembresia = ma.idUnicoMembresia
-            WHERE DATE(ma.fechaTraspaso) BETWEEN '".$opciones['fechaInicio']."' AND '".$opciones['fechaFin']."'
+            WHERE DATE(ma.fechaTraspaso) BETWEEN '" . $opciones['fechaInicio'] . "' AND '" . $opciones['fechaFin'] . "'
                 AND DATE(ma.fechaTraspaso) IS NOT NULL AND DATE(ma.fechaTraspaso)<>'0000-00-00'
                 $opcion2 $membresia AND ma.idUnicoMembresia NOT IN (3,5442)
             ORDER BY 1 desc";
@@ -4450,7 +4436,7 @@ class Membresia extends Model
      *
      * @return integer
      */
-    function mostrarDetalleAccesos($dato, $posicion=0, $registros=25)
+    public function mostrarDetalleAccesos($dato, $posicion = 0, $registros = 25)
     {
         settype($posicion, 'integer');
         settype($registros, 'integer');
@@ -4462,11 +4448,11 @@ class Membresia extends Model
             $posicion = 0;
         }
 
-        $data = Array();
-        $sql="SELECT u.nombre, CONCAT_WS(' ',r.fecha,r.hora) AS fecha, r.direccion, r.estatus, r.idEmpleado
-            FROM ".TBL_REGISTROACCESO." r
-            INNER JOIN ".TBL_UN." u ON u.idUn=r.idUn
-            WHERE  r.idPersona=".$dato['idPersona']." ORDER BY fecha DESC LIMIT ".$posicion.", ".$registros;
+        $data = array();
+        $sql  = "SELECT u.nombre, CONCAT_WS(' ',r.fecha,r.hora) AS fecha, r.direccion, r.estatus, r.idEmpleado
+            FROM " . TBL_REGISTROACCESO . " r
+            INNER JOIN " . TBL_UN . " u ON u.idUn=r.idUn
+            WHERE  r.idPersona=" . $dato['idPersona'] . " ORDER BY fecha DESC LIMIT " . $posicion . ", " . $registros;
         $query = $this->db->query($sql);
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
@@ -4487,9 +4473,9 @@ class Membresia extends Model
      */
     public function mostrarTotalDetalleAccesos($dato)
     {
-       $sql = "SELECT COUNT(*) AS total
+        $sql = "SELECT COUNT(*) AS total
             FROM registroacceso
-            WHERE idPersona=".$dato['idPersona'];
+            WHERE idPersona=" . $dato['idPersona'];
         $query = $this->db->query($sql);
         if ($query->num_rows() > 0) {
             $row = $query->row();
@@ -4514,7 +4500,7 @@ class Membresia extends Model
             from sociomensaje sm
             left join socio s on s.idSocio=sm.idSocio and s.eliminado=0
             left join persona p on p.idPersona=s.idPersona and p.fechaEliminacion='0000-00-00 00:00:00'
-            where s.idUnicoMembresia=".$idUnicoMembresia." and sm.fechaEliminacion='0000-00-00 00:00:00'";
+            where s.idUnicoMembresia=" . $idUnicoMembresia . " and sm.fechaEliminacion='0000-00-00 00:00:00'";
         $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
@@ -4534,26 +4520,26 @@ class Membresia extends Model
      *
      * @return void
      */
-    function muestraReporteCat($idUn, $tipoTarjeta, $diaCargo)
+    public function muestraReporteCat($idUn, $tipoTarjeta, $diaCargo)
     {
         settype($idUn, 'integer');
         settype($tipoTarjeta, 'integer');
         settype($diaCargo, 'integer');
 
-        $data = Array();
-        $sql="SELECT mem.idmembresia, CONCAT('************',RIGHT(sdt.numeroTarjetaCta,4)) AS numeroTarjetaCta, tt.descripcion, sdt.mesExpiracion, sdt.anioExpiracion, sdt.diaCargo
+        $data = array();
+        $sql  = "SELECT mem.idmembresia, CONCAT('************',RIGHT(sdt.numeroTarjetaCta,4)) AS numeroTarjetaCta, tt.descripcion, sdt.mesExpiracion, sdt.anioExpiracion, sdt.diaCargo
             FROM membresia mem
             INNER JOIN socio s ON s.idUnicoMembresia=mem.idUnicoMembresia
             INNER JOIN sociodatostarjeta sdt ON sdt.idSocio=s.idSocio
             INNER JOIN tipotarjeta tt ON tt.idTipoTarjeta=sdt.tipoTarjeta
-            WHERE mem.idUn=".$idUn." AND sdt.activo=1";
-        if ($tipoTarjeta!='0') {
-           $sql.=" AND sdt.tipoTarjeta=".$tipoTarjeta;
+            WHERE mem.idUn=" . $idUn . " AND sdt.activo=1";
+        if ($tipoTarjeta != '0') {
+            $sql .= " AND sdt.tipoTarjeta=" . $tipoTarjeta;
         }
-        if ($diaCargo!='0') {
-           $sql.=" AND sdt.diaCargo=".$diaCargo;
+        if ($diaCargo != '0') {
+            $sql .= " AND sdt.diaCargo=" . $diaCargo;
         }
-        $sql.=" GROUP BY mem.idmembresia ORDER By mem.idmembresia";
+        $sql .= " GROUP BY mem.idmembresia ORDER By mem.idmembresia";
         $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
@@ -4587,11 +4573,11 @@ class Membresia extends Model
             FROM socio s
             INNER JOIN persona p ON p.idPersona=s.idPersona
             WHERE s.eliminado=0 AND s.idTipoEstatusSocio=81 AND ";
-        $sql .= "s.idUnicoMembresia=".$idUnicoMembresia;
+        $sql .= "s.idUnicoMembresia=" . $idUnicoMembresia;
 
         $query = $this->db->query($sql);
 
-        if ($query->num_rows()>0) {
+        if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $numIntegrantes = $fila->adultos;
             }
@@ -4649,7 +4635,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    function obtenAdeudosRangoMeses ($idEmpresa, $idUn, $idTipoEstatusMembresia = 0, $ultimoMtto = array('Todos'), $rangoDias = array('Todos'), $registros = REGISTROS_POR_PAGINA, $posicion = 0, $orden = 'ORDER BY idMembresia', $totales = 0)
+    public function obtenAdeudosRangoMeses($idEmpresa, $idUn, $idTipoEstatusMembresia = 0, $ultimoMtto = array('Todos'), $rangoDias = array('Todos'), $registros = REGISTROS_POR_PAGINA, $posicion = 0, $orden = 'ORDER BY idMembresia', $totales = 0)
     {
         settype($idEmpresa, 'integer');
         settype($idUn, 'integer');
@@ -4660,73 +4646,74 @@ class Membresia extends Model
         } else {
             $datos = array();
         }
-        $limit = '';
-        $offset = '';
+        $limit            = '';
+        $offset           = '';
         $estatusMembresia = '';
-        $where = '';
-        $where2 = '';
-        $where3 = '';
-        $where4 = '';
-        $where5 = '';
+        $where            = '';
+        $where2           = '';
+        $where3           = '';
+        $where4           = '';
+        $where5           = '';
 
         if ($registros) {
-            $limit = "LIMIT ".$registros." ";
+            $limit = "LIMIT " . $registros . " ";
         }
         if ($posicion > 0) {
-            $offset = "OFFSET ".$posicion." ";
+            $offset = "OFFSET " . $posicion . " ";
         }
         if ($idTipoEstatusMembresia > 0) {
-            $estatusMembresia .= " AND t.idTipoEstatusMembresia = ".$idTipoEstatusMembresia." ";
+            $estatusMembresia .= " AND t.idTipoEstatusMembresia = " . $idTipoEstatusMembresia . " ";
         }
         if ($ultimoMtto) {
             foreach ($ultimoMtto as $idRow => $mtto) {
                 if ($mtto != 'Todos') {
-                    $ultimoMtto[$idRow] = "'".$mtto."'";
+                    $ultimoMtto[$idRow] = "'" . $mtto . "'";
                 } else {
                     unset($ultimoMtto[$idRow]);
                 }
             }
-            $ultimoMtto = $ultimoMtto ? " AND t.ultimoMtto IN (".implode(',', $ultimoMtto).") " : '';
+            $ultimoMtto = $ultimoMtto ? " AND t.ultimoMtto IN (" . implode(',', $ultimoMtto) . ") " : '';
         }
         if ($rangoDias) {
             if (in_array('sinAdeudos', $rangoDias)) {
                 if ($where2 == '') {
-                    $where2 .= 'AND (t.sinAdeudos = 1 ' ;
-                    if (count($rangoDias) == 5) {#Si seleccionaron todos los filtros es necesario tomar en cuenta este tambien
-                        $where2 .= ' OR t.sinAdeudos = 0 ' ;
+                    $where2 .= 'AND (t.sinAdeudos = 1 ';
+                    if (count($rangoDias) == 5) {
+#Si seleccionaron todos los filtros es necesario tomar en cuenta este tambien
+                        $where2 .= ' OR t.sinAdeudos = 0 ';
                     }
                 } else {
-                    $where2 .= ' OR t.sinAdeudos = 1 ' ;
+                    $where2 .= ' OR t.sinAdeudos = 1 ';
                 }
             } else {
-                $where3 .= ' AND t.sinAdeudos = 0 ' ;
+                $where3 .= ' AND t.sinAdeudos = 0 ';
             }
             if (in_array('treintaDias', $rangoDias)) {
                 if ($where2 == '') {
-                    $where2 .= 'AND (t.treintaDias > 0 ' ;
+                    $where2 .= 'AND (t.treintaDias > 0 ';
                 } else {
-                    $where2 .= ' OR t.treintaDias > 0 ' ;
+                    $where2 .= ' OR t.treintaDias > 0 ';
                 }
             }
             if (in_array('sesentaDias', $rangoDias)) {
                 if ($where2 == '') {
-                    $where2 .= 'AND (t.sesentaDias > 0 ' ;
+                    $where2 .= 'AND (t.sesentaDias > 0 ';
                 } else {
-                    $where2 .= ' OR t.sesentaDias > 0 ' ;
+                    $where2 .= ' OR t.sesentaDias > 0 ';
                 }
             }
             if (in_array('noventaDias', $rangoDias)) {
                 if ($where2 == '') {
-                    $where2 .= 'AND (t.noventaDias > 0 ' ;
+                    $where2 .= 'AND (t.noventaDias > 0 ';
                 } else {
-                    $where2 .= ' OR t.noventaDias > 0 ' ;
+                    $where2 .= ' OR t.noventaDias > 0 ';
                 }
             }
             if (in_array('masDeNoventaDias', $rangoDias)) {
                 if ($where2 == '') {
-                    $where2 .= 'AND (t.masDeNoventaDias > 0 ' ;
+                    $where2 .= 'AND (t.masDeNoventaDias > 0 ';
                 } else {
-                    $where2 .= ' OR t.masDeNoventaDias > 0 ' ;
+                    $where2 .= ' OR t.masDeNoventaDias > 0 ';
                 }
             }
         }
@@ -4737,26 +4724,26 @@ class Membresia extends Model
                 t.socio, t.idUn, t.mail, t.telefono, t.tipoMembresia, t.idSocioPagoMtto, t.ultimoMtto,
                 t.estatusMembresia, t.sinAdeudos, t.treintaDias, t.sesentaDias,
                 t.noventaDias, t.masDeNoventaDias
-            FROM ".TBL_TMPADEUDOMEMBRESIAS." t
+            FROM " . TBL_TMPADEUDOMEMBRESIAS . " t
             INNER JOIN socio s on s.idPersona=t.idPersona and s.eliminado=0
             INNER JOIN tiporolcliente trc on trc.idTipoRolCliente=s.idTipoRolCliente and trc.activo=1
             INNER JOIN un ON un.idUn = t.idUn AND un.fechaEliminacion = '0000-00-00 00:00:00'
             INNER JOIN empresa e ON e.idEmpresa = un.idEmpresa AND e.fechaEliminacion = '0000-00-00 00:00:00'
             WHERE t.fechaRegistro = DATE(NOW()) ";
-            if ($idUn) {
-                $sql .= " AND t.idUn = ".$idUn." ";
-            } else {
-                $sql .= " AND e.idEmpresa = ".$idEmpresa." ";
-            }
-            $sql .= "
-            ".$estatusMembresia."
-            ".$ultimoMtto."
-            ".$where2."
-            ".$where3."
-            ".$orden;
+        if ($idUn) {
+            $sql .= " AND t.idUn = " . $idUn . " ";
+        } else {
+            $sql .= " AND e.idEmpresa = " . $idEmpresa . " ";
+        }
+        $sql .= "
+            " . $estatusMembresia . "
+            " . $ultimoMtto . "
+            " . $where2 . "
+            " . $where3 . "
+            " . $orden;
 
         if ($totales == 0) {
-            $sql .= " ".$limit." ".$offset;
+            $sql .= " " . $limit . " " . $offset;
         }
 
         $query = $this->db->query($sql);
@@ -4778,16 +4765,16 @@ class Membresia extends Model
      *
      * @return void
      */
-    public function obtenAlertaMensajes($idUnicoMembresia, $posicion=0)
+    public function obtenAlertaMensajes($idUnicoMembresia, $posicion = 0)
     {
         settype($idUnicoMembresia, 'integer');
         settype($posicion, 'integer');
 
-        $sql="SELECT sm.idSocioMensaje, sm.titulo, sm.mensaje FROM sociomensaje sm
+        $sql = "SELECT sm.idSocioMensaje, sm.titulo, sm.mensaje FROM sociomensaje sm
             left join socio s on s.idsocio=sm.idSocio
-            where s.idunicoMembresia=".$idUnicoMembresia." and sm.fechaAlerta='".date('Y-m-d')."'
+            where s.idunicoMembresia=" . $idUnicoMembresia . " and sm.fechaAlerta='" . date('Y-m-d') . "'
                 and sm.fechaEliminacion='0000-00-00 00:00:00' and enviarAcceso=0
-                and alertaEmitida=0 limit ".$posicion.",1";
+                and alertaEmitida=0 limit " . $posicion . ",1";
         $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
@@ -4805,14 +4792,14 @@ class Membresia extends Model
      * @param  [type] $idUnicoMembresia [description]
      * @return [type]                   [description]
      */
-    function obtenCargosPromocionMTTOMSI($idUnicoMembresia)
+    public function obtenCargosPromocionMTTOMSI($idUnicoMembresia)
     {
-        $sql1 = "CALL crm.spMTTOMSIObtenCargos(".$idUnicoMembresia.", @resultado)";
+        $sql1   = "CALL crm.spMTTOMSIObtenCargos(" . $idUnicoMembresia . ", @resultado)";
         $query1 = $this->db->query($sql1);
 
-        $sql2 = "SELECT @resultado AS resp";
+        $sql2   = "SELECT @resultado AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
 
@@ -4823,7 +4810,7 @@ class Membresia extends Model
      */
     public function obtenCargosPromocionMTTOMSICambioMaMSI($ids)
     {
-        $sql1 = "UPDATE crm.movimiento mov SET mov.origen=CONCAT(mov.origen, '_MTTOMSI') WHERE mov.idMovimiento IN (".$ids.");";
+        $sql1   = "UPDATE crm.movimiento mov SET mov.origen=CONCAT(mov.origen, '_MTTOMSI') WHERE mov.idMovimiento IN (" . $ids . ");";
         $query1 = $this->db->query($sql1);
         return 1;
     }
@@ -4835,12 +4822,12 @@ class Membresia extends Model
      */
     public function obtenCargosPromocionMTTOMSIIds($idUnicoMembresia)
     {
-        $sql1 = "CALL crm.spMTTOMSIObtenCargosIds(".$idUnicoMembresia.", @resultado)";
+        $sql1   = "CALL crm.spMTTOMSIObtenCargosIds(" . $idUnicoMembresia . ", @resultado)";
         $query1 = $this->db->query($sql1);
 
-        $sql2 = "SELECT @resultado AS resp";
+        $sql2   = "SELECT @resultado AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
 
@@ -4851,12 +4838,12 @@ class Membresia extends Model
      */
     public function obtenCargosPromocionMTTOMSIPaquete($idUnicoMembresia)
     {
-        $sql1 = "CALL crm.spMTTOMSIObtenPaquete(".$idUnicoMembresia.", @resultado)";
+        $sql1   = "CALL crm.spMTTOMSIObtenPaquete(" . $idUnicoMembresia . ", @resultado)";
         $query1 = $this->db->query($sql1);
 
-        $sql2 = "SELECT @resultado AS resp";
+        $sql2   = "SELECT @resultado AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
 
@@ -4867,12 +4854,12 @@ class Membresia extends Model
      */
     public function obtenCargosPromocionMTTOMSISoloMensual($idUnicoMembresia)
     {
-        $sql1 = "CALL crm.spMTTOMSIObtenCargosSoloMensual(".$idUnicoMembresia.", @resultado)";
+        $sql1   = "CALL crm.spMTTOMSIObtenCargosSoloMensual(" . $idUnicoMembresia . ", @resultado)";
         $query1 = $this->db->query($sql1);
 
-        $sql2 = "SELECT @resultado AS resp";
+        $sql2   = "SELECT @resultado AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
 
@@ -4888,7 +4875,7 @@ class Membresia extends Model
         $datos = array();
         $where = array(
             'activo'         => 1,
-            'idTipoProducto' => 1
+            'idTipoProducto' => 1,
         );
 
         $query = $this->db->select("idProducto, nombre", false)->get_where(TBL_PRODUCTO, $where);
@@ -4909,15 +4896,15 @@ class Membresia extends Model
      *
      * @return array
      */
-    function obtenConvenio ($idUnicoMembresia)
+    public function obtenConvenio($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
-        $datos = array();
-        $datos['idConvenio'] = 0;
-        $datos['nombre']     = 'NA';
-        $datos["idTipoConvenio"]=0;
+        $datos                   = array();
+        $datos['idConvenio']     = 0;
+        $datos['nombre']         = 'NA';
+        $datos["idTipoConvenio"] = 0;
 
-        if ( ! $idUnicoMembresia) {
+        if (!$idUnicoMembresia) {
             return $datos;
         }
         $where = array(
@@ -4926,13 +4913,13 @@ class Membresia extends Model
             'cd.eliminado'       => 0,
             'c.eliminado'        => 0,
             'c.activo'           => 1,
-            'cd.activo'          => 1
+            'cd.activo'          => 1,
         );
-        $this->db->join(TBL_CONVENIODETALLE." cd", "m.idConvenioDetalle = cd.idConvenioDetalle", "inner");
-        $this->db->join(TBL_CONVENIO." c", "cd.idConvenio = c.idConvenio", "inner");
+        $this->db->join(TBL_CONVENIODETALLE . " cd", "m.idConvenioDetalle = cd.idConvenioDetalle", "inner");
+        $this->db->join(TBL_CONVENIO . " c", "cd.idConvenio = c.idConvenio", "inner");
         $query = $this->db->select(
             'c.idConvenio, c.nombre, cd.idTipoConvenio'
-        )->get_where(TBL_MEMBRESIA." m", $where);
+        )->get_where(TBL_MEMBRESIA . " m", $where);
 
         if ($query->num_rows) {
             $datos = $query->row_array();
@@ -4949,24 +4936,24 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function obtenDatosBeneficiario ($idUnicoMembresia)
+    public function obtenDatosBeneficiario($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
         $datos = array();
 
-        if (! $idUnicoMembresia) {
+        if (!$idUnicoMembresia) {
             return $datos;
         }
         $where = array(
-           'mi.fechaEliminacion' => '0000-00-00 00:00:00',
-           'p.fechaEliminacion' => '0000-00-00 00:00:00',
-           'mi.idTipoInvolucrado' => TIPO_INVOLUCRADO_BENEFICIARIO,
-           'p.fallecido' => 0,
-           'tc.activo' => 1,
-           'mi.idUnicoMembresia' => $idUnicoMembresia,
+            'mi.fechaEliminacion'  => '0000-00-00 00:00:00',
+            'p.fechaEliminacion'   => '0000-00-00 00:00:00',
+            'mi.idTipoInvolucrado' => TIPO_INVOLUCRADO_BENEFICIARIO,
+            'p.fallecido'          => 0,
+            'tc.activo'            => 1,
+            'mi.idUnicoMembresia'  => $idUnicoMembresia,
         );
-        $this->db->join(TBL_PERSONA.' p', 'p.idPersona = mi.idPersona', 'inner');
-        $this->db->join(TBL_TIPOCONTACTO.' tc', 'mi.idTipoContacto = tc.idTipoContacto', 'inner');
+        $this->db->join(TBL_PERSONA . ' p', 'p.idPersona = mi.idPersona', 'inner');
+        $this->db->join(TBL_TIPOCONTACTO . ' tc', 'mi.idTipoContacto = tc.idTipoContacto', 'inner');
         $query = $this->db->select(
             "mi.idMembresiaInvolucrado, mi.idPersona, tc.idTipoContacto, tc.descripcion AS tipoContacto,
             CONCAT_WS(' ',p.nombre, p.paterno, p.materno) AS nombre, p.fechaNacimiento,
@@ -4980,7 +4967,7 @@ class Membresia extends Model
                 LIMIT 1
             )AS telefono",
             false
-        )->get_where(TBL_MEMBRESIAINVOLUCRADO." mi", $where);
+        )->get_where(TBL_MEMBRESIAINVOLUCRADO . " mi", $where);
 
         if ($query->num_rows) {
             $datos = $query->row_array();
@@ -4998,7 +4985,7 @@ class Membresia extends Model
     public function obtenDatosMensajes($idSocioMensaje)
     {
         settype($idSocioMensaje, 'integer');
-        $sql="select * from sociomensaje where idSocioMensaje=".$idSocioMensaje;
+        $sql = "select * from sociomensaje where idSocioMensaje=" . $idSocioMensaje;
 
         $query = $this->db->query($sql);
 
@@ -5025,7 +5012,7 @@ class Membresia extends Model
      *
      * @return integer
      */
-    public function obtenDatosOpcion ($tipoOpcion, $idUnicoMemb, $idUn = 0, $idProducto = 0, $idMembConfig = 0)
+    public function obtenDatosOpcion($tipoOpcion, $idUnicoMemb, $idUn = 0, $idProducto = 0, $idMembConfig = 0)
     {
         settype($tipoOpcion, 'integer');
         settype($idUnicoMemb, 'integer');
@@ -5037,20 +5024,20 @@ class Membresia extends Model
             'idMembresiaOpciones'      => 0,
             'activo'                   => 0,
             'idMembresiaConfiguracion' => 0,
-            'valor'                    => 0
+            'valor'                    => 0,
         );
         if (($tipoOpcion == 0) or ($idUnicoMemb == 0 and $idProducto == 0 and $idMembConfig == 0)) {
             return $datos;
         }
         $this->db->select("mo.idMembresiaOpciones, mo.activo, mo.idMembresiaConfiguracion, mo.valor");
-        $this->db->join(TBL_MEMBRESIACONFIGURACION." mc", 'mc.idMembresiaConfiguracion = mo.idMembresiaConfiguracion', 'inner');
-        $this->db->join(TBL_PRODUCTOUN." pu", "mc.idProductoUn = pu.idProductoUn");
+        $this->db->join(TBL_MEMBRESIACONFIGURACION . " mc", 'mc.idMembresiaConfiguracion = mo.idMembresiaConfiguracion', 'inner');
+        $this->db->join(TBL_PRODUCTOUN . " pu", "mc.idProductoUn = pu.idProductoUn");
 
         if ($idUnicoMemb > 0) {
-            $this->db->join(TBL_MEMBRESIA." m", "pu.idProducto = m.idProducto AND pu.idUn = m.idUn");
+            $this->db->join(TBL_MEMBRESIA . " m", "pu.idProducto = m.idProducto AND pu.idUn = m.idUn");
         }
         if ($idProducto > 0) {
-            $this->db->join(TBL_PRODUCTO." p", "pu.idProducto = p.idProducto");
+            $this->db->join(TBL_PRODUCTO . " p", "pu.idProducto = p.idProducto");
         }
         $this->db->where('pu.fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->where('mo.fechaEliminacion', '0000-00-00 00:00:00');
@@ -5071,7 +5058,7 @@ class Membresia extends Model
             $this->db->where('mc.idMembresiaConfiguracion', $idMembConfig);
         }
         $this->db->group_by("mo.idMembresiaOpciones, mo.activo, mo.idMembresiaConfiguracion, mo.valor");
-        $query = $this->db->get(TBL_MEMBRESIAOPCIONES." mo");
+        $query = $this->db->get(TBL_MEMBRESIAOPCIONES . " mo");
         if ($query->num_rows > 0) {
             $datos = $query->row_array();
         }
@@ -5087,27 +5074,27 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function obtenDatosTipoMembresia ($idProductoUn)
+    public function obtenDatosTipoMembresia($idProductoUn)
     {
         settype($idProductoUn, 'integer');
         $datos = array();
 
-        if (! $idProductoUn) {
+        if (!$idProductoUn) {
             return $datos;
         }
         $where = array(
             'mc.idProductoUn'     => $idProductoUn,
             'mc.fechaEliminacion' => '0000-00-00 00:00:00',
-            'tm.activo'           => 1
+            'tm.activo'           => 1,
         );
-        $this->db->join(TBL_TIPOMEMBRESIA." tm", "tm.idTipoMembresia = mc.idTipoMembresia", "inner");
+        $this->db->join(TBL_TIPOMEMBRESIA . " tm", "tm.idTipoMembresia = mc.idTipoMembresia", "inner");
         $query = $this->db->select(
             "mc.idTipoMembresia, tm.descripcion AS tipoMembresia, mc.idMembresiaConfiguracion"
-        )->get_where(TBL_MEMBRESIACONFIGURACION." mc", $where);
+        )->get_where(TBL_MEMBRESIACONFIGURACION . " mc", $where);
 
         if ($query->num_rows == 1) {
-            $datos            = $query->row_array();
-            $datos['error']   = 0;
+            $datos          = $query->row_array();
+            $datos['error'] = 0;
         } else {
             $datos['error']   = 1;
             $datos['mensaje'] = 'Error, se encuentra duplicado el registro de idProductoUn en membresiaconfiguracion';
@@ -5126,7 +5113,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    function obtenEdadMinimaMaximaMtto ($idProducto, $idUn, $idMantenimiento)
+    public function obtenEdadMinimaMaximaMtto($idProducto, $idUn, $idMantenimiento)
     {
         settype($idProducto, 'integer');
         settype($idUn, 'integer');
@@ -5134,7 +5121,7 @@ class Membresia extends Model
 
         $datos = array('edadMinima' => 0, 'edadMaxima' => 0);
 
-        if ( ! $idProducto or ! $idUn or ! $idMantenimiento) {
+        if (!$idProducto or !$idUn or !$idMantenimiento) {
             return $datos;
         }
         $where = array(
@@ -5146,25 +5133,25 @@ class Membresia extends Model
             'pu.fechaEliminacion'    => '0000-00-00 00:00:00',
             'mc.fechaEliminacion'    => '0000-00-00 00:00:00',
             'trc.fechaEliminacion'   => '0000-00-00 00:00:00',
-            'mttoc.fechaEliminacion' => '0000-00-00 00:00:00'
+            'mttoc.fechaEliminacion' => '0000-00-00 00:00:00',
         );
-        $this->db->join(TBL_PRODUCTOUN.' pu', 'pu.idProductoUn = mc.idProductoUn', 'inner');
-        $this->db->join(TBL_MEMBRESIATIPOSOCIO.' mts', 'mts.idMembresiaConfiguracion = mc.idMembresiaConfiguracion', 'inner');
-        $this->db->join(TBL_TIPOROLCLIENTE.' trc', "trc.idTipoRolCliente = mts.idTipoRolCliente AND trc.fechaEliminacion = '0000-00-00 00:00:00'", 'inner');
-        $this->db->join(TBL_MANTENIMIENTOCLIENTE.' mttoc', "mttoc.idTipoRolCliente = trc.idTipoRolCliente AND mttoc.idUn = pu.idUn AND mttoc.fechaEliminacion = '0000-00-00 00:00:00'", 'inner');
+        $this->db->join(TBL_PRODUCTOUN . ' pu', 'pu.idProductoUn = mc.idProductoUn', 'inner');
+        $this->db->join(TBL_MEMBRESIATIPOSOCIO . ' mts', 'mts.idMembresiaConfiguracion = mc.idMembresiaConfiguracion', 'inner');
+        $this->db->join(TBL_TIPOROLCLIENTE . ' trc', "trc.idTipoRolCliente = mts.idTipoRolCliente AND trc.fechaEliminacion = '0000-00-00 00:00:00'", 'inner');
+        $this->db->join(TBL_MANTENIMIENTOCLIENTE . ' mttoc', "mttoc.idTipoRolCliente = trc.idTipoRolCliente AND mttoc.idUn = pu.idUn AND mttoc.fechaEliminacion = '0000-00-00 00:00:00'", 'inner');
 
         $query = $this->db->select(
             'mttoc.edadMinima, mttoc.edadMaxima'
-        )->order_by('mttoc.idTipoRolCliente')->get_where(TBL_MEMBRESIACONFIGURACION.' mc', $where);
+        )->order_by('mttoc.idTipoRolCliente')->get_where(TBL_MEMBRESIACONFIGURACION . ' mc', $where);
 
         if ($query->num_rows) {
             foreach ($query->result_array() as $fila) {
-                if ( ! $datos['edadMinima']) {
+                if (!$datos['edadMinima']) {
                     $datos['edadMinima'] = $fila['edadMinima'];
                 } else {
                     $datos['edadMinima'] = ($fila['edadMinima'] < $datos['edadMinima']) ? $fila['edadMinima'] : $datos['edadMinima'];
                 }
-                if ( ! $datos['edadMaxima']) {
+                if (!$datos['edadMaxima']) {
                     $datos['edadMaxima'] = $fila['edadMaxima'];
                 } else {
                     $datos['edadMaxima'] = ($fila['edadMaxima'] > $datos['edadMaxima']) ? $fila['edadMaxima'] : $datos['edadMaxima'];
@@ -5184,29 +5171,29 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function obtenExtras ($idUnicoMembresia, $idTipoMembresiaExtras)
+    public function obtenExtras($idUnicoMembresia, $idTipoMembresiaExtras)
     {
         settype($idUnicoMembresia, 'integer');
 
-        $datos  = array(
+        $datos = array(
             'error'   => 1,
             'mensaje' => 'Error faltan datos',
             'valor'   => '',
         );
-        if ( ! $idUnicoMembresia or ! $idTipoMembresiaExtras) {
+        if (!$idUnicoMembresia or !$idTipoMembresiaExtras) {
             return $datos;
         }
         $datos['error']   = 0;
         $datos['mensaje'] = '';
 
-        $this->db->join(TBL_MEMBRESIAEXTRAS.' me', "me.idTipoMembresiaExtras = tme.idTipoMembresiaExtras AND me.idUnicoMembresia = ".$idUnicoMembresia." AND me.fechaEliminacion = '0000-00-00 00:00:00'", "LEFT");
+        $this->db->join(TBL_MEMBRESIAEXTRAS . ' me', "me.idTipoMembresiaExtras = tme.idTipoMembresiaExtras AND me.idUnicoMembresia = " . $idUnicoMembresia . " AND me.fechaEliminacion = '0000-00-00 00:00:00'", "LEFT");
         $this->db->where('tme.idTipoMembresiaExtras', $idTipoMembresiaExtras);
 
         $query = $this->db->select(
             "IFNULL(me.valor, '') AS valor,
             IFNULL(me.idMembresiaExtras, 0)AS idMembresiaExtras,
             If(tme.activo AND DATE(NOW()) BETWEEN DATE(tme.inicioVigencia) AND DATE(tme.finVigencia), 1, 0) AS vigente", false
-        )->order_by('me.idMembresiaExtras DESC')->get(TBL_TIPOMEMBRESIAEXTRAS.' tme', 1);
+        )->order_by('me.idMembresiaExtras DESC')->get(TBL_TIPOMEMBRESIAEXTRAS . ' tme', 1);
 
         if ($query->num_rows) {
             $datos = $query->row_array();
@@ -5224,15 +5211,15 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function obtenExtrasConfiguracion ($idTipoMembresiaExtras)
+    public function obtenExtrasConfiguracion($idTipoMembresiaExtras)
     {
         settype($idTipoMembresiaExtras, 'integer');
 
         $datos = array(
             'mensaje' => 'Error faltan datos',
-            'error'   => 1
+            'error'   => 1,
         );
-        if (! $idTipoMembresiaExtras) {
+        if (!$idTipoMembresiaExtras) {
             return $datos;
         }
         $where = array('idTipoMembresiaExtras' => $idTipoMembresiaExtras);
@@ -5241,7 +5228,7 @@ class Membresia extends Model
         )->get_where(TBL_TIPOMEMBRESIAEXTRAS, $where);
 
         if ($query->num_rows) {
-            $datos = $query->row_array();
+            $datos            = $query->row_array();
             $datos['mensaje'] = '';
             $datos['error']   = 0;
         } else {
@@ -5262,28 +5249,28 @@ class Membresia extends Model
     public function obtenFidelidad($idUnicoMembresia)
     {
         $lista = array();
-        $rs = $this->db->query("SELECT a.idMembresiaFidelidad, a.idtipoFidelidad, tf.descripcion,
+        $rs    = $this->db->query("SELECT a.idMembresiaFidelidad, a.idtipoFidelidad, tf.descripcion,
             a.mesesConsecutivos, a.autorizacionEspecial
             FROM
             (
                 SELECT MAX(mf.idMembresiaFidelidad) AS idMembresiaFidelidad, mf.idUnicoMembresia, mf.idTipoFidelidad,
                     mf.mesesConsecutivos, mf.autorizacionEspecial
                 FROM crm.membresiafidelidad mf
-                WHERE mf.idUnicoMembresia IN (".$idUnicoMembresia.") AND mf.fechaEliminacion='0000-00-00 00:00:00'
+                WHERE mf.idUnicoMembresia IN (" . $idUnicoMembresia . ") AND mf.fechaEliminacion='0000-00-00 00:00:00'
                 GROUP BY mf.idUnicoMembresia
             ) a
             INNER JOIN crm.tipofidelidad tf ON tf.idTipoFidelidad=a.idTipoFidelidad
             GROUP BY a.idUnicoMembresia");
-        if ( $rs->num_rows()>0 ) {
-            foreach ( $rs->result_array() as $row ) {
-               $lista[]=$row;
+        if ($rs->num_rows() > 0) {
+            foreach ($rs->result_array() as $row) {
+                $lista[] = $row;
             }
         } else {
-            $lista[0]['idMembresiaFidelidad']  = 0;
-            $lista[0]['idtipoFidelidad']       = 1;
-            $lista[0]['descripcion']           = '';
-            $lista[0]['mesesConsecutivos']     = 0;
-            $lista[0]['autorizacionEspecial']  = 0;
+            $lista[0]['idMembresiaFidelidad'] = 0;
+            $lista[0]['idtipoFidelidad']      = 1;
+            $lista[0]['descripcion']          = '';
+            $lista[0]['mesesConsecutivos']    = 0;
+            $lista[0]['autorizacionEspecial'] = 0;
         }
 
         return $lista;
@@ -5303,9 +5290,9 @@ class Membresia extends Model
         settype($idMantenimiento, 'integer');
 
         $this->db->select('th.descripcion');
-        $this->db->from(TBL_TIPOHORARIO.' th');
-        $this->db->join(TBL_MANTENIMIENTO.' m', 'm.idTipoHorario = th.idTipoHorario');
-        $where = array('m.idMantenimiento' => $idMantenimiento, 'm.fechaEliminacion'=>'0000-00-00 00:00:00');
+        $this->db->from(TBL_TIPOHORARIO . ' th');
+        $this->db->join(TBL_MANTENIMIENTO . ' m', 'm.idTipoHorario = th.idTipoHorario');
+        $where = array('m.idMantenimiento' => $idMantenimiento, 'm.fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
 
@@ -5328,12 +5315,12 @@ class Membresia extends Model
     public function obtenIdConvenioDetalle($idUnicoMembresia)
     {
         $resultado = 0;
-        $rs = $this->db->query("SELECT mem.idConvenioDetalle
+        $rs        = $this->db->query("SELECT mem.idConvenioDetalle
             FROM crm.membresia mem
-            WHERE mem.idUnicoMembresia IN (".$idUnicoMembresia.")");
-        if ( $rs->num_rows()>0 ) {
-           $row = $rs->row();
-           $resultado = $row->idConvenioDetalle;
+            WHERE mem.idUnicoMembresia IN (" . $idUnicoMembresia . ")");
+        if ($rs->num_rows() > 0) {
+            $row       = $rs->row();
+            $resultado = $row->idConvenioDetalle;
         }
 
         return $resultado;
@@ -5354,20 +5341,20 @@ class Membresia extends Model
         $resultado = 0;
 
         $idMantenimiento = 0;
-        $rs2 = $this->db->query("SELECT soc.idMantenimiento
+        $rs2             = $this->db->query("SELECT soc.idMantenimiento
             FROM crm.socio soc
-            WHERE soc.idUnicoMembresia IN (".$idUnicoMembresia.") AND soc.idTipoRolCliente IN (1)
+            WHERE soc.idUnicoMembresia IN (" . $idUnicoMembresia . ") AND soc.idTipoRolCliente IN (1)
                 AND soc.eliminado = 0");
-        if ( $rs2->num_rows()>0 ) {
-            $row = $rs2->row();
+        if ($rs2->num_rows() > 0) {
+            $row             = $rs2->row();
             $idMantenimiento = $row->idMantenimiento;
         }
         $rs3 = $this->db->query("SELECT mc.idMantenimientoCongelado
             FROM crm.mantenimientocongelado mc
-            WHERE mc.anio IN (YEAR(NOW()),2014) AND mc.idUn IN (".$idUn.") AND mc.idMantenimiento IN (".$idMantenimiento.")
+            WHERE mc.anio IN (YEAR(NOW()),2014) AND mc.idUn IN (" . $idUn . ") AND mc.idMantenimiento IN (" . $idMantenimiento . ")
                 AND mc.fechaEliminacion = '0000-00-00 00:00:00';");
-        if ( $rs3->num_rows()>0 ) {
-            $row = $rs3->row();
+        if ($rs3->num_rows() > 0) {
+            $row       = $rs3->row();
             $resultado = $row->idMantenimientoCongelado;
         }
         return $resultado;
@@ -5380,12 +5367,12 @@ class Membresia extends Model
      */
     public function obtenCargosPromocionMTTOMSIMensuales($idUnicoMembresia)
     {
-        $sql1 = "CALL crm.spMTTOMSIObtenCargosMensuales(".$idUnicoMembresia.", @resultado)";
+        $sql1   = "CALL crm.spMTTOMSIObtenCargosMensuales(" . $idUnicoMembresia . ", @resultado)";
         $query1 = $this->db->query($sql1);
 
-        $sql2 = "SELECT @resultado AS resp";
+        $sql2   = "SELECT @resultado AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
 
@@ -5401,31 +5388,31 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
 
         $resultado = 0;
-        $rs = $this->db->query("SELECT mem.idProducto
+        $rs        = $this->db->query("SELECT mem.idProducto
             FROM crm.membresia mem
-            WHERE mem.idUnicoMembresia IN (".$idUnicoMembresia.")");
+            WHERE mem.idUnicoMembresia IN (" . $idUnicoMembresia . ")");
         $idProducto = 0;
-        if ( $rs->num_rows()>0 ) {
-            $row = $rs->row();
+        if ($rs->num_rows() > 0) {
+            $row        = $rs->row();
             $idProducto = $row->idProducto;
         }
         $idMantenimiento = 0;
 
         $rs2 = $this->db->query("SELECT soc.idMantenimiento
             FROM crm.socio soc
-            WHERE soc.idUnicoMembresia IN (".$idUnicoMembresia.") AND soc.idTipoRolCliente IN (1)
+            WHERE soc.idUnicoMembresia IN (" . $idUnicoMembresia . ") AND soc.idTipoRolCliente IN (1)
                 AND soc.eliminado=0");
-        if ( $rs2->num_rows()>0 ) {
-            $row = $rs2->row();
+        if ($rs2->num_rows() > 0) {
+            $row             = $rs2->row();
             $idMantenimiento = $row->idMantenimiento;
         }
 
         $rs3 = $this->db->query("SELECT mnf.idMantenimientoNoFidelidad
             FROM mantenimientonofidelidad mnf
-            WHERE mnf.idProducto IN (".$idProducto.") AND mnf.idMantenimiento IN (".$idMantenimiento.")
+            WHERE mnf.idProducto IN (" . $idProducto . ") AND mnf.idMantenimiento IN (" . $idMantenimiento . ")
                 AND mnf.fechaEliminacion='0000-00-00 00:00:00';");
-        if ( $rs3->num_rows()>0 ) {
-            $row = $rs3->row();
+        if ($rs3->num_rows() > 0) {
+            $row       = $rs3->row();
             $resultado = $row->idMantenimientoNoFidelidad;
         }
         return $resultado;
@@ -5454,9 +5441,9 @@ class Membresia extends Model
         } elseif ($idUnicoMembresia > 0) {
             $this->db->select("mc.idMembresiaConfiguracion");
             $this->db->where('m.idUnicoMembresia', $idUnicoMembresia);
-            $this->db->join(TBL_PRODUCTOUN." pu", 'm.idProducto = pu.idProducto AND m.idUn = pu.idUn','inner');
-            $this->db->join(TBL_MEMBRESIACONFIGURACION." mc", 'pu.idProductoUn = mc.idProductoUn','inner');
-            $query = $this->db->get(TBL_MEMBRESIA." m");
+            $this->db->join(TBL_PRODUCTOUN . " pu", 'm.idProducto = pu.idProducto AND m.idUn = pu.idUn', 'inner');
+            $this->db->join(TBL_MEMBRESIACONFIGURACION . " mc", 'pu.idProductoUn = mc.idProductoUn', 'inner');
+            $query = $this->db->get(TBL_MEMBRESIA . " m");
         } else {
             return $idMembConfig;
         }
@@ -5465,7 +5452,6 @@ class Membresia extends Model
         }
         return $idMembConfig;
     }
-
 
     /**
      * Obtiene el IdProductoUn de una membersia
@@ -5477,7 +5463,7 @@ class Membresia extends Model
      *
      * @return integer
      */
-    public function obtenIdProductoUn ($idUnicoMembresia, $idUn)
+    public function obtenIdProductoUn($idUnicoMembresia, $idUn)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idUn, 'integer');
@@ -5487,10 +5473,10 @@ class Membresia extends Model
             return $IdProductoUn;
         }
         $this->db->select("pu.idProductoUn");
-        $this->db->join(TBL_PRODUCTOUN." pu", "m.idProducto = pu.idProducto AND m.idUn = pu.idUn", "inner");
+        $this->db->join(TBL_PRODUCTOUN . " pu", "m.idProducto = pu.idProducto AND m.idUn = pu.idUn", "inner");
         $this->db->where("m.idUn", $idUn);
         $this->db->where("m.idUnicoMembresia", $idUnicoMembresia);
-        $query = $this->db->get(TBL_MEMBRESIA." m");
+        $query = $this->db->get(TBL_MEMBRESIA . " m");
 
         if ($query->num_rows > 0) {
             $IdProductoUn = $query->row()->idProductoUn;
@@ -5509,17 +5495,17 @@ class Membresia extends Model
      */
     public function obtenListaCambioMtto($idUn, $idUnicoMembresia, $bandera)
     {
-        $data = Array();
+        $data = array();
 
-        $sql = "CALL crm.spObtenListaCambioMtto(".$idUn.",".$idUnicoMembresia.",".$bandera.", 0, @respuesta)";
-        $query = $this->db->query($sql);
-        $sql2 = "SELECT @respuesta AS resp";
-        $query2 = $this->db->query($sql2);
-        $row = $query2->row();
-        $resultado= $row->resp;
-        $pipes=explode("|", $resultado);
+        $sql       = "CALL crm.spObtenListaCambioMtto(" . $idUn . "," . $idUnicoMembresia . "," . $bandera . ", 0, @respuesta)";
+        $query     = $this->db->query($sql);
+        $sql2      = "SELECT @respuesta AS resp";
+        $query2    = $this->db->query($sql2);
+        $row       = $query2->row();
+        $resultado = $row->resp;
+        $pipes     = explode("|", $resultado);
         foreach ($pipes as $sep1) {
-            $comas=explode(",", $sep1);
+            $comas           = explode(",", $sep1);
             $data[$comas[0]] = $comas[1];
         }
 
@@ -5531,21 +5517,21 @@ class Membresia extends Model
      * @param  integer $descMeses [description]
      * @return [type]             [description]
      */
-    public function obtenListaFidelidad($descMeses=0)
+    public function obtenListaFidelidad($descMeses = 0)
     {
         $data = array();
 
         settype($descMeses, 'integer');
 
-        if ($descMeses==0) {
-            $sql="SELECT tf.idTipoFidelidad, tf.descripcion
+        if ($descMeses == 0) {
+            $sql = "SELECT tf.idTipoFidelidad, tf.descripcion
                 FROM crm.tipofidelidad tf WHERE tf.fechaEliminacion ='0000-00-00 00:00:00'";
         } else {
-            $sql="SELECT tf.idTipoFidelidad, CONCAT(tf.descripcion,' (',tf.minMeses,'-',tf.maxMeses,' meses)') AS descripcion
+            $sql = "SELECT tf.idTipoFidelidad, CONCAT(tf.descripcion,' (',tf.minMeses,'-',tf.maxMeses,' meses)') AS descripcion
                 FROM crm.tipofidelidad tf WHERE tf.fechaEliminacion ='0000-00-00 00:00:00' AND tf.activo IN (1)";
         }
 
-        $query=$this->db->query($sql);
+        $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
@@ -5570,13 +5556,13 @@ class Membresia extends Model
         settype($unico, "integer");
         settype($idUn, "integer");
 
-        $query =$this->db->query("SELECT mo.valor
+        $query = $this->db->query("SELECT mo.valor
             FROM membresia m
             JOIN productoun pu ON pu.idProducto=m.idProducto AND pu.idUn=m.idUn
             JOIN membresiaconfiguracion mc ON mc.idProductoUn=pu.idProductoUn
             JOIN membresiaOpciones mo ON mo.idMembresiaConfiguracion=mc.idMembresiaConfiguracion
-            WHERE m.idUnicoMembresia=".$unico." AND mc.fechaEliminacion='0000-00-00 00:00:00'
-                AND mo.idTipoMembresiaOpcion=".$tipoOpcion." AND m.idUn=".$idUn);
+            WHERE m.idUnicoMembresia=" . $unico . " AND mc.fechaEliminacion='0000-00-00 00:00:00'
+                AND mo.idTipoMembresiaOpcion=" . $tipoOpcion . " AND m.idUn=" . $idUn);
         if ($query->num_rows() > 0) {
             $row = $query->row();
             return $row->valor;
@@ -5598,13 +5584,13 @@ class Membresia extends Model
         settype($unico, 'integer');
         settype($idUn, 'integer');
 
-        $query =$this->db->query("SELECT mo.valor
+        $query = $this->db->query("SELECT mo.valor
             from membresia m
             join productoun pu on pu.idProducto=m.idProducto and pu.idUn=m.idUn
             join membresiaconfiguracion mc on mc.idProductoUn= pu.idProductoUn
             join membresiaOpciones mo on mo.idMembresiaConfiguracion=mc.idMembresiaConfiguracion
-            where m.idUnicoMembresia=".$unico." and mc.fechaEliminacion='0000-00-00 00:00:00'
-               and mo.idTipoMembresiaOpcion=".$tipoOpcion." and m.idUn=".$idUn);
+            where m.idUnicoMembresia=" . $unico . " and mc.fechaEliminacion='0000-00-00 00:00:00'
+               and mo.idTipoMembresiaOpcion=" . $tipoOpcion . " and m.idUn=" . $idUn);
         if ($query->num_rows() > 0) {
             $row = $query->row();
             return $row->valor;
@@ -5620,7 +5606,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function obtenOpciones ()
+    public function obtenOpciones()
     {
         $datos = array();
         $where = array('activo' => 1);
@@ -5641,10 +5627,10 @@ class Membresia extends Model
      */
     public function obtenPorcentajeAnualidad($idUn)
     {
-        $data = Array();
-        $sql = "SELECT idTipoAnualidad, GROUP_CONCAT(CONCAT_WS(',' ,mes, porcentajeDescuento, idEsquemaPago) ORDER BY mes SEPARATOR ';') AS cadena
+        $data = array();
+        $sql  = "SELECT idTipoAnualidad, GROUP_CONCAT(CONCAT_WS(',' ,mes, porcentajeDescuento, idEsquemaPago) ORDER BY mes SEPARATOR ';') AS cadena
             FROM finanzasconfigmttoanual f
-            WHERE anio=YEAR(NOW()) AND idUn=".$idUn."
+            WHERE anio=YEAR(NOW()) AND idUn=" . $idUn . "
             GROUP BY idTipoAnualidad ORDER BY idTipoAnualidad, anio, mes;";
         $query = $this->db->query($sql);
 
@@ -5671,7 +5657,7 @@ class Membresia extends Model
     {
         settype($idUnicoMembresia, 'integer');
 
-        if ($idUnicoMembresia==0) {
+        if ($idUnicoMembresia == 0) {
             return 0;
         }
 
@@ -5694,14 +5680,14 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function obtenReporteSinTitular($club, $totales=0, $posicion=0, $registros=25, $orden = '')
+    public function obtenReporteSinTitular($club, $totales = 0, $posicion = 0, $registros = 25, $orden = '')
     {
         settype($club, 'integer');
         settype($totales, 'integer');
         settype($posicion, 'integer');
         settype($registros, 'integer');
 
-        if ($registros == 0) { $registros = REGISTROS_POR_PAGINA; }
+        if ($registros == 0) {$registros = REGISTROS_POR_PAGINA;}
 
         $sql = "SELECT m.idMembresia, p.nombre, CONCAT(per.nombre,' ',per.paterno,' ',per.materno) AS nombrePropietario,
                 mi.idPersona, a.idunicoMembresia, a.total
@@ -5711,7 +5697,7 @@ class Membresia extends Model
                 FROM socio s
                 INNER JOIN membresia m ON m.idunicoMembresia=s.idUnicoMembresia
                     AND m.eliminado=0
-                WHERE s.eliminado=0 AND s.idTipoRolCliente=1 AND m.idUn=".$club."
+                WHERE s.eliminado=0 AND s.idTipoRolCliente=1 AND m.idUn=" . $club . "
                 GROUP BY idUnicoMembresia
             ) AS a ON a.idUnicoMembresia=m.idUnicoMembresia
             LEFT JOIN producto p ON p.idProducto=m.idProducto AND p.fechaEliminacion='0000-00-00 00:00:00'
@@ -5719,24 +5705,24 @@ class Membresia extends Model
                 AND pu.fechaEliminacion='0000-00-00 00:00:00'
             LEFT JOIN membresiaInvolucrado mi ON mi.idUnicoMembresia=m.idUnicoMembresia
             LEFT JOIN persona per ON per.idPersona=mi.idPersona
-            WHERE m.idUn=".$club." AND m.eliminado=0
+            WHERE m.idUn=" . $club . " AND m.eliminado=0
                 AND mi.idTipoInvolucrado=1 AND mi.fechaEliminacion='0000-00-00 00:00:00'
             HAVING a.total IS NULL OR a.total>1";
-        if ($orden == ''){
-          $sql.=" ORDER BY m.idMembresia";
+        if ($orden == '') {
+            $sql .= " ORDER BY m.idMembresia";
         } else {
-            $sql.=" ORDER BY $orden";
+            $sql .= " ORDER BY $orden";
         }
         if ($totales == 0) {
             if ($posicion == '') {
                 $posicion = 0;
             }
-            $sql.=" LIMIT $posicion,$registros ";
+            $sql .= " LIMIT $posicion,$registros ";
         }
         $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
-            if ($totales == 1) { return $query->num_rows(); }
+            if ($totales == 1) {return $query->num_rows();}
             return $query->result_array();
         } else {
             return 0;
@@ -5754,22 +5740,22 @@ class Membresia extends Model
     {
         settype($idUnicoMembresia, 'integer');
 
-        $res=0;
-        $sql="SELECT mr.idMembresiaReactivacion
+        $res = 0;
+        $sql = "SELECT mr.idMembresiaReactivacion
             FROM membresiareactivacion mr
             INNER JOIN membresiareactivacionmovimiento mrm ON mrm.idMembresiaReactivacion=mr.idMembresiaReactivacion
             INNER JOIN movimiento mov ON mov.idMovimiento=mrm.idMovimiento
             INNER JOIN facturaMovimiento facmov ON facmov.idMovimiento=mov.idMovimiento
             INNER JOIN factura fac ON fac.idFactura=facmov.idFactura
-                AND EXTRACT(YEAR_MONTH FROM fac.fecha)='".date("Ym")."'
-            WHERE mr.idUnicoMembresia=".$idUnicoMembresia." AND mov.idTipoEstatusMovimiento=66";
-       $query = $this->db->query($sql);
+                AND EXTRACT(YEAR_MONTH FROM fac.fecha)='" . date("Ym") . "'
+            WHERE mr.idUnicoMembresia=" . $idUnicoMembresia . " AND mov.idTipoEstatusMovimiento=66";
+        $query = $this->db->query($sql);
 
-       if ($query->num_rows() > 0) {
-           $res=1;
+        if ($query->num_rows() > 0) {
+            $res = 1;
 
-       }
-       return $res;
+        }
+        return $res;
     }
 
     /**
@@ -5784,12 +5770,12 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
 
         $resultado = 0;
-        $rs = $this->db->query("SELECT  IFNULL(CONCAT('1|||',SUM(mov.importe)),'0|||0.00') AS montoAdeudo
+        $rs        = $this->db->query("SELECT  IFNULL(CONCAT('1|||',SUM(mov.importe)),'0|||0.00') AS montoAdeudo
             FROM crm.movimiento mov
             INNER JOIN crm.movimientoctacontable mcc ON mcc.idMovimiento=mov.idMovimiento AND mcc.numeroCuenta IN (4201,4202,4203)
-            WHERE mov.idUnicoMembresia IN (".$idUnicoMembresia.") AND mov.idTipoEstatusMovimiento IN (65) AND mov.eliminado=0;");
-        if ( $rs->num_rows()>0 ) {
-            $row = $rs->row();
+            WHERE mov.idUnicoMembresia IN (" . $idUnicoMembresia . ") AND mov.idTipoEstatusMovimiento IN (65) AND mov.eliminado=0;");
+        if ($rs->num_rows() > 0) {
+            $row       = $rs->row();
             $resultado = $row->montoAdeudo;
         }
 
@@ -5797,16 +5783,16 @@ class Membresia extends Model
     }
 
     /**
-    * Obtiene tipo de pago de anualidad
-    *
-    * @author Antonio Sixtos
-    *
-    * @return array
-    */
+     * Obtiene tipo de pago de anualidad
+     *
+     * @author Antonio Sixtos
+     *
+     * @return array
+     */
     public function obtenTipoAnualidad()
     {
-        $data = Array();
-        $sql="SELECT * from tipoanualidad";
+        $data = array();
+        $sql  = "SELECT * from tipoanualidad";
 
         $query = $this->db->query($sql);
 
@@ -5829,23 +5815,23 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function obtenUltimaMembresia ($idUn)
+    public function obtenUltimaMembresia($idUn)
     {
         settype($idUn, 'integer');
 
         $datos = array(
             'mensaje'     => 'Error, faltan datos',
             'error'       => 1,
-            'idMembresia' => 0
+            'idMembresia' => 0,
         );
-        if ( ! $idUn) {
+        if (!$idUn) {
             return $datos;
         }
         $datos['mensaje'] = 'Error al obtener ultima membresia';
         $datos['error']   = 2;
-        $where = array(
+        $where            = array(
             'idUn'      => $idUn,
-            'eliminado' => 0
+            'eliminado' => 0,
         );
         $query = $this->db->select_max('idMembresia', 'idMembresia')->get_where(TBL_MEMBRESIA, $where);
 
@@ -5877,9 +5863,9 @@ class Membresia extends Model
         $this->db->select('idPersona');
         $this->db->from(TBL_MEMBRESIAINVOLUCRADO);
         $where = array(
-            'idUnicoMembresia' => $membresia,
+            'idUnicoMembresia'  => $membresia,
             'idTipoInvolucrado' => MEM_BENFICIARIO,
-            'fechaEliminacion'=> '0000-00-00 00:00:00');
+            'fechaEliminacion'  => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
 
@@ -5905,16 +5891,16 @@ class Membresia extends Model
         settype($idPersona, 'integer');
 
         $this->db->select('pd.idPersonaDocumento, pd.idTipoDocumento');
-        $this->db->from(TBL_PERSONADOCUMENTO.' pd');
-        $this->db->join(TBL_TIPODOCUMENTO.' td', 'td.idTipoDocumento=pd.idTipoDocumento');
-        $this->db->join(TBL_COMPROBANTEDOCUMENTO.' cd', 'cd.idTipoDocumento=td.idTipoDocumento');
+        $this->db->from(TBL_PERSONADOCUMENTO . ' pd');
+        $this->db->join(TBL_TIPODOCUMENTO . ' td', 'td.idTipoDocumento=pd.idTipoDocumento');
+        $this->db->join(TBL_COMPROBANTEDOCUMENTO . ' cd', 'cd.idTipoDocumento=td.idTipoDocumento');
         $this->db->where('cd.idTipoComprobante', $idTipoComprobante);
         $this->db->where('pd.idPersona', $idPersona);
         $this->db->where('pd.fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->where('td.fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
-        if ( $query->num_rows > 0 ) {
-             foreach ($query->result() as $fila) {
+        if ($query->num_rows > 0) {
+            foreach ($query->result() as $fila) {
                 return $fila->idTipoDocumento;
             }
         } else {
@@ -5941,7 +5927,7 @@ class Membresia extends Model
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
 
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return 0;
@@ -5982,7 +5968,7 @@ class Membresia extends Model
             GROUP BY m.idUnicoMembresia";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows()>0) {
+        if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $dato[] = $fila;
             }
@@ -6007,7 +5993,7 @@ class Membresia extends Model
         $this->db->where('eliminado', 0);
         $query = $this->db->get();
 
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return 0;
@@ -6021,7 +6007,7 @@ class Membresia extends Model
      *
      * @return void
      */
-    function obtenerDatosSocioPagoMttoProximo($idPersona, $idUnicoMembresia, $fecha)
+    public function obtenerDatosSocioPagoMttoProximo($idPersona, $idUnicoMembresia, $fecha)
     {
         $sql = "SELECT s.idMantenimiento
             from sociopagomtto s
@@ -6030,7 +6016,7 @@ class Membresia extends Model
                 and s.eliminado = 0 and s.idUnicoMembresia=$idUnicoMembresia";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows()>0) {
+        if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $idMantenimiento = $fila->idMantenimiento;
             }
@@ -6047,26 +6033,26 @@ class Membresia extends Model
      *
      * @return boolean
      */
-    function obtenerDescuentoMtto($idUnicoMembresia)
+    public function obtenerDescuentoMtto($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
 
         $this->db->select('m.idMembresia,m.idUn,m.idMembresiaDescuentoMtto,mdm.descripcion,mdm.porcentajeDescuento,mdm.inicioVigencia,mdm.finVigencia');
-        $this->db->from(TBL_MEMBRESIA.' m');
-        $this->db->join(TBL_MEMBRESIADESCUENTOMTTO.' mdm', 'mdm.idMembresiaDescuentoMtto=m.idMembresiaDescuentoMtto');
+        $this->db->from(TBL_MEMBRESIA . ' m');
+        $this->db->join(TBL_MEMBRESIADESCUENTOMTTO . ' mdm', 'mdm.idMembresiaDescuentoMtto=m.idMembresiaDescuentoMtto');
         $this->db->where('m.idUnicoMembresia', $idUnicoMembresia);
         $this->db->where('mdm.activo', 1);
         $this->db->where('mdm.fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
 
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return 0;
         }
     }
 
-     /**
+    /**
      * Obtiene las fechas tanto de Registro, como de inicio de vigencia y fin de vigencia
      *
      * @param integer $idUnicoMembresia Identificador unico de la membresia
@@ -6089,7 +6075,7 @@ class Membresia extends Model
         $query = $this->db->get();
 
         if ($query->num_rows() > 0) {
-            $fila      = $query->row_array();
+            $fila = $query->row_array();
         }
         if (isset($fila)) {
             return $fila;
@@ -6108,17 +6094,17 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function obtenerFolio($idUnicoMembresia,$idUn)
+    public function obtenerFolio($idUnicoMembresia, $idUn)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idUn, 'integer');
 
-        $sql='select max(folio) as folio from membresiacesion WHERE';
-        if ($idUnicoMembresia!=0) {
-            $sql .= ' idUnicoMembresia='.$idUnicoMembresia;
+        $sql = 'select max(folio) as folio from membresiacesion WHERE';
+        if ($idUnicoMembresia != 0) {
+            $sql .= ' idUnicoMembresia=' . $idUnicoMembresia;
         }
-        if ($idUn!=0) {
-            $sql .= ' AND idUn='.$idUn;
+        if ($idUn != 0) {
+            $sql .= ' AND idUn=' . $idUn;
         }
         $query = $this->db->query($sql);
 
@@ -6152,15 +6138,15 @@ class Membresia extends Model
         $formaPago = 0;
 
         $this->db->select('s.idEsquemaPago');
-        $this->db->from(TBL_MEMBRESIA.' m');
-        $this->db->join(TBL_SOCIO.' s', 's.idUnicoMembresia=m.idUnicoMembresia');
+        $this->db->from(TBL_MEMBRESIA . ' m');
+        $this->db->join(TBL_SOCIO . ' s', 's.idUnicoMembresia=m.idUnicoMembresia');
         $this->db->where('m.idUnicoMembresia', $idUnicoMembresia);
         $this->db->where('m.eliminado', 0);
         $this->db->where('s.idTipoRolCliente', '1');
         $this->db->where('s.eliminado', 0);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
-            $fila = $query->row_array();
+            $fila      = $query->row_array();
             $formaPago = $fila['idEsquemaPago'];
         }
         return $formaPago;
@@ -6182,14 +6168,14 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
         settype($idUn, 'integer');
 
-        if (!$idUnicoMembresia or ! $idUn) {
+        if (!$idUnicoMembresia or !$idUn) {
             return MTTO_DEFAULT;
         }
         $this->db->select('mcm.idMantenimiento');
-        $this->db->from(TBL_MEMBRESIA.' m');
-        $this->db->join(TBL_PRODUCTOUN.' pu', 'pu.idProducto = m.idProducto');
-        $this->db->join(TBL_MEMBRESIACONFIGURACION.' mc', 'mc.idProductoUn = pu.idProductoUn');
-        $this->db->join(TBL_MEMBRESIACONFIGMTTO.' mcm', 'mcm.idMembresiaConfiguracion = mc.idMembresiaConfiguracion');
+        $this->db->from(TBL_MEMBRESIA . ' m');
+        $this->db->join(TBL_PRODUCTOUN . ' pu', 'pu.idProducto = m.idProducto');
+        $this->db->join(TBL_MEMBRESIACONFIGURACION . ' mc', 'mc.idProductoUn = pu.idProductoUn');
+        $this->db->join(TBL_MEMBRESIACONFIGMTTO . ' mcm', 'mcm.idMembresiaConfiguracion = mc.idMembresiaConfiguracion');
         $this->db->where('m.eliminado', 0);
         $this->db->where('pu.eliminado', 0);
         $this->db->where('mc.fechaEliminacion', '0000-00-00 00:00:00');
@@ -6214,7 +6200,7 @@ class Membresia extends Model
      *
      * @return void
      */
-    function obtenerImporteMttoMes($idPersona)
+    public function obtenerImporteMttoMes($idPersona)
     {
         settype($idPersona, 'integer');
 
@@ -6226,7 +6212,7 @@ class Membresia extends Model
 
         $query = $this->db->query($sql);
 
-        if ($query->num_rows()>0) {
+        if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 return $fila->importe;
             }
@@ -6244,7 +6230,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function obtenerInvolucrado ($idUnicoMembresia)
+    public function obtenerInvolucrado($idUnicoMembresia)
     {
         settype($idMembresia, 'integer');
         if ($idUnicoMembresia == 0) {
@@ -6252,14 +6238,14 @@ class Membresia extends Model
         }
 
         $this->db->select('mi.idPersona');
-        $this->db->from(TBL_MEMBRESIAINVOLUCRADO.' mi');
-        $this->db->join(TBL_TIPOINVOLUCRADO.' ti', 'ti.idTipoInvolucrado= mi.idTipoInvolucrado');
-        $where = array('mi.idUnicoMembresia' => $idUnicoMembresia,'ti.descripcion'=>'Beneficiario','mi.fechaEliminacion'=>'0000-00-00 00:00:00');
+        $this->db->from(TBL_MEMBRESIAINVOLUCRADO . ' mi');
+        $this->db->join(TBL_TIPOINVOLUCRADO . ' ti', 'ti.idTipoInvolucrado= mi.idTipoInvolucrado');
+        $where = array('mi.idUnicoMembresia' => $idUnicoMembresia, 'ti.descripcion' => 'Beneficiario', 'mi.fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
 
         if ($query->num_rows() > 0) {
-            $fila      = $query->row_array();
+            $fila          = $query->row_array();
             $idInvolucrado = $fila['idPersona'];
         }
         if (isset($idInvolucrado)) {
@@ -6282,15 +6268,15 @@ class Membresia extends Model
         settype($idTipoComprobante, 'integer');
 
         $this->db->select('td.concepto, td.idTipoDocumento');
-        $this->db->from(TBL_TIPODOCUMENTO.' td');
-        $this->db->join(TBL_COMPROBANTEDOCUMENTO.' cd', 'cd.idTipoDocumento=td.idTipoDocumento');
+        $this->db->from(TBL_TIPODOCUMENTO . ' td');
+        $this->db->join(TBL_COMPROBANTEDOCUMENTO . ' cd', 'cd.idTipoDocumento=td.idTipoDocumento');
         $this->db->where('td.fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->where('cd.idTipoComprobante', $idTipoComprobante);
         $this->db->where('td.activo', 1);
-        $query = $this->db->get();
-        $lista=array();
+        $query    = $this->db->get();
+        $lista    = array();
         $lista[0] = 'Seleccione una opcion';
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
                 $lista[$fila->idTipoDocumento] = $fila->concepto;
             }
@@ -6318,12 +6304,12 @@ class Membresia extends Model
         settype($idUn, 'integer');
 
         $this->db->select('trc.descripcion,trc.idTipoRolCliente');
-        $this->db->from(TBL_MEMBRESIACONFIGURACION.' mc');
-        $this->db->join(TBL_PRODUCTOUN .' pu', 'pu.idProductoUn = mc.idProductoUn');
-        $this->db->join(TBL_MEMBRESIACONFIGMTTO.' mcm', 'mcm.idMembresiaConfiguracion = mc.idMembresiaConfiguracion');
-        $this->db->join(TBL_MEMBRESIATIPOSOCIO .' mts', 'mts.idMembresiaConfiguracion = mc.idMembresiaConfiguracion');
-        $this->db->join(TBL_TIPOROLCLIENTE.' trc', 'trc.idTipoRolCliente = mts.idTipoRolCliente');
-        $where = array('mcm.idMantenimiento' => $idMantenimiento, 'pu.idProducto'=>$idProducto,'idUn'=>$idUn);
+        $this->db->from(TBL_MEMBRESIACONFIGURACION . ' mc');
+        $this->db->join(TBL_PRODUCTOUN . ' pu', 'pu.idProductoUn = mc.idProductoUn');
+        $this->db->join(TBL_MEMBRESIACONFIGMTTO . ' mcm', 'mcm.idMembresiaConfiguracion = mc.idMembresiaConfiguracion');
+        $this->db->join(TBL_MEMBRESIATIPOSOCIO . ' mts', 'mts.idMembresiaConfiguracion = mc.idMembresiaConfiguracion');
+        $this->db->join(TBL_TIPOROLCLIENTE . ' trc', 'trc.idTipoRolCliente = mts.idTipoRolCliente');
+        $where = array('mcm.idMantenimiento' => $idMantenimiento, 'pu.idProducto' => $idProducto, 'idUn' => $idUn);
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
@@ -6351,7 +6337,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    function obtenMembresiasVentaEnLinea ($idUn, $totales = 0, $registros = REGISTROS_POR_PAGINA, $posicion = 0, $orden = 'mem.fechaRegistro', $direccion = 'DESC')
+    public function obtenMembresiasVentaEnLinea($idUn, $totales = 0, $registros = REGISTROS_POR_PAGINA, $posicion = 0, $orden = 'mem.fechaRegistro', $direccion = 'DESC')
     {
         settype($idUn, 'integer');
         settype($totales, 'integer');
@@ -6369,20 +6355,20 @@ class Membresia extends Model
         }
         $where = array(
             'mem.ventaEnLinea' => 1,
-            'mem.eliminado'    => 0
+            'mem.eliminado'    => 0,
         );
         if ($idUn) {
             $where['mem.idUn'] = $idUn;
         }
         $this->db->join(TBL_UN, "un.idUn = mem.idUn AND un.fechaEliminacion = '0000-00-00 00:00:00'", "INNER");
-        $this->db->join(TBL_MOVIMIENTO." mov", "mov.idUnicoMembresia = mem.idUnicoMembresia AND mov.eliminado = 0 AND mov.idTipoEstatusMovimiento = ".MOVIMIENTO_PENDIENTE, "INNER");
-        $this->db->join(TBL_MOVIMIENTOCTACONTABLE." mcc", "mcc.idMovimiento = mov.idMovimiento AND mcc.idTipoMovimiento = ".TIPO_MOVIMIENTO_MEMBRESIA." AND mcc.eliminado = 0", "INNER");
-        $this->db->join(TBL_MEMBRESIAINVOLUCRADO." mi", "mi.idUnicoMembresia = mem.idUnicoMembresia AND mi.fechaEliminacion = '0000-00-00 00:00:00' AND mi.idTipoInvolucrado = 1", "INNER");
-        $this->db->join(TBL_PERSONA." p", "p.idPersona = mi.idPersona", "INNER");
+        $this->db->join(TBL_MOVIMIENTO . " mov", "mov.idUnicoMembresia = mem.idUnicoMembresia AND mov.eliminado = 0 AND mov.idTipoEstatusMovimiento = " . MOVIMIENTO_PENDIENTE, "INNER");
+        $this->db->join(TBL_MOVIMIENTOCTACONTABLE . " mcc", "mcc.idMovimiento = mov.idMovimiento AND mcc.idTipoMovimiento = " . TIPO_MOVIMIENTO_MEMBRESIA . " AND mcc.eliminado = 0", "INNER");
+        $this->db->join(TBL_MEMBRESIAINVOLUCRADO . " mi", "mi.idUnicoMembresia = mem.idUnicoMembresia AND mi.fechaEliminacion = '0000-00-00 00:00:00' AND mi.idTipoInvolucrado = 1", "INNER");
+        $this->db->join(TBL_PERSONA . " p", "p.idPersona = mi.idPersona", "INNER");
 
         $query = $this->db->select(
             "mem.idUnicoMembresia, p.idPersona, mem.idMembresia, un.nombre AS club,CONCAT_WS(' ', p.nombre, p.paterno, p.materno)AS nombre, mem.fechaRegistro", false
-        )->order_by($orden, $direccion)->group_by('mem.idUnicoMembresia')->get_where(TBL_MEMBRESIA.' mem', $where, $registros, $posicion);
+        )->order_by($orden, $direccion)->group_by('mem.idUnicoMembresia')->get_where(TBL_MEMBRESIA . ' mem', $where, $registros, $posicion);
 
         if ($query->num_rows) {
             if ($totales) {
@@ -6401,7 +6387,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    function obtenerNumeroAusencias($idPersona)
+    public function obtenerNumeroAusencias($idPersona)
     {
         $this->db->select('numeroAusencias');
         $this->db->from(TBL_SOCIO);
@@ -6425,9 +6411,9 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function obtenerPagosMtto($opciones, $totales=0, $posicion=0, $registros=25, $orden = '', $todo = false)
+    public function obtenerPagosMtto($opciones, $totales = 0, $posicion = 0, $registros = 25, $orden = '', $todo = false)
     {
-        if (isset ($opciones['membresia'])) {
+        if (isset($opciones['membresia'])) {
             settype($opciones['membresia'], 'integer');
         } else {
             return 0;
@@ -6441,31 +6427,31 @@ class Membresia extends Model
             $orden = 'fechaInicio';
         }
 
-        $this->db->select('p.nombre, p.paterno, p.materno, s.idSocioPagoMtto, s.fechaInicio, s.fechaFin, '.
-            's.idMovimiento, s.idPersona, s.idEsquemaPago, s.idMantenimiento, s.activo, s.porcentaje, '.
+        $this->db->select('p.nombre, p.paterno, p.materno, s.idSocioPagoMtto, s.fechaInicio, s.fechaFin, ' .
+            's.idMovimiento, s.idPersona, s.idEsquemaPago, s.idMantenimiento, s.activo, s.porcentaje, ' .
             'e.descripcion as esquemaPago, pr.nombre as mantenimiento, s.idSocio, s.ausencia');
-        $this->db->from(TBL_SOCIOPAGOMTTO.' s');
-        $this->db->join(TBL_PERSONA .' p', 'p.idPersona = s.idPersona');
-        $this->db->join(TBL_ESQUEMAPAGO .' e', 'e.idEsquemaPago= s.idEsquemaPago');
-        $this->db->join(TBL_PRODUCTOMANTENIMIENTO .' pm', 'pm.idMantenimiento = s.idMantenimiento');
-        $this->db->join(TBL_PRODUCTO .' pr', 'pr.idProducto = pm.idProducto and pr.activo = 1');
+        $this->db->from(TBL_SOCIOPAGOMTTO . ' s');
+        $this->db->join(TBL_PERSONA . ' p', 'p.idPersona = s.idPersona');
+        $this->db->join(TBL_ESQUEMAPAGO . ' e', 'e.idEsquemaPago= s.idEsquemaPago');
+        $this->db->join(TBL_PRODUCTOMANTENIMIENTO . ' pm', 'pm.idMantenimiento = s.idMantenimiento');
+        $this->db->join(TBL_PRODUCTO . ' pr', 'pr.idProducto = pm.idProducto and pr.activo = 1');
         $this->db->where('s.eliminado', 0);
         $this->db->where('s.idUnicoMembresia', $opciones['membresia']);
 
-        if(isset ($opciones['fecha'])){
+        if (isset($opciones['fecha'])) {
             $this->db->where('s.fechaInicio <=', $opciones['fecha']);
             $this->db->where('s.fechaFin >=', $opciones['fecha']);
         }
-        if(isset ($opciones['idPersona'])){
+        if (isset($opciones['idPersona'])) {
             $this->db->where('s.idPersona', $opciones['idPersona']);
         }
 
         if ($totales == 0) {
-            if ( ! $todo) {
+            if (!$todo) {
                 $this->db->limit($registros, $posicion);
             }
         }
-        $this->db->order_by("$orden",'desc');
+        $this->db->order_by("$orden", 'desc');
         $query = $this->db->get();
 
         if ($query->num_rows() > 0) {
@@ -6489,7 +6475,7 @@ class Membresia extends Model
         settype($idUnicoMembresia, 'integer');
         settype($idUn, 'integer');
 
-        $sql="select fncObtenPrecioTraspaso($idUnicoMembresia,$idUn) as precio;";
+        $sql   = "select fncObtenPrecioTraspaso($idUnicoMembresia,$idUn) as precio;";
         $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
@@ -6521,9 +6507,9 @@ class Membresia extends Model
         $this->db->select('idPersona');
         $this->db->from(TBL_MEMBRESIAINVOLUCRADO);
         $where = array(
-            'idUnicoMembresia' => $membresia,
+            'idUnicoMembresia'  => $membresia,
             'idTipoInvolucrado' => INVOLUCRADO_PROPIETARIO,
-            'fechaEliminacion'=> '0000-00-00 00:00:00');
+            'fechaEliminacion'  => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
@@ -6541,7 +6527,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    function obtenerReactivacionXPeriodo($unico, $fechaInicio, $fechaFin)
+    public function obtenerReactivacionXPeriodo($unico, $fechaInicio, $fechaFin)
     {
         settype($unico, 'integer');
 
@@ -6565,25 +6551,25 @@ class Membresia extends Model
      *
      * @return string
      */
-    function obtenerReactivacionesPorPeriodo($idUnicoMembresia)
+    public function obtenerReactivacionesPorPeriodo($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
-        $mes = date('m');
+        $mes       = date('m');
         $condicion = '';
         if ($mes <= 6) {
-            $contador = '0';
-            $dia = strftime("%d", mktime(0, 0, 0, 6+1, 0, date('Y')));
-            $condicion1 = date('Y').'-01-01';
-            $condicion2 = date('Y').'-06-'.$dia;
+            $contador   = '0';
+            $dia        = strftime("%d", mktime(0, 0, 0, 6 + 1, 0, date('Y')));
+            $condicion1 = date('Y') . '-01-01';
+            $condicion2 = date('Y') . '-06-' . $dia;
         } else {
-            $contador = '1';
-            $dia = strftime("%d", mktime(0, 0, 0, 12+1, 0, date('Y')));
-            $condicion1 = date('Y').'-06-01';
-            $condicion2 = date('Y').'-12-'.$dia;
+            $contador   = '1';
+            $dia        = strftime("%d", mktime(0, 0, 0, 12 + 1, 0, date('Y')));
+            $condicion1 = date('Y') . '-06-01';
+            $condicion2 = date('Y') . '-12-' . $dia;
         }
         $this->db->select('idMembresiaReactivacion');
         $this->db->from(TBL_MEMBRESIAREACTIVACION);
-        $where = array('idUnicoMembresia' => $idUnicoMembresia, 'fechaEliminacion'=>'0000-00-00 00:00:00' , 'fechaRegistro >='=> $condicion1, 'fechaRegistro <='=> $condicion2);
+        $where = array('idUnicoMembresia' => $idUnicoMembresia, 'fechaEliminacion' => '0000-00-00 00:00:00', 'fechaRegistro >=' => $condicion1, 'fechaRegistro <=' => $condicion2);
         $this->db->where($where);
         $query = $this->db->get();
 
@@ -6613,8 +6599,8 @@ class Membresia extends Model
         $tipoCliente = "";
 
         $this->db->select('t.idTipoRolCliente,t.descripcion');
-        $this->db->from(TBL_TIPOROLCLIENTE.' t');
-        $this->db->join(TBL_SOCIO .' s', 't.idTipoRolCliente = s.idTipoRolCliente');
+        $this->db->from(TBL_TIPOROLCLIENTE . ' t');
+        $this->db->join(TBL_SOCIO . ' s', 't.idTipoRolCliente = s.idTipoRolCliente');
         $this->db->where('s.idPersona', $idPersona);
         $this->db->where('s.eliminado', 0);
         $this->db->where('t.idTipoRolCliente <>', 0);
@@ -6643,12 +6629,12 @@ class Membresia extends Model
         settype($idTipoRolCliente, 'integer');
 
         $this->db->select('tc.descripcion, tc.idTipoComprobante');
-        $this->db->from(TBL_CLIENTECOMPROBANTE.' cd');
-        $this->db->join(TBL_TIPOCOMPROBANTE.' tc', 'tc.idTipoComprobante=cd.idTipoComprobante');
+        $this->db->from(TBL_CLIENTECOMPROBANTE . ' cd');
+        $this->db->join(TBL_TIPOCOMPROBANTE . ' tc', 'tc.idTipoComprobante=cd.idTipoComprobante');
         $this->db->where('tc.activo', '1');
         $this->db->where('cd.idTipoRolCliente', $idTipoRolCliente);
         $query = $this->db->get();
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return array();
@@ -6672,12 +6658,12 @@ class Membresia extends Model
         }
         $this->db->distinct();
         $this->db->select('p.nombre, p.idProducto');
-        $this->db->from(TBL_PRODUCTO.' p');
-        $this->db->join(TBL_MEMBRESIA .' m', 'm.idProducto= p.idProducto');
-        $where = array('m.idUnicoMembresia' => $idUnicoMembresia,'p.fechaEliminacion'=>'0000-00-00 00:00:00');
+        $this->db->from(TBL_PRODUCTO . ' p');
+        $this->db->join(TBL_MEMBRESIA . ' m', 'm.idProducto= p.idProducto');
+        $where = array('m.idUnicoMembresia' => $idUnicoMembresia, 'p.fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $query = $this->db->get();
-         if ($query->num_rows() > 0) {
+        if ($query->num_rows() > 0) {
             $fila      = $query->row_array();
             $Membresia = $fila;
         }
@@ -6689,14 +6675,14 @@ class Membresia extends Model
     }
 
     /**
-    * Obtiene el titular de la membresía
-    *
-    * @param integer $idUnicoMembresia Identificador unico de la membresia
-    *
-    * @author Santa Garcia
-    *
-    * @return array
-    */
+     * Obtiene el titular de la membresía
+     *
+     * @param integer $idUnicoMembresia Identificador unico de la membresia
+     *
+     * @author Santa Garcia
+     *
+     * @return array
+     */
     public function obtenerTitular($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
@@ -6755,7 +6741,7 @@ class Membresia extends Model
      *
      * @return string
      */
-    function obtieneDatosCAvencidos($idSocio)
+    public function obtieneDatosCAvencidos($idSocio)
     {
         settype($idSocio, 'integer');
 
@@ -6764,7 +6750,7 @@ class Membresia extends Model
                 left join sociodatostarjeta sdt on s.idSocio = sdt.idSocio and sdt.fechaEliminacion = '0000-00-00 00:00:00'
                 #and date(CURDATE()) > DATE(concat_ws('-',YEAR(CURDATE()),MONTH(CURDATE()),sdt.diaCargo))
                 and s.idTipoEstatusSocio=81
-                where s.idEsquemaPago = 2 and s.idSocio=".$idSocio;
+                where s.idEsquemaPago = 2 and s.idSocio=" . $idSocio;
         $query = $this->db->query($sql);
         if ($query->num_rows() > 0) {
             return $query->result_array();
@@ -6789,7 +6775,7 @@ class Membresia extends Model
         $this->db->where('idPromoMttoUn', $idPromoMttoUn);
         $query = $this->db->get();
 
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return 0;
@@ -6808,13 +6794,13 @@ class Membresia extends Model
         settype($idConvenio, 'integer');
 
         $this->db->select('m.idUnicoMembresia, cd.idConvenioDetalle');
-        $this->db->from(TBL_CONVENIODETALLE.' cd');
-        $this->db->join(TBL_MEMBRESIA.' m', 'm.idConvenioDetalle=cd.idConvenioDetalle');
+        $this->db->from(TBL_CONVENIODETALLE . ' cd');
+        $this->db->join(TBL_MEMBRESIA . ' m', 'm.idConvenioDetalle=cd.idConvenioDetalle');
         $this->db->where('cd.eliminado', 0);
         $this->db->where('m.eliminado', 0);
         $this->db->where('cd.idConvenio', $idConvenio);
         $query = $this->db->get();
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return 0;
@@ -6832,12 +6818,12 @@ class Membresia extends Model
     {
         settype($idUnicoMembresia, 'integer');
 
-        $sql = "CALL spPermite2x1(".$idUnicoMembresia.", @res_agregado)";
+        $sql   = "CALL spPermite2x1(" . $idUnicoMembresia . ", @res_agregado)";
         $query = $this->db->query($sql);
 
-        $sql = "SELECT @res_agregado AS resultado";
+        $sql   = "SELECT @res_agregado AS resultado";
         $query = $this->db->query($sql);
-        $fila = $query->row_array();
+        $fila  = $query->row_array();
 
         return $fila['resultado'];
     }
@@ -6855,12 +6841,12 @@ class Membresia extends Model
     {
         settype($idUnicoMembresia, 'integer');
 
-        $sql = "CALL spPermiteAgregado(".$idUnicoMembresia.", @res_agregado)";
+        $sql   = "CALL spPermiteAgregado(" . $idUnicoMembresia . ", @res_agregado)";
         $query = $this->db->query($sql);
 
-        $sql = "SELECT @res_agregado AS resultado";
+        $sql   = "SELECT @res_agregado AS resultado";
         $query = $this->db->query($sql);
-        $fila = $query->row_array();
+        $fila  = $query->row_array();
 
         return $fila['resultado'];
     }
@@ -6874,26 +6860,26 @@ class Membresia extends Model
      *
      * @return string
      */
-    public function realizaReactivacion ($idUnicoMembresia,$idProducto,$importe = 0)
+    public function realizaReactivacion($idUnicoMembresia, $idProducto, $importe = 0)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idProducto, 'integer');
 
-        $data = array (
+        $data = array(
             'idUnicoMembresia' => $idUnicoMembresia,
-            'idProducto' => $idProducto,
-            'importe' => $importe
+            'idProducto'       => $idProducto,
+            'importe'          => $importe,
         );
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('un_model');
 
-        $datosGral=$this->obtenerDatosGeneralesMem($idUnicoMembresia);
-        $club=$ci->un_model->nombre($datosGral[0]->idUn);
-        $membresia=$datosGral[0]->idMembresia;
+        $datosGral = $this->obtenerDatosGeneralesMem($idUnicoMembresia);
+        $club      = $ci->un_model->nombre($datosGral[0]->idUn);
+        $membresia = $datosGral[0]->idMembresia;
         $this->db->insert(TBL_MEMBRESIAREACTIVACION, $data);
         $reactivacion = $this->db->insert_id();
-        $total = $this->db->affected_rows();
+        $total        = $this->db->affected_rows();
         if ($total == 0) {
             return 0;
         } else {
@@ -6913,15 +6899,15 @@ class Membresia extends Model
      */
     public function reenviaMailCodigosVueloAnualidades2015($idAnualidadesCodigosViajes, $idUnicoMembresia, $idPersona)
     {
-        $data  = 0;
-        $sql = "UPDATE crm.anualidadescodigosviajes acv
+        $data = 0;
+        $sql  = "UPDATE crm.anualidadescodigosviajes acv
             SET acv.envioMail2=1, acv.fechaActualizacion=NOW()
-            WHERE idAnualidadesCodigosViajes IN (".$idAnualidadesCodigosViajes.");";
+            WHERE idAnualidadesCodigosViajes IN (" . $idAnualidadesCodigosViajes . ");";
         $query = $this->db->query($sql);
 
-        if ($this->db->affected_rows()>0) {
+        if ($this->db->affected_rows() > 0) {
             $this->permisos_model->log(
-                utf8_decode("Reenvio de correo con codigo de viajes Anualidades 2015 a [".$idPersona."][".date('Y-m-d')."]") ,
+                utf8_decode("Reenvio de correo con codigo de viajes Anualidades 2015 a [" . $idPersona . "][" . date('Y-m-d') . "]"),
                 LOG_MEMBRESIA,
                 $idUnicoMembresia
             );
@@ -6939,14 +6925,14 @@ class Membresia extends Model
      *
      * @return [type]                   [description]
      */
-    public function spGeneracionManualMovimientos($idMovimiento, $nuevaDescripcion="", $nuevoOrigen="")
+    public function spGeneracionManualMovimientos($idMovimiento, $nuevaDescripcion = "", $nuevoOrigen = "")
     {
         $nuevoCargo = 0;
 
-        $rsSP = $this->db->query("CALL crm.spGeneracionManualMovimientos(".$idMovimiento.", 0, 0, 0, 0, 0, 0, '".$nuevaDes."', 0, 0, '".$nuevoOrigen."', @nuevoMovimiento);");
-        $rsR = $this->db->query("SELECT @nuevoMovimiento AS nuevoCargo;");
+        $rsSP = $this->db->query("CALL crm.spGeneracionManualMovimientos(" . $idMovimiento . ", 0, 0, 0, 0, 0, 0, '" . $nuevaDes . "', 0, 0, '" . $nuevoOrigen . "', @nuevoMovimiento);");
+        $rsR  = $this->db->query("SELECT @nuevoMovimiento AS nuevoCargo;");
 
-        if( $rsR->num_rows()>0 ){
+        if ($rsR->num_rows() > 0) {
             $nuevoCargo = $rsR->row();
         }
 
@@ -6960,14 +6946,14 @@ class Membresia extends Model
      *
      * @return [type]              [description]
      */
-    public function spObtenCargosPromocionAnualidadFacturados($anioAplica=0)
+    public function spObtenCargosPromocionAnualidadFacturados($anioAplica = 0)
     {
-        $sql1 = "CALL crm.spMTTOMSIObtenCargosFacturados(".$anioAplica.", @resultado)";
+        $sql1   = "CALL crm.spMTTOMSIObtenCargosFacturados(" . $anioAplica . ", @resultado)";
         $query1 = $this->db->query($sql1);
 
-        $sql2 = "SELECT @resultado AS resp";
+        $sql2   = "SELECT @resultado AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
 
@@ -6978,14 +6964,14 @@ class Membresia extends Model
      *
      * @return [type]            [description]
      */
-    function spObtenUltimoMesPagado($idPersona)
+    public function spObtenUltimoMesPagado($idPersona)
     {
-        $sql1 = "CALL crm.spObtenUltimoMesPagado(".$idPersona.", @resultado)";
+        $sql1   = "CALL crm.spObtenUltimoMesPagado(" . $idPersona . ", @resultado)";
         $query1 = $this->db->query($sql1);
 
-        $sql2 = "SELECT @resultado AS resp";
+        $sql2   = "SELECT @resultado AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
 
@@ -6996,14 +6982,14 @@ class Membresia extends Model
      *
      * @return [type]            [description]
      */
-    function spObtenUltimoPeriodoPagado($idPersona)
+    public function spObtenUltimoPeriodoPagado($idPersona)
     {
-        $sql1 = "CALL crm.spObtenUltimoPeriodoPagado(".$idPersona.", @resultado)";
+        $sql1   = "CALL crm.spObtenUltimoPeriodoPagado(" . $idPersona . ", @resultado)";
         $query1 = $this->db->query($sql1);
 
-        $sql2 = "SELECT @resultado AS resp";
+        $sql2   = "SELECT @resultado AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
 
@@ -7018,7 +7004,7 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function tieneAtributo($idUnicoMembresia, $idUn, $atributo, $idProducto=0)
+    public function tieneAtributo($idUnicoMembresia, $idUn, $atributo, $idProducto = 0)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idUn, 'integer');
@@ -7026,15 +7012,15 @@ class Membresia extends Model
         settype($idProducto, 'integer');
 
         $this->db->select('m.idUnicoMembresia');
-        $this->db->from(TBL_PRODUCTOUN.' pu');
+        $this->db->from(TBL_PRODUCTOUN . ' pu');
         if ($idProducto != 0) {
-            $this->db->join(TBL_MEMBRESIA.' m', 'pu.idUn=m.idUn');
+            $this->db->join(TBL_MEMBRESIA . ' m', 'pu.idUn=m.idUn');
         } else {
-            $this->db->join(TBL_MEMBRESIA.' m', 'pu.idProducto=m.idProducto');
+            $this->db->join(TBL_MEMBRESIA . ' m', 'pu.idProducto=m.idProducto');
         }
-        $this->db->join(TBL_MEMBRESIACONFIGURACION.' mc', 'pu.idProductoUn=mc.idProductoUn AND mc.fechaEliminacion="0000-00-00 00:00:00"');
-        $this->db->join(TBL_MEMBRESIAATRIBUTOS.' ma', 'mc.idMembresiaConfiguracion=ma.idMembresiaConfiguracion');
-        $this->db->join(TBL_TIPOMEMBRESIAATRIBUTO.' ta', 'ma.idTipoMembresiaAtributo=ta.idTipoMembresiaAtributo');
+        $this->db->join(TBL_MEMBRESIACONFIGURACION . ' mc', 'pu.idProductoUn=mc.idProductoUn AND mc.fechaEliminacion="0000-00-00 00:00:00"');
+        $this->db->join(TBL_MEMBRESIAATRIBUTOS . ' ma', 'mc.idMembresiaConfiguracion=ma.idMembresiaConfiguracion');
+        $this->db->join(TBL_TIPOMEMBRESIAATRIBUTO . ' ta', 'ma.idTipoMembresiaAtributo=ta.idTipoMembresiaAtributo');
         $this->db->where('m.idUnicoMembresia', $idUnicoMembresia);
         if ($idProducto != 0) {
             $this->db->where('pu.idProducto', $idProducto);
@@ -7059,13 +7045,13 @@ class Membresia extends Model
      *
      * @return integer
      */
-    public function totalIntegrantes ($unico)
+    public function totalIntegrantes($unico)
     {
-        $this->db->from(TBL_SOCIO.' s');
+        $this->db->from(TBL_SOCIO . ' s');
         $this->db->where('s.idUnicoMembresia', $unico);
         $this->db->where('s.eliminado', 0);
 
-        return (int)$this->db->count_all_results();
+        return (int) $this->db->count_all_results();
     }
 
     /**
@@ -7088,25 +7074,25 @@ class Membresia extends Model
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $this->db->where('idMembresiaTraspaso', $fila->idMembresiaTraspaso);
-                $datos = array ('fechaEliminacion' => date("Y-m-d H:i:s"));
+                $datos = array('fechaEliminacion' => date("Y-m-d H:i:s"));
                 $this->db->update(TBL_MEMBRESIATRASPASO, $datos);
             }
         }
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('un_model');
         $ci->load->model('empleados_model');
 
-        $club1= $ci->un_model->nombre($idUn);
-        $club2= $ci->un_model->nombre($idUnNuevo);
+        $club1 = $ci->un_model->nombre($idUn);
+        $club2 = $ci->un_model->nombre($idUnNuevo);
 
-        $traspaso = array (
+        $traspaso = array(
             'idUnicoMembresia' => $idUnicoMembresia,
             'idPersona'        => $ci->empleados_model->obtenIdEmpleado($this->session->userdata('idPersona')),
             'idUn'             => $idUnNuevo,
             'idMembresia'      => 0,
             'fechaTraspaso'    => '0000-00-00',
-            'idMovimiento'     => $idMovimiento
+            'idMovimiento'     => $idMovimiento,
         );
         $this->db->insert(TBL_MEMBRESIATRASPASO, $traspaso);
         $idTraspaso = $this->db->insert_id();
@@ -7116,7 +7102,7 @@ class Membresia extends Model
             return 0;
         }
 
-        $this->permisos_model->log(utf8_decode("Se realizó un traspaso del club de $club1 Membresía No. ".$idMembresia." al club de $club2"), LOG_MEMBRESIA, $idUnicoMembresia);
+        $this->permisos_model->log(utf8_decode("Se realizó un traspaso del club de $club1 Membresía No. " . $idMembresia . " al club de $club2"), LOG_MEMBRESIA, $idUnicoMembresia);
 
         return $idTraspaso;
     }
@@ -7145,7 +7131,7 @@ class Membresia extends Model
         $where = array(
             'idMembresia' => $membresia,
             'idUn'        => $club,
-            'eliminado'   => 0
+            'eliminado'   => 0,
         );
         $this->db->where($where);
         $query = $this->db->get();
@@ -7177,9 +7163,9 @@ class Membresia extends Model
         $this->db->select('idUnicoMembresia');
         $this->db->from(TBL_MEMBRESIATRASPASO);
         $where = array(
-            'idMembresia' => $membresia,
-            'idUn' => $club,
-            'fechaEliminacion' => '00000-00-00 00:00:00'
+            'idMembresia'      => $membresia,
+            'idUn'             => $club,
+            'fechaEliminacion' => '00000-00-00 00:00:00',
         );
         $this->db->where($where);
         $query = $this->db->get();
@@ -7201,7 +7187,7 @@ class Membresia extends Model
      *
      * @return boolean
      */
-    public function validaAusencias ($idUnicoMembresia)
+    public function validaAusencias($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
         $valido = false;
@@ -7211,25 +7197,25 @@ class Membresia extends Model
         }
 
         $this->db->select("COUNT(DISTINCT s.idSocio) AS sociosSinTitular");
-        $this->db->join(TBL_SOCIO." s", 's.idUnicoMembresia = m.idUnicoMembresia', 'inner');
+        $this->db->join(TBL_SOCIO . " s", 's.idUnicoMembresia = m.idUnicoMembresia', 'inner');
         $this->db->where("m.idUnicoMembresia", $idUnicoMembresia);
         $this->db->where("s.idTipoRolCliente <>", ROL_CLIENTE_TITULAR);
         $this->db->where("s.idTipoEstatusSocio <> ", ESTATUS_SOCIO_BAJA);
         $this->db->where("s.eliminado", 0);
-        $query = $this->db->get(TBL_MEMBRESIA." m");
+        $query = $this->db->get(TBL_MEMBRESIA . " m");
 
         $sociosSinTitular = $query->row_object()->sociosSinTitular;
 
         $this->db->select("COUNT(DISTINCT s.idSocio) AS sociosAusentes");
-        $this->db->join(TBL_SOCIO." s", 's.idUnicoMembresia = m.idUnicoMembresia', 'inner');
-        $this->db->join(TBL_SOCIOAUSENCIA." sa", 'sa.idSocio = s.idSocio', 'left');
+        $this->db->join(TBL_SOCIO . " s", 's.idUnicoMembresia = m.idUnicoMembresia', 'inner');
+        $this->db->join(TBL_SOCIOAUSENCIA . " sa", 'sa.idSocio = s.idSocio', 'left');
         $this->db->where('m.idUnicoMembresia', $idUnicoMembresia);
         $this->db->where('s.idTipoRolCliente <>', ROL_CLIENTE_TITULAR);
         $this->db->where('s.idTipoEstatusSocio <>', ESTATUS_SOCIO_BAJA);
         $this->db->where('s.eliminado', 0);
         $this->db->where('sa.fechaRegresoAusencia', '0000-00-00 00:00:00');
         $this->db->where('sa.fechaEliminacion', '0000-00-00 00:00:00');
-        $query = $this->db->get(TBL_MEMBRESIA." m");
+        $query = $this->db->get(TBL_MEMBRESIA . " m");
 
         $sociosAusentes = $query->row_object()->sociosAusentes;
 
@@ -7249,14 +7235,14 @@ class Membresia extends Model
      *
      * @return integer
      */
-    public function validaExisteOpcion ($idMembConfig, $idTipoMemOp)
+    public function validaExisteOpcion($idMembConfig, $idTipoMemOp)
     {
         settype($idMembConfig, 'integer');
         settype($idTipoMemOp, 'integer');
 
         $where = array(
             'idMembresiaConfiguracion' => $idMembConfig,
-            'idTipoMembresiaOpcion'    => $idTipoMemOp
+            'idTipoMembresiaOpcion'    => $idTipoMemOp,
         );
         $total = $this->db->select(
             'COUNT(*)as total'
@@ -7280,11 +7266,11 @@ class Membresia extends Model
     public function validaMesesConsecutivos($idTipoFidelidad, $mesesConsecutivos)
     {
         $resultado = 0;
-        $rs = $this->db->query("SELECT tf.idTipoFidelidad
+        $rs        = $this->db->query("SELECT tf.idTipoFidelidad
             FROM crm.tipofidelidad tf
-            WHERE tf.idTipoFidelidad IN (".$idTipoFidelidad.") AND ".$mesesConsecutivos." BETWEEN tf.minMeses AND tf.maxMeses");
-        if ( $rs->num_rows()>0 ) {
-            $row = $rs->row();
+            WHERE tf.idTipoFidelidad IN (" . $idTipoFidelidad . ") AND " . $mesesConsecutivos . " BETWEEN tf.minMeses AND tf.maxMeses");
+        if ($rs->num_rows() > 0) {
+            $row       = $rs->row();
             $resultado = $row->idTipoFidelidad;
         }
 
@@ -7300,37 +7286,37 @@ class Membresia extends Model
      *
      * @return array
      */
-    public function validaRegresoAusencias ($idUnicoMembresia)
+    public function validaRegresoAusencias($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
 
         $datos = array(
             'mensaje' => 'Error, faltan datos',
             'error'   => 1,
-            'adeudo'  => 0
+            'adeudo'  => 0,
         );
 
-        if ( ! $idUnicoMembresia) {
+        if (!$idUnicoMembresia) {
             return $datos;
         }
         $datos['mensaje'] = '';
         $datos['error']   = 0;
-        $where = array(
+        $where            = array(
             's.eliminado'        => 0,
-            's.idUnicoMembresia' => $idUnicoMembresia
+            's.idUnicoMembresia' => $idUnicoMembresia,
         );
-        $this->db->join(TBL_SOCIO.' s', "s.idSocio = sa.idSocio AND s.eliminado = 0", 'INNER');
-        $this->db->join(TBL_MOVIMIENTO.' m',
-            "m.idUnicoMembresia = s.idUnicoMembresia AND m.idTipoEstatusMovimiento = ".MOVIMIENTO_PENDIENTE." AND m.eliminado=0 AND m.descripcion LIKE '%ausencia%'",
+        $this->db->join(TBL_SOCIO . ' s', "s.idSocio = sa.idSocio AND s.eliminado = 0", 'INNER');
+        $this->db->join(TBL_MOVIMIENTO . ' m',
+            "m.idUnicoMembresia = s.idUnicoMembresia AND m.idTipoEstatusMovimiento = " . MOVIMIENTO_PENDIENTE . " AND m.eliminado=0 AND m.descripcion LIKE '%ausencia%'",
             'INNER'
         );
-        $this->db->join(TBL_MOVIMIENTOCTACONTABLE.' mcc',
-            "mcc.idMovimiento = m.idMovimiento AND mcc.idTipoMovimiento = ".TIPO_MOVIMIENTO_MANTENIMIENTO." AND mcc.eliminado=0",
+        $this->db->join(TBL_MOVIMIENTOCTACONTABLE . ' mcc',
+            "mcc.idMovimiento = m.idMovimiento AND mcc.idTipoMovimiento = " . TIPO_MOVIMIENTO_MANTENIMIENTO . " AND mcc.eliminado=0",
             'INNER'
         );
         $query = $this->db->select(
-                'COUNT(DISTINCT m.idMovimiento) AS totalMovs', false
-        )->get_where(TBL_SOCIOAUSENCIA.' sa', $where);
+            'COUNT(DISTINCT m.idMovimiento) AS totalMovs', false
+        )->get_where(TBL_SOCIOAUSENCIA . ' sa', $where);
 
         $datos['adeudo'] = ($query->row()->totalMovs) ? 1 : 0;
 
@@ -7355,7 +7341,7 @@ class Membresia extends Model
         $this->db->where('fechaInicio >=', $inicio);
         $this->db->where('fechaFin <=', $fechaFin);
         $query = $this->db->get();
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return 0;
@@ -7377,11 +7363,11 @@ class Membresia extends Model
         $this->db->from(TBL_SOCIOPAGOMTTO);
         $this->db->where('idSocio', $idSocio);
         $this->db->where('eliminado', 0);
-        $this->db->where('fechaInicio >=', date('Y-m').'-01');
+        $this->db->where('fechaInicio >=', date('Y-m') . '-01');
         $this->db->where('fechaFin <=', $fechaFin);
         $this->db->where('activo', 0);
         $query = $this->db->get();
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
             return 0;
@@ -7405,14 +7391,14 @@ class Membresia extends Model
         $CI->load->model('digital_model');
 
         $formatosCat = $CI->digital_model->obtenDocumentosMembresia($idUnicoMembresia, TIPO_DOCUMENTO_ALTA_CARGO_AUTOMATICO);
-        if (count($formatosCat)>0) {
+        if (count($formatosCat) > 0) {
             $lastFormat = $formatosCat[0];
-            if (strlen($lastFormat['firma'])>0) {
+            if (strlen($lastFormat['firma']) > 0) {
                 return array();
             } else {
                 return array(
                     'idUnicoMembresia' => $idUnicoMembresia,
-                    'concepto' => $formatosCat[0]['concepto']
+                    'concepto'         => $formatosCat[0]['concepto'],
                 );
             }
         } else {
@@ -7437,17 +7423,17 @@ class Membresia extends Model
         $CI->load->model('documentos_model');
 
         $membresiaSinCatFirmado = $this->membresiaSinCatFirmado($idUnicoMembresia);
-        $documentosFaltantes = $CI->documentos_model->obtenerListaDocumentosPendientes($idUnicoMembresia);
+        $documentosFaltantes    = $CI->documentos_model->obtenerListaDocumentosPendientes($idUnicoMembresia);
 
-        if (count($documentosFaltantes)==0) {
+        if (count($documentosFaltantes) == 0) {
             $documentos = array(
                 'documentosCompletos' => 1,
-                'lista' => ''
+                'lista'               => '',
             );
         } else {
             $documentos = array(
                 'documentosCompletos' => 0,
-                'lista' => $documentosFaltantes
+                'lista'               => $documentosFaltantes,
             );
         }
 
@@ -7467,44 +7453,44 @@ class Membresia extends Model
         settype($idProducto, 'integer');
         settype($idProductoAnt, 'integer');
         $anterior = utf8_encode($this->obtenerNombreProducto($idProductoAnt));
-        $actual =  utf8_encode($this->obtenerNombreProducto($idProducto));
-        $datos = array (
-            'idProducto' => $idProducto
+        $actual   = utf8_encode($this->obtenerNombreProducto($idProducto));
+        $datos    = array(
+            'idProducto' => $idProducto,
         );
         $this->db->where('idUnicoMembresia', $idUnicoMembresia);
         $this->db->update(TBL_MEMBRESIA, $datos);
         $total = $this->db->affected_rows();
-        if ($total > 0){
-            $this->permisos_model->log(utf8_decode("Cambio Tipo de ".$anterior." a ".$actual."."), LOG_MEMBRESIA, $idUnicoMembresia);
+        if ($total > 0) {
+            $this->permisos_model->log(utf8_decode("Cambio Tipo de " . $anterior . " a " . $actual . "."), LOG_MEMBRESIA, $idUnicoMembresia);
             return true;
         }
         return false;
-     }
+    }
 
-     /**
+    /**
      * Funcion Obtiene Nombre de Producto
      *
      * @author Ruben Alcocer
      *
      * @return texto
      */
-     public function obtenerNombreProducto($idProducto)
-     {
-        $sql = 'SELECT nombre FROM '.TBL_PRODUCTO.' where idProducto = '.$idProducto.' LIMIT 1';
+    public function obtenerNombreProducto($idProducto)
+    {
+        $sql      = 'SELECT nombre FROM ' . TBL_PRODUCTO . ' where idProducto = ' . $idProducto . ' LIMIT 1';
         $consulta = $this->db->query($sql);
-        $fila = $consulta->row_array();
+        $fila     = $consulta->row_array();
         return $fila['nombre'];
-     }
+    }
 
-     /**
+    /**
      * Funcion Valida si el Club participa en Forever Fit
      *
      * @author Ruben Alcocer
      *
      * @return int
      */
-     public function validaParticipacionClub($idUn)
-     {
+    public function validaParticipacionClub($idUn)
+    {
 
         settype($idUn, 'integer');
 
@@ -7513,134 +7499,141 @@ class Membresia extends Model
         $this->db->where('idUn', $idUn);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get();
-        if ( $query->num_rows > 0 ) {
+        if ($query->num_rows > 0) {
             return 1;
         } else {
             return 0;
         }
-     }
+    }
 
-
-    public function reporteCredencializacion(){
-        $max_fp = $this->db->select_max('fechaParticion','fp')->from('crm.credencialenvio');
-        $q1 = $this->db->_compile_select();
-        echo $q1.'<br />';
+    public function reporteCredencializacion()
+    {
+        $max_fp = $this->db->select_max('fechaParticion', 'fp')->from('crm.credencialenvio');
+        $q1     = $this->db->_compile_select();
+        echo $q1 . '<br />';
         $max_fp = $this->db->get()->result();
         $max_fp = $max_fp[0]->fp;
         //En el caso que $max_fp acabe siendo algo diferente a un numero
-        if(!is_int($max_fp) && !is_numeric($max_fp)) $max_fp = 20160815;
-        $max_fp = mktime(0,0,0,substr($max_fp,4,2),substr($max_fp,6,2),substr($max_fp,0,4));
-        $max_fp = $max_fp-(16*24*60*60); #16 dias por 24 horas por 60 minutos por 60 segundos
-        $max_fp = date('Ymd',$max_fp);
+        if (!is_int($max_fp) && !is_numeric($max_fp)) {
+            $max_fp = 20160815;
+        }
+
+        $max_fp = mktime(0, 0, 0, substr($max_fp, 4, 2), substr($max_fp, 6, 2), substr($max_fp, 0, 4));
+        $max_fp = $max_fp - (16 * 24 * 60 * 60); #16 dias por 24 horas por 60 minutos por 60 segundos
+        $max_fp = date('Ymd', $max_fp);
         #else $max_fp = ($max_fp-16);
-        $this->db->select('m.idMovimiento,'.
-            'uf.nombre as clubFactura,'.
-            'ifnull(mm.idMembresia,m.idPersona) as idMembresia,'.
-            'substring(uf.clave,3,3) as cveFac,'.
-            'if(isnull(um.clave),\'IE\',substring(um.clave,3,3)) as clave,'. //Esta linea hace que tengamos que NO escapar los campos
-            'm.idPersona,'.
-            'TIMESTAMPDIFF(YEAR,p.fechaNacimiento,now()) as edad,'.
-            'f.fechaParticion as fechaParticion,'.
-            '\'1\' as nuevo,'.
-            'IFNULL(mm.idtipoestatusmembresia,27) as estatus,'.
-            'IF(isnull(s.idTipoEstatusSocio) and m.idUnicoMembresia=0,81,s.idTipoEstatusSocio) as estatus_socio,'.
-            'concat_ws(\' \',p.nombre,p.paterno,p.materno) as nombreCompleto',false);
+        $this->db->select('m.idMovimiento,' .
+            'uf.nombre as clubFactura,' .
+            'ifnull(mm.idMembresia,m.idPersona) as idMembresia,' .
+            'substring(uf.clave,3,3) as cveFac,' .
+            'if(isnull(um.clave),\'IE\',substring(um.clave,3,3)) as clave,' . //Esta linea hace que tengamos que NO escapar los campos
+            'm.idPersona,' .
+            'TIMESTAMPDIFF(YEAR,p.fechaNacimiento,now()) as edad,' .
+            'f.fechaParticion as fechaParticion,' .
+            '\'1\' as nuevo,' .
+            'IFNULL(mm.idtipoestatusmembresia,27) as estatus,' .
+            'IF(isnull(s.idTipoEstatusSocio) and m.idUnicoMembresia=0,81,s.idTipoEstatusSocio) as estatus_socio,' .
+            'concat_ws(\' \',p.nombre,p.paterno,p.materno) as nombreCompleto', false);
         $this->db->from('crm.movimiento m');
-        $this->db->join('crm.persona p','m.idPersona = p.idPersona')
-             ->join('crm.facturamovimiento fm','m.idMovimiento = fm.idMovimiento')
-             ->join('crm.factura f','fm.idFactura = f.idFactura')
-             ->join('crm.un uf','f.idun = uf.idun')
-             ->join('crm.finanzasnotacredito fnc','f.idFactura = fnc.idFactura and year(fnc.fechaActivacion) > 0 and year(fnc.fechaCancelacion) = 0','left')
-             ->join('crm.membresia mm','m.idUnicoMembresia = mm.idunicomembresia','left')
-             ->join('crm.un um','mm.idun = um.idun','left')
-             ->join('crm.credencialenvio ce','m.idMovimiento = ce.idMovimiento','left')
-             ->join('crm.socio s','p.idPersona = s.idPersona and mm.idunicomembresia = s.idunicomembresia and s.eliminado=0','left');
-        $this->db->where('f.fechaParticion > '.$max_fp)
-            ->where('f.fechaParticion < '.date('Ymd'))
-            ->where('m.idProducto','390')
+        $this->db->join('crm.persona p', 'm.idPersona = p.idPersona')
+            ->join('crm.facturamovimiento fm', 'm.idMovimiento = fm.idMovimiento')
+            ->join('crm.factura f', 'fm.idFactura = f.idFactura')
+            ->join('crm.un uf', 'f.idun = uf.idun')
+            ->join('crm.finanzasnotacredito fnc', 'f.idFactura = fnc.idFactura and year(fnc.fechaActivacion) > 0 and year(fnc.fechaCancelacion) = 0', 'left')
+            ->join('crm.membresia mm', 'm.idUnicoMembresia = mm.idunicomembresia', 'left')
+            ->join('crm.un um', 'mm.idun = um.idun', 'left')
+            ->join('crm.credencialenvio ce', 'm.idMovimiento = ce.idMovimiento', 'left')
+            ->join('crm.socio s', 'p.idPersona = s.idPersona and mm.idunicomembresia = s.idunicomembresia and s.eliminado=0', 'left');
+        $this->db->where('f.fechaParticion > ' . $max_fp)
+            ->where('f.fechaParticion < ' . date('Ymd'))
+            ->where('m.idProducto', '390')
             ->where('m.importe > 0')
-            ->where('m.idTipoEstatusMovimiento','66')
-            ->where('f.idTipoEstatusFactura','109')
+            ->where('m.idTipoEstatusMovimiento', '66')
+            ->where('f.idTipoEstatusFactura', '109')
             ->where('fnc.idFinanzasNotaCredito is null')
             ->where('ce.idPersona is null');
         #$this->db->having('edad < 18');
         $q1 = $this->db->_compile_select();
-        echo $q1.'<br />';
+        echo $q1 . '<br />';
         $this->db->_reset_select();
 
-        $this->db->select('cre.idMovimiento,'.
-            'ifnull(uf2.nombre,\'ADM\') as clubFactura,'.
-            'cre.idMembresia,'.
-            'substring(ifnull(uf2.clave,\'SWADM\'),3,3) as cveFac,'.
-            'cre.cvemm as clave,'.
-            'cre.idPersona,'.
-            'TIMESTAMPDIFF(YEAR,p2.fechaNacimiento,now()) as edad,'.
-            'cre.fechaParticion,'.
-            '\'0\' as nuevo,'.
-            'IFNULL(mm2.idtipoestatusmembresia,27) as estatus,'.
-            'IF(isnull(s2.idTipoEstatusSocio) and m2.idUnicoMembresia=0,81,s2.idTipoEstatusSocio) as estatus_socio,'.
+        $this->db->select('cre.idMovimiento,' .
+            'ifnull(uf2.nombre,\'ADM\') as clubFactura,' .
+            'cre.idMembresia,' .
+            'substring(ifnull(uf2.clave,\'SWADM\'),3,3) as cveFac,' .
+            'cre.cvemm as clave,' .
+            'cre.idPersona,' .
+            'TIMESTAMPDIFF(YEAR,p2.fechaNacimiento,now()) as edad,' .
+            'cre.fechaParticion,' .
+            '\'0\' as nuevo,' .
+            'IFNULL(mm2.idtipoestatusmembresia,27) as estatus,' .
+            'IF(isnull(s2.idTipoEstatusSocio) and m2.idUnicoMembresia=0,81,s2.idTipoEstatusSocio) as estatus_socio,' .
             'concat_ws(\' \',p2.nombre,p2.paterno,p2.materno) as nombreCompleto');
         $this->db->from('crm.credencialenvio cre');
-        $this->db->join('crm.facturamovimiento fm2','cre.idMovimiento = fm2.idMovimiento','left')
-            ->join('crm.factura f2','fm2.idFactura = f2.idFactura','left')
-            ->join('crm.persona p2','cre.idPersona = p2.idPersona')
-            ->join('crm.movimiento m2','cre.idMovimiento = m2.idMovimiento AND m2.fechaEliminacion = 0')
-            ->join('crm.membresia mm2','m2.idUnicoMembresia = mm2.idunicomembresia','left')
-            ->join('crm.socio s2','p2.idPersona = s2.idPersona and mm2.idunicomembresia = s2.idunicomembresia and s2.eliminado=0','left')
-            ->join('crm.un uf2','f2.idUn = uf2.idUn','left');
+        $this->db->join('crm.facturamovimiento fm2', 'cre.idMovimiento = fm2.idMovimiento', 'left')
+            ->join('crm.factura f2', 'fm2.idFactura = f2.idFactura', 'left')
+            ->join('crm.persona p2', 'cre.idPersona = p2.idPersona')
+            ->join('crm.movimiento m2', 'cre.idMovimiento = m2.idMovimiento AND m2.fechaEliminacion = 0')
+            ->join('crm.membresia mm2', 'm2.idUnicoMembresia = mm2.idunicomembresia', 'left')
+            ->join('crm.socio s2', 'p2.idPersona = s2.idPersona and mm2.idunicomembresia = s2.idunicomembresia and s2.eliminado=0', 'left')
+            ->join('crm.un uf2', 'f2.idUn = uf2.idUn', 'left');
         $this->db->where('cre.fechaEnvio is null');
         $q2 = $this->db->_compile_select();
         $this->db->_reset_select();
 
-        echo "\n".$q1.' UNION '.$q2."\n";
-        $rs = $this->db->query($q1.' UNION '.$q2);
+        echo "\n" . $q1 . ' UNION ' . $q2 . "\n";
+        $rs = $this->db->query($q1 . ' UNION ' . $q2);
 
         return $rs->result();
     }
 
-     public function reporteMembresiaFamiliarSinResponsable() {
+    public function reporteMembresiaFamiliarSinResponsable()
+    {
         /*
          * Obtener las membresías que tienen menores (y cuantos)
          */
-         $this->db->select('s2.idUnicoMembresia, count(s2.idPersona) as menores')
-             ->from('crm.socio s2')
-             ->join('crm.persona pr','s2.idPersona = pr.idPersona')
-             ->where('s2.eliminado = 0')
-             ->where('s2.idTipoEstatusSocio','81')
-             ->where('pr.fechaNacimiento > DATE_SUB(date(now()), INTERVAL 16 YEAR)')
-             ->group_by('s2.idUnicoMembresia');
-         $q1 = $this->db->_compile_select();
-         $this->db->_reset_select();
+        $this->db->select('s2.idUnicoMembresia, count(s2.idPersona) as menores')
+            ->from('crm.socio s2')
+            ->join('crm.persona pr', 's2.idPersona = pr.idPersona')
+            ->where('s2.eliminado = 0')
+            ->where('s2.idTipoEstatusSocio', '81')
+            ->where('pr.fechaNacimiento > DATE_SUB(date(now()), INTERVAL 16 YEAR)')
+            ->group_by('s2.idUnicoMembresia');
+        $q1 = $this->db->_compile_select();
+        $this->db->_reset_select();
 
         /*
          * Obtener las membresias con menores que no tienen responsable
          */
-         $this->db->select('m.idMembresia, '.
-             'u.nombre as club, '.
-             'p.nombre as producto, '.
-             's.menores, '.
-             'count(rm.idResponsableMenor) as responsables');
-         $this->db->from('crm.membresia m')
-             ->join('crm.un u','m.idUn = u.idUn')
-             ->join('crm.producto p','m.idProducto = p.idProducto')
-             ->join('crm.responsablemenor rm','m.idUnicoMembresia = rm.idUnicoMembresia','left')
-             ->join('('.$q1.') s','m.idUnicoMembresia = s.idUnicoMembresia','left');
-         $this->db->where('m.idTipoEstatusMembresia','27')
-             ->where('m.eliminado',0)
-             ->where('s.menores > 0');
-         $this->db->group_by('m.idUnicoMembresia');
-         $this->db->having('responsables','0');
+        $this->db->select('m.idMembresia, ' .
+            'u.nombre as club, ' .
+            'p.nombre as producto, ' .
+            's.menores, ' .
+            'count(rm.idResponsableMenor) as responsables');
+        $this->db->from('crm.membresia m')
+            ->join('crm.un u', 'm.idUn = u.idUn')
+            ->join('crm.producto p', 'm.idProducto = p.idProducto')
+            ->join('crm.responsablemenor rm', 'm.idUnicoMembresia = rm.idUnicoMembresia', 'left')
+            ->join('(' . $q1 . ') s', 'm.idUnicoMembresia = s.idUnicoMembresia', 'left');
+        $this->db->where('m.idTipoEstatusMembresia', '27')
+            ->where('m.eliminado', 0)
+            ->where('s.menores > 0');
+        $this->db->group_by('m.idUnicoMembresia');
+        $this->db->having('responsables', '0');
 
-         /*
-          * Regresar objetos
-          */
-         $query = $this->db->get();
-         if($query->num_rows() > 0)
-             return $query->result();
-         return array();
-     }
-    public function getAnexosPartTime($idMantenimiento,$idUn){
-        $query= $this->db->query("SELECT u.idUn,u.nombre,p.nombre,m.idMantenimiento,m.idTipoAcceso,ta.descripcion,m.idTipoHorario,th.descripcion,
+        /*
+         * Regresar objetos
+         */
+        $query = $this->db->get();
+        if ($query->num_rows() > 0) {
+            return $query->result();
+        }
+
+        return array();
+    }
+    public function getAnexosPartTime($idMantenimiento, $idUn)
+    {
+        $query = $this->db->query("SELECT u.idUn,u.nombre,p.nombre,m.idMantenimiento,m.idTipoAcceso,ta.descripcion,m.idTipoHorario,th.descripcion,
         m.fullTimeFinSemana,m.allClubFinSemana,mu.horaEntrada,
         mu.horaSalida,mu.horaEntradaFinSemana,mu.horaSalidaFinSemna,mu.integrante
         from  mantenimiento m
@@ -7652,7 +7645,7 @@ class Membresia extends Model
         inner join un u on mu.idUn=u.idUn
         where m.idTipoHorario=2 and m.fechaEliminacion=0 and mu.integrante='Titular'
         and u.idUn=$idUn and m.idMantenimiento=$idMantenimiento;");
-        $rs=$query->result_array();
+        $rs = $query->result_array();
         return $rs;
     }
 
@@ -7665,14 +7658,13 @@ class Membresia extends Model
      */
     public function getIdMembresia($idUnicoMembresia)
     {
-        $sql="select idMembresia,idUn from membresia where idUnicoMembresia=".$idUnicoMembresia;
-        $query=$this->db->query($sql);
-        if($query->num_rows() > 0)
-        { 
-            $res=$query->result();
+        $sql   = "select idMembresia,idUn from membresia where idUnicoMembresia=" . $idUnicoMembresia;
+        $query = $this->db->query($sql);
+        if ($query->num_rows() > 0) {
+            $res = $query->result();
             return $res->idMembresia;
         }
         return 0;
-       
+
     }
 }

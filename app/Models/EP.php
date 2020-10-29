@@ -1,9 +1,9 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use API_EPS\Models\CalificacionEntrenador;
-use API_EPS\Models\Objeto;
+use App\Models\CalificacionEntrenador;
+use App\Models\Objeto;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;

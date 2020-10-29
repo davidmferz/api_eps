@@ -1,22 +1,16 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use Carbon\Carbon;
-use API_EPS\Models\CatRutinas;
-use API_EPS\Models\MenuActividad;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use API_EPS\Models\Permiso;
+use Illuminate\Support\Facades\DB;
 
 class Tipocliente extends Model
 {
     use SoftDeletes;
     protected $connection = 'crm';
-    protected $table = 'crm.tipocliente';
+    protected $table      = 'crm.tipocliente';
     protected $primaryKey = 'idTipoCliente';
 
     const CREATED_AT = 'fechaRegistro';
@@ -30,7 +24,8 @@ class Tipocliente extends Model
      *
      * @return array
      */
-    function arrayTipoCliente() {
+    public function arrayTipoCliente()
+    {
         $lista = array();
 
         $this->db->cache_on();
@@ -48,7 +43,6 @@ class Tipocliente extends Model
         return $lista;
     }
 
-
     /**
      * Regresa un array con los roles de cliente establecidos para el tipo de cliente solicitado
      *
@@ -58,7 +52,8 @@ class Tipocliente extends Model
      *
      * @return array
      */
-    function arrayTipoRolCliente($tipoCliente) {
+    public function arrayTipoRolCliente($tipoCliente)
+    {
         $lista = array();
 
         $this->db->cache_on();
@@ -71,7 +66,7 @@ class Tipocliente extends Model
 
         if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
-                if ($fila->base == 1 ) {
+                if ($fila->base == 1) {
                     $lista[$fila->idTipoRolCliente] = $this->nombreTipoCliente($tipoCliente);
                 } else {
                     $lista[$fila->idTipoRolCliente] = $fila->descripcion;
@@ -80,7 +75,6 @@ class Tipocliente extends Model
         }
         return $lista;
     }
-
 
     /**
      * Obtiene el nombre para el tipo de cliente solicitado
@@ -91,7 +85,8 @@ class Tipocliente extends Model
      *
      * @return string
      */
-    function nombreTipoCliente($cliente) {
+    public function nombreTipoCliente($cliente)
+    {
         settype($cliente, 'integer');
 
         $this->db->select('descripcion');
@@ -106,7 +101,6 @@ class Tipocliente extends Model
         return $fila["descripcion"];
     }
 
-
     /**
      * Obtiener el nombre del rol de cliente solicitado
      *
@@ -116,7 +110,7 @@ class Tipocliente extends Model
      *
      * @return string
      */
-    function nombreRolCliente($rol)
+    public function nombreRolCliente($rol)
     {
         settype($rol, 'integer');
 
@@ -150,7 +144,6 @@ class Tipocliente extends Model
         return null;
     }
 
-
     /**
      * Obtiene el identificador del tipo de persona para el rol indicado
      *
@@ -160,7 +153,7 @@ class Tipocliente extends Model
      *
      * @return integer
      */
-    function origenRol($rol)
+    public function origenRol($rol)
     {
         settype($rol, 'integer');
 
@@ -184,7 +177,7 @@ class Tipocliente extends Model
      *
      * @return integer
      */
-    function tipoRolCliente($rol)
+    public function tipoRolCliente($rol)
     {
         settype($rol, 'integer');
 
@@ -208,21 +201,21 @@ class Tipocliente extends Model
      *
      * @return string/integer
      */
-    public static function obtenRolBase ($idTipoCliente)
+    public static function obtenRolBase($idTipoCliente)
     {
         settype($idTipoCliente, 'integer');
         $resultado = 'error';
 
-        if (! $idTipoCliente) {
+        if (!$idTipoCliente) {
             return $resultado;
         }
         $where = array(
             'idTipoCliente'    => $idTipoCliente,
             'base'             => 1,
             'fechaEliminacion' => '0000-00-00 00:00:00',
-            'activo'           => 1
+            'activo'           => 1,
         );
-        
+
         $query = DB::connection('crm')->table(TBL_TIPOROLCLIENTE)->select('idTipoRolCliente');
 
         if ($query->count() > 0) {
