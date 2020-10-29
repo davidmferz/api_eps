@@ -22,6 +22,8 @@ Route::group(['prefix' => 'v1/'], function () {
         });
         Route::post('creaRutina', 'RutinasController@creaRutina');
 
+        Route::get('getFullCatalog', 'EPController@getFullCatalog');
+
         Route::match(['get', 'options'], 'getTipoCliente/{idPersona}', 'EventosController@getTipoCliente');
         Route::match(['post', 'options'], 'inscribirDemo', 'EventosController@inscribirDemo');
         Route::match(['post', 'options'], 'inscribirProgramaDeportivo', 'EventosController@inscribirProgramaDeportivo');
