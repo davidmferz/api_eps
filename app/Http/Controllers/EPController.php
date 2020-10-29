@@ -2,34 +2,35 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\ApiController;
-use App\Http\Requests\InscripcionRequest;
-use App\Models\AgendaInbody;
-use App\Models\Anualidad;
-use App\Models\Categoria;
-use App\Models\Comision;
-use App\Models\ComisionMovimiento;
-use App\Models\Empleado;
 use App\Models\EP;
+use App\Models\Un;
+use Carbon\Carbon;
+use App\Models\Socio;
+use App\Models\Token;
 use App\Models\Evento;
-use App\Models\EventoFecha;
-use App\Models\EventoInscripcion;
-use App\Models\Membresia;
-use App\Models\Movimiento;
 use App\Models\Permiso;
 use App\Models\Persona;
+use App\Models\Comision;
+use App\Models\Empleado;
 use App\Models\Producto;
-use App\Models\PromocionVisa;
-use App\Models\Socio;
+use App\Models\Anualidad;
+use App\Models\Categoria;
+use App\Models\Membresia;
+use App\Models\CatRutinas;
+use App\Models\Movimiento;
+use App\Models\EventoFecha;
 use App\Models\Tipocliente;
-use App\Models\Token;
-use App\Models\Un;
-use App\Models\UsuariosMigracion;
-use Carbon\Carbon;
+use App\Models\AgendaInbody;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use App\Models\PromocionVisa;
+use App\Models\EventoInscripcion;
+use App\Models\UsuariosMigracion;
+use App\Models\ComisionMovimiento;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use App\Http\Controllers\ApiController;
+use App\Http\Requests\InscripcionRequest;
 
 /**
  * Extraído desde el controller /crm/system/application/controllers/ep.php
@@ -37,7 +38,12 @@ use Illuminate\Support\Facades\Log;
  */
 class EPController extends ApiController
 {
+    public function getFullCatalog(GetFullCatalogRequest $request)
+    {
+        $data = CatRutinas::getFullCatalog($data);
+        return $this->successResponse($data);
 
+    }
     public function catalogoPaquetes($idUn)
     {
         $datos = Producto::getPaquetes($idUn);
