@@ -1,11 +1,11 @@
 <?php
 
-namespace API_EPS\Http\Controllers;
+namespace App\Http\Controllers;
 
-use API_EPS\Http\Controllers\ApiController;
-use API_EPS\Models\AgendaInbody;
-use API_EPS\Models\Menu;
-use API_EPS\Models\Un;
+use App\Http\Controllers\ApiController;
+use App\Models\AgendaInbody;
+use App\Models\Menu;
+use App\Models\Un;
 
 class ReportesController extends ApiController
 {

@@ -1,12 +1,12 @@
 <?php
 
-namespace API_EPS\Http\Controllers;
+namespace App\Http\Controllers;
 
-use API_EPS\Http\Controllers\ApiController;
-use API_EPS\Http\Requests\CreaRutinaRequest;
-use API_EPS\Models\EP;
-use API_EPS\Models\Menu;
-use API_EPS\Models\Persona;
+use App\Http\Controllers\ApiController;
+use App\Http\Requests\CreaRutinaRequest;
+use App\Models\EP;
+use App\Models\Menu;
+use App\Models\Persona;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 

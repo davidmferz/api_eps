@@ -1,6 +1,6 @@
 <?php
 
-namespace API_EPS\Mail;
+namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;

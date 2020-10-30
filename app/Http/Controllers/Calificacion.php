@@ -1,13 +1,13 @@
 <?php
 
-namespace API_EPS\Http\Controllers;
+namespace App\Http\Controllers;
 
-use API_EPS\Http\Controllers\ApiController;
-use API_EPS\Models\CalificacionEntrenador;
-use API_EPS\Models\EP;
-use API_EPS\Models\EventoCalificacion;
-use API_EPS\Models\EventoInscripcion;
-use API_EPS\Models\TokenEncuestas;
+use App\Http\Controllers\ApiController;
+use App\Models\CalificacionEntrenador;
+use App\Models\EP;
+use App\Models\EventoCalificacion;
+use App\Models\EventoInscripcion;
+use App\Models\TokenEncuestas;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;

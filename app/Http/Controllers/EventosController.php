@@ -1,21 +1,21 @@
 <?php
 
-namespace API_EPS\Http\Controllers;
+namespace App\Http\Controllers;
 
-use API_EPS\Http\Controllers\ApiController;
-use API_EPS\Http\Requests\InscribirDemoRequest;
-use API_EPS\Http\Requests\InscribirProgramaRequest;
-use API_EPS\Models\AgendaInbody;
-use API_EPS\Models\Categoria;
-use API_EPS\Models\DemoClientes;
-use API_EPS\Models\Empleado;
-use API_EPS\Models\Evento;
-use API_EPS\Models\EventoFecha;
-use API_EPS\Models\Movimiento;
-use API_EPS\Models\Persona;
-use API_EPS\Models\Producto;
-use API_EPS\Models\Socio;
-use API_EPS\Models\Un;
+use App\Http\Controllers\ApiController;
+use App\Http\Requests\InscribirDemoRequest;
+use App\Http\Requests\InscribirProgramaRequest;
+use App\Models\AgendaInbody;
+use App\Models\Categoria;
+use App\Models\DemoClientes;
+use App\Models\Empleado;
+use App\Models\Evento;
+use App\Models\EventoFecha;
+use App\Models\Movimiento;
+use App\Models\Persona;
+use App\Models\Producto;
+use App\Models\Socio;
+use App\Models\Un;
 use Illuminate\Support\Facades\DB;
 
 class EventosController extends ApiController

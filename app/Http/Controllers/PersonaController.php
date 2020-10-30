@@ -1,9 +1,9 @@
 <?php
 
-namespace API_EPS\Http\Controllers;
+namespace App\Http\Controllers;
 
-use API_EPS\Http\Controllers\ApiController;
-use API_EPS\Models\Persona;
+use App\Http\Controllers\ApiController;
+use App\Models\Persona;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 

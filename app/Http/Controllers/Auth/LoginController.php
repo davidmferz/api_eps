@@ -1,8 +1,8 @@
 <?php
 
-namespace API_EPS\Http\Controllers\Auth;
+namespace App\Http\Controllers\Auth;
 
-use API_EPS\Http\Controllers\Controller;
+use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 
 class LoginController extends Controller
@@ -16,7 +16,7 @@ class LoginController extends Controller
     | redirecting them to your home screen. The controller uses a trait
     | to conveniently provide its functionality to your applications.
     |
-    */
+     */
 
     use AuthenticatesUsers;
 

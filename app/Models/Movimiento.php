@@ -1,8 +1,8 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use API_EPS\Models\Permiso;
+use App\Models\Permiso;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;

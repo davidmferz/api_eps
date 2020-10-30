@@ -1,6 +1,6 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;

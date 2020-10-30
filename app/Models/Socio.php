@@ -1,20 +1,17 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use Carbon\Carbon;
-use API_EPS\Models\CatRutinas;
-use API_EPS\Models\MenuActividad;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Socio extends Model
 {
     use SoftDeletes;
     protected $connection = 'crm';
-    protected $table = 'crm.socio';
+    protected $table      = 'crm.socio';
     protected $primaryKey = 'idSocio';
 
     const CREATED_AT = 'fechaRegistro';
@@ -32,30 +29,30 @@ class Socio extends Model
      *
      * @return array
      */
-     function actCorreccionEsquemaPago($idUnicoMembresia, $idEsquemaPago, $idPersona)
-     {
-        $pm=&get_instance();
+    public function actCorreccionEsquemaPago($idUnicoMembresia, $idEsquemaPago, $idPersona)
+    {
+        $pm = &get_instance();
         $pm->load->model('persona_model');
 
-        $socioNuevo=$pm->persona_model->nombre($idPersona);
-        $socioNuevo=strtoupper($socioNuevo);
+        $socioNuevo = $pm->persona_model->nombre($idPersona);
+        $socioNuevo = strtoupper($socioNuevo);
 
-        $query = $this->db->query('select es.descripcion FROM esquemapago es LEFT JOIN socio s on es.idEsquemaPago=s.idEsquemaPago where s.idPersona='.$idPersona);
-        $row = $query->row();
-        $esquemaPagoViejo=$row->descripcion;
+        $query            = $this->db->query('select es.descripcion FROM esquemapago es LEFT JOIN socio s on es.idEsquemaPago=s.idEsquemaPago where s.idPersona=' . $idPersona);
+        $row              = $query->row();
+        $esquemaPagoViejo = $row->descripcion;
 
-        $query = $this->db->query('select descripcion FROM esquemapago where idEsquemaPago='.$idEsquemaPago);
-        $row = $query->row();
-        $esquemaPagoNuevo=$row->descripcion;
+        $query            = $this->db->query('select descripcion FROM esquemapago where idEsquemaPago=' . $idEsquemaPago);
+        $row              = $query->row();
+        $esquemaPagoNuevo = $row->descripcion;
 
         $data = array('idEsquemaPago' => $idEsquemaPago);
         $this->db->where('idUnicoMembresia', $idUnicoMembresia);
         $this->db->where('idPersona', $idPersona);
         $this->db->where('idTipoEstatusSocio !=', ESTATUS_SOCIO_BAJA);
         $this->db->where('eliminado', 0);
-        $res=$this->db->update('socio', $data);
-        if ($res==TRUE) {
-            $this->permisos_model->log('Correccion cambio de forma de pago ('.$socioNuevo.', de '.$esquemaPagoViejo.' a '.$esquemaPagoNuevo.')' , LOG_MEMBRESIA, $idUnicoMembresia);
+        $res = $this->db->update('socio', $data);
+        if ($res == true) {
+            $this->permisos_model->log('Correccion cambio de forma de pago (' . $socioNuevo . ', de ' . $esquemaPagoViejo . ' a ' . $esquemaPagoNuevo . ')', LOG_MEMBRESIA, $idUnicoMembresia);
             return $esquemaPagoNuevo;
         } else {
             return false;
@@ -72,13 +69,13 @@ class Socio extends Model
      *
      * @return integer
      */
-    function activaAusencia ($idSocio = 0, $fechaAusencia = '', $idPersona = 0, $idUnicoMembresia = 0, $nombreSocio = '')
+    public function activaAusencia($idSocio = 0, $fechaAusencia = '', $idPersona = 0, $idUnicoMembresia = 0, $nombreSocio = '')
     {
         settype($idSocio, 'integer');
 
-        $datos = array();
+        $datos           = array();
         $idSocioAusencia = 0;
-        $resultado = true;
+        $resultado       = true;
 
         if ($idSocio == 0 or $fechaAusencia == '') {
             return $idSocioAusencia;
@@ -90,24 +87,24 @@ class Socio extends Model
 
         if (($mesActual) == ($mesAusencia)) {
             $set = array(
-                'idTipoEstatusSocio' => ESTATUS_SOCIO_AUSENCIA
+                'idTipoEstatusSocio' => ESTATUS_SOCIO_AUSENCIA,
             );
             $where = array(
-                'idSocio' => $idSocio
+                'idSocio' => $idSocio,
             );
             $resultado = $this->db->update(TBL_SOCIO, $set, $where);
         }
         if ($resultado) {
             $datos = array(
                 'idSocio'       => $idSocio,
-                'fechaAusencia' => $fechaAusencia
+                'fechaAusencia' => $fechaAusencia,
             );
 
             $query = $this->db->insert(TBL_SOCIOAUSENCIA, $datos);
 
             if ($this->db->affected_rows() > 0) {
                 $idSocioAusencia = $this->db->insert_id();
-                $this->permisos_model->log('Socio "'.ucwords(strtolower($nombreSocio)).'" activa ausencia para: '.$fechaAusencia, LOG_MEMBRESIA, $idUnicoMembresia, $idPersona);
+                $this->permisos_model->log('Socio "' . ucwords(strtolower($nombreSocio)) . '" activa ausencia para: ' . $fechaAusencia, LOG_MEMBRESIA, $idUnicoMembresia, $idPersona);
             }
         }
         return $idSocioAusencia;
@@ -130,58 +127,58 @@ class Socio extends Model
      *
      * @return array
      */
-    function actualizaDatosTarjeta($id, $idBanco, $idDia, $idUnicoMembresia, $nombre, $activo, $mes=0, $anio=0, $idConvenioDetalle = 0)
+    public function actualizaDatosTarjeta($id, $idBanco, $idDia, $idUnicoMembresia, $nombre, $activo, $mes = 0, $anio = 0, $idConvenioDetalle = 0)
     {
         settype($id, 'integer');
         settype($idBanco, 'integer');
         settype($idDia, 'integer');
 
-        $CI =& get_instance();
+        $CI = &get_instance();
 
         if ($mes == 0 && $anio == 0) {
-            $datos = array (
+            $datos = array(
                 'idBanco'       => $idBanco,
                 'diaCargo'      => $idDia,
                 'nombreTarjeta' => $nombre,
                 'activo'        => $activo);
         } else {
-            $datos = array (
-                'idBanco'       => $idBanco,
-                'diaCargo'      => $idDia,
-                'nombreTarjeta' => $nombre,
-                'activo'        => $activo,
-                'mesExpiracion' => $mes,
-                'anioExpiracion'=> $anio);
+            $datos = array(
+                'idBanco'        => $idBanco,
+                'diaCargo'       => $idDia,
+                'nombreTarjeta'  => $nombre,
+                'activo'         => $activo,
+                'mesExpiracion'  => $mes,
+                'anioExpiracion' => $anio);
         }
-        if ($activo=='1') {
-            $act='activa';
+        if ($activo == '1') {
+            $act = 'activa';
         } else {
-            $act='inactiva';
+            $act = 'inactiva';
         }
         if ($idConvenioDetalle) {
             $where = array('idConvenioDatosTarjeta' => $id);
             $this->db->update(TBL_CONVENIODATOSTARJETA, $datos, $where);
 
-            $this->permisos_model->log("Se actualizo tarjeta idConvneioDetalle ".$idConvenioDetalle." (".date('Y-m')."). Tarjeta ".$act, LOG_CONVENIO);
+            $this->permisos_model->log("Se actualizo tarjeta idConvneioDetalle " . $idConvenioDetalle . " (" . date('Y-m') . "). Tarjeta " . $act, LOG_CONVENIO);
         } else {
             $CI->load->model('persona_model');
             $this->db->select('st.idSocioDatosTarjeta,st.idSocio,st.numeroTarjetaCta,s.idPersona');
-            $this->db->from(TBL_SOCIODATOSTARJETA.' st');
-            $this->db->join(TBL_SOCIO.' s', 's.idSocio=st.idSocio');
+            $this->db->from(TBL_SOCIODATOSTARJETA . ' st');
+            $this->db->join(TBL_SOCIO . ' s', 's.idSocio=st.idSocio');
             $this->db->where('st.idSocioDatosTarjeta', $id);
             $this->db->where('st.fechaEliminacion', '0000-00-00 00:00:00');
             $query = $this->db->get();
 
             if ($query->num_rows() > 0) {
-                $fila = $query->row_array();
-                $idSocio=$fila['idSocio'];
-                $idPersona=$fila['idPersona'];
-                $numTarjeta=$fila['numeroTarjetaCta'];
+                $fila           = $query->row_array();
+                $idSocio        = $fila['idSocio'];
+                $idPersona      = $fila['idPersona'];
+                $numTarjeta     = $fila['numeroTarjetaCta'];
                 $nombreCompleto = $CI->persona_model->nombre($idPersona);
                 $this->db->where('idSocioDatosTarjeta', $fila['idSocioDatosTarjeta']);
                 $this->db->update(TBL_SOCIODATOSTARJETA, $datos);
 
-                $this->permisos_model->log("Se actualizo tarjeta (xxxx xxxx xxxx ".substr ($numTarjeta,-4,4).") de socio (".$nombreCompleto.") (".date('Y-m')."). Tarjeta ".$act, LOG_MEMBRESIA, $idUnicoMembresia);
+                $this->permisos_model->log("Se actualizo tarjeta (xxxx xxxx xxxx " . substr($numTarjeta, -4, 4) . ") de socio (" . $nombreCompleto . ") (" . date('Y-m') . "). Tarjeta " . $act, LOG_MEMBRESIA, $idUnicoMembresia);
             }
         }
         $total = $this->db->affected_rows();
@@ -203,9 +200,9 @@ class Socio extends Model
      *
      * @return array
      */
-     function actualizaEsquemaPago($idUnicoMembresia, $idEsquemaPago, $idPersona=0)
-     {
-        $mm=&get_instance();
+    public function actualizaEsquemaPago($idUnicoMembresia, $idEsquemaPago, $idPersona = 0)
+    {
+        $mm = &get_instance();
         $mm->load->model('membresia_model');
         $mm->load->model('persona_model');
         $idMembresiaLocal = $mm->membresia_model->numero($idUnicoMembresia);
@@ -218,23 +215,23 @@ class Socio extends Model
             $this->db->where('idPersona', $idPersona);
         }
 
-        $res=$this->db->update('socio', $data);
+        $res = $this->db->update('socio', $data);
 
         if ($idPersona != 0) {
-            if ($idPersona>0) {
+            if ($idPersona > 0) {
                 $formaPagoAnterior = $this->obtenerEsquemaFormaPago($idPersona);
-                $formaPagoActual = $this->obtenerEsquemaFormaPago(0,$idEsquemaPago);
+                $formaPagoActual   = $this->obtenerEsquemaFormaPago(0, $idEsquemaPago);
             }
-            $mensaje='Cambio de forma de pago a '.$formaPagoAnterior.' a  '.$formaPagoActual.' a ('.$mm->persona_model->nombre($idPersona).') integrante de la membresia: ';
+            $mensaje = 'Cambio de forma de pago a ' . $formaPagoAnterior . ' a  ' . $formaPagoActual . ' a (' . $mm->persona_model->nombre($idPersona) . ') integrante de la membresia: ';
         } else {
-            $formaPagoActual = $this->obtenerEsquemaFormaPago(0,$idEsquemaPago);
-            $mensaje='Cambio de forma de pago  a '.$formaPagoActual.' a todos los integrantes de la membresia: ';
+            $formaPagoActual = $this->obtenerEsquemaFormaPago(0, $idEsquemaPago);
+            $mensaje         = 'Cambio de forma de pago  a ' . $formaPagoActual . ' a todos los integrantes de la membresia: ';
         }
 
-        if($res==TRUE){
-            $this->permisos_model->log($mensaje.$idMembresiaLocal, LOG_MEMBRESIA, $idUnicoMembresia);
-            return $uno=1;
-        }else{
+        if ($res == true) {
+            $this->permisos_model->log($mensaje . $idMembresiaLocal, LOG_MEMBRESIA, $idUnicoMembresia);
+            return $uno = 1;
+        } else {
             return false;
         }
     }
@@ -246,7 +243,7 @@ class Socio extends Model
      *
      * @return int
      */
-    function actualizaEstatusSocioNuevo($idUnicoMembresia, $idTipoEstatusSocio, $idPersona = 0)
+    public function actualizaEstatusSocioNuevo($idUnicoMembresia, $idTipoEstatusSocio, $idPersona = 0)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idTipoEstatusSocio, 'integer');
@@ -254,7 +251,7 @@ class Socio extends Model
 
         $this->db->select('idSocio');
         $this->db->from(TBL_SOCIO);
-        if($idPersona > 0){
+        if ($idPersona > 0) {
             $this->db->where('idPersona', $idPersona);
         }
         $this->db->where('idUnicoMembresia', $idUnicoMembresia);
@@ -264,7 +261,7 @@ class Socio extends Model
 
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
-                $datos = array('nuevo'=> $idTipoEstatusSocio);
+                $datos = array('nuevo' => $idTipoEstatusSocio);
                 $this->db->where('idSocio', $fila->idSocio);
                 $this->db->update(TBL_SOCIO, $datos);
             }
@@ -288,9 +285,9 @@ class Socio extends Model
      *
      * @return boolean
      */
-    function actualizaManttoSocio($idMantenimiento, $idSocio, $idUnicoMembresia, $idPersona = 0, $nombreSocio = '', $correcion = false)
+    public function actualizaManttoSocio($idMantenimiento, $idSocio, $idUnicoMembresia, $idPersona = 0, $nombreSocio = '', $correcion = false)
     {
-        $CI =& get_instance();
+        $CI = &get_instance();
         $CI->load->model('mantenimientos_model');
 
         $resultado = false;
@@ -306,17 +303,17 @@ class Socio extends Model
 
         $where = array(
             'idSocio'          => $idSocio,
-            'idUnicoMembresia' => $idUnicoMembresia
+            'idUnicoMembresia' => $idUnicoMembresia,
         );
         $set = array(
-            'idMantenimiento' => $idMantenimiento
+            'idMantenimiento' => $idMantenimiento,
         );
         $resultado = $this->db->update(TBL_SOCIO, $set, $where);
 
-        if ($resultado and ! $correcion) {
-            $this->permisos_model->log('Socio "'.strtolower($nombreSocio).'" cambia tipo de mantenimiento a '.$mantenimiento, LOG_MEMBRESIA, $idUnicoMembresia, $idPersona);
+        if ($resultado and !$correcion) {
+            $this->permisos_model->log('Socio "' . strtolower($nombreSocio) . '" cambia tipo de mantenimiento a ' . $mantenimiento, LOG_MEMBRESIA, $idUnicoMembresia, $idPersona);
         } elseif ($resultado and $correcion) {
-            $this->permisos_model->log(utf8_decode('Corrección para Socio "'.strtolower($nombreSocio).'" se le cambia tipo de mantenimiento a '.$mantenimiento), LOG_MEMBRESIA, $idUnicoMembresia, $idPersona);
+            $this->permisos_model->log(utf8_decode('Corrección para Socio "' . strtolower($nombreSocio) . '" se le cambia tipo de mantenimiento a ' . $mantenimiento), LOG_MEMBRESIA, $idUnicoMembresia, $idPersona);
         }
         return $resultado;
     }
@@ -330,34 +327,34 @@ class Socio extends Model
      *
      * @return [type]                     [description]
      */
-    function actualizaTipoEstatusSocio($idUnicoMembresia, $idTipoEstatusSocio, $idPersona)
+    public function actualizaTipoEstatusSocio($idUnicoMembresia, $idTipoEstatusSocio, $idPersona)
     {
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $ci->load->model('catalogos_model');
 
-        $socio=$ci->persona_model->nombre($idPersona);
-        $socio=strtoupper($socio);
+        $socio = $ci->persona_model->nombre($idPersona);
+        $socio = strtoupper($socio);
 
         $this->db->select('t.descripcion');
-        $this->db->from(TBL_TIPOESTATUSSOCIO.' t');
-        $this->db->join(TBL_SOCIO.' s', 's.idTipoEstatusSocio=t.idTipoEstatusSocio', 'LEFT');
+        $this->db->from(TBL_TIPOESTATUSSOCIO . ' t');
+        $this->db->join(TBL_SOCIO . ' s', 's.idTipoEstatusSocio=t.idTipoEstatusSocio', 'LEFT');
         $this->db->where('s.idPersona', $idPersona);
         $this->db->where('s.eliminado', 0);
-        $query1 = $this->db->get();
-        $row1 = $query1->row();
+        $query1           = $this->db->get();
+        $row1             = $query1->row();
         $tipoEsSocioViejo = $row1->descripcion;
 
         $ci->catalogos_model->opcionesCampo(40, $idTipoEstatusSocio, 'descripcion');
-        $tipoEsSocioNuevo = $ci->catalogos_model->opcionesCampo(40, $idTipoEstatusSocio, 'descripcion');;
+        $tipoEsSocioNuevo = $ci->catalogos_model->opcionesCampo(40, $idTipoEstatusSocio, 'descripcion');
 
         $data = array('idTipoEstatusSocio' => $idTipoEstatusSocio);
         $this->db->where('idPersona', $idPersona);
         $this->db->where('idUnicoMembresia', $idUnicoMembresia);
         $this->db->where('eliminado', 0);
         $res = $this->db->update('socio', $data);
-        if ($res==true) {
-            $this->permisos_model->log('Correccion del estatus de socio ('.$socio.', de '.$tipoEsSocioViejo.' a '.$tipoEsSocioNuevo.' )', LOG_MEMBRESIA, $idUnicoMembresia);
+        if ($res == true) {
+            $this->permisos_model->log('Correccion del estatus de socio (' . $socio . ', de ' . $tipoEsSocioViejo . ' a ' . $tipoEsSocioNuevo . ' )', LOG_MEMBRESIA, $idUnicoMembresia);
             return $uno = 1;
         } else {
             return false;
@@ -373,22 +370,22 @@ class Socio extends Model
      *
      * @return [type]                   [description]
      */
-    function actualizaTipoSocio($idUnicoMembresia, $idTipoSocio, $idPersona)
+    public function actualizaTipoSocio($idUnicoMembresia, $idTipoSocio, $idPersona)
     {
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $ci->load->model('tipocliente_model');
 
-        $socio=$ci->persona_model->nombre($idPersona);
-        $socio=strtoupper($socio);
+        $socio = $ci->persona_model->nombre($idPersona);
+        $socio = strtoupper($socio);
 
-        $sql1="SELECT descripcion
+        $sql1 = "SELECT descripcion
             FROM tiporolcliente trc
             LEFT JOIN socio s ON s.idTipoRolCliente=trc.idTipoRolCliente AND s.eliminado=0
-            WHERE s.idpersona=".$idPersona;
-        $query1=$this->db->query($sql1);
-        $row1 = $query1->row();
-        $tipoSocioViejo=$row1->descripcion;
+            WHERE s.idpersona=" . $idPersona;
+        $query1         = $this->db->query($sql1);
+        $row1           = $query1->row();
+        $tipoSocioViejo = $row1->descripcion;
 
         $tipoSocioNuevo = $ci->tipocliente_model->nombreRolCliente($idTipoSocio);
 
@@ -396,10 +393,10 @@ class Socio extends Model
         $this->db->where('idPersona', $idPersona);
         $this->db->where('eliminado', 0);
         $this->db->where('idUnicoMembresia', $idUnicoMembresia);
-        $res=$this->db->update('socio', $data);
-        if($res==TRUE){
-            $this->permisos_model->log('Correccion de tipo de socio ('.$socio.', de '.$tipoSocioViejo.' a '.$tipoSocioNuevo.' )', LOG_MEMBRESIA, $idUnicoMembresia);
-            return $uno=1;
+        $res = $this->db->update('socio', $data);
+        if ($res == true) {
+            $this->permisos_model->log('Correccion de tipo de socio (' . $socio . ', de ' . $tipoSocioViejo . ' a ' . $tipoSocioNuevo . ' )', LOG_MEMBRESIA, $idUnicoMembresia);
+            return $uno = 1;
         } else {
             return false;
         }
@@ -410,12 +407,12 @@ class Socio extends Model
      *
      * @return array
      */
-    function arrayBanco()
+    public function arrayBanco()
     {
         $data = array();
         $this->db->select('idBanco, descripcion');
         $query = $this->db->order_by('idBanco')->get(TBL_BANCO);
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
                 $data[$fila->idBanco] = $fila->descripcion;
             }
@@ -428,12 +425,12 @@ class Socio extends Model
      *
      * @return array
      */
-    function arrayTipoTarjeta()
+    public function arrayTipoTarjeta()
     {
         $data = array();
         $this->db->select('idTipoTarjeta, descripcion');
         $query = $this->db->order_by('idTipoTarjeta')->get('tipotarjeta');
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
                 $data[$fila->idTipoTarjeta] = $fila->descripcion;
             }
@@ -450,21 +447,21 @@ class Socio extends Model
      *
      * @return int
      */
-    function asignarLealtad($idUnicoMembresia, $asignarLealtad, $mensajeLealtad)
+    public function asignarLealtad($idUnicoMembresia, $asignarLealtad, $mensajeLealtad)
     {
         $asignarLealtad = intval($asignarLealtad);
-        $query  = $this->db->query("SELECT s.idSocio
+        $query          = $this->db->query("SELECT s.idSocio
             FROM socio s
-            WHERE s.idUnicoMembresia IN (".$idUnicoMembresia.") AND s.idTipoRolCliente=1
+            WHERE s.idUnicoMembresia IN (" . $idUnicoMembresia . ") AND s.idTipoRolCliente=1
                 AND s.eliminado=0");
-        $row    = $query->row();
-        $idSocio= $row->idSocio;
+        $row     = $query->row();
+        $idSocio = $row->idSocio;
 
-        $query1 = $this->db->query("UPDATE socio SET asignarLealtad=".$asignarLealtad." WHERE idSocio=".$idSocio);
-        $res  = $this->db->affected_rows();
-        if($res==1){
-            $mensaje1=($asignarLealtad==1)?'Asignacion':'Cancelaci&oacuten';
-            $this->permisos_model->log($mensaje1.' de programa de lealtad, por motivo de: "'.utf8_decode($mensajeLealtad).'"', LOG_MEMBRESIA, $idUnicoMembresia);
+        $query1 = $this->db->query("UPDATE socio SET asignarLealtad=" . $asignarLealtad . " WHERE idSocio=" . $idSocio);
+        $res    = $this->db->affected_rows();
+        if ($res == 1) {
+            $mensaje1 = ($asignarLealtad == 1) ? 'Asignacion' : 'Cancelaci&oacuten';
+            $this->permisos_model->log($mensaje1 . ' de programa de lealtad, por motivo de: "' . utf8_decode($mensajeLealtad) . '"', LOG_MEMBRESIA, $idUnicoMembresia);
         }
         return $res;
     }
@@ -480,12 +477,12 @@ class Socio extends Model
      * @author Antonio Sixtos
      * @return array
      */
-    function baja($idsocio, $fechabaja, $motivo, $idpersona, $unico)
+    public function baja($idsocio, $fechabaja, $motivo, $idpersona, $unico)
     {
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
 
-        $idUnicoMembresia = $unico;
+        $idUnicoMembresia     = $unico;
         $da['nombrecompleto'] = $ci->persona_model->nombre($idpersona);
 
         $motivo   = utf8_decode($motivo);
@@ -494,19 +491,19 @@ class Socio extends Model
         $fecha    = diffmktime($fechab);
         $hoy      = diffmktime($fechahoy);
 
-        $datos = array (
+        $datos = array(
             'idSocio'   => $idsocio,
             'idPersona' => $this->session->userdata('idPersona'),
             'motivo'    => $motivo,
-            'fechaBaja' => $fechab
+            'fechaBaja' => $fechab,
         );
         $this->db->insert(TBL_SOCIOBAJA, $datos);
-        $this->permisos_model->log('Baja de Socio ('.$da['nombrecompleto'].')', LOG_MEMBRESIA, $idUnicoMembresia);
+        $this->permisos_model->log('Baja de Socio (' . $da['nombrecompleto'] . ')', LOG_MEMBRESIA, $idUnicoMembresia);
 
-        if ($fecha==$hoy) {
-            $socio = array (
+        if ($fecha == $hoy) {
+            $socio = array(
                 'idTipoEstatusSocio' => ESTATUS_SOCIO_BAJA,
-                'fechaEliminacion'   => date('Y-m-d H:i:s')
+                'fechaEliminacion'   => date('Y-m-d H:i:s'),
             );
             $this->db->where('idSocio', $idsocio);
             $this->db->update(TBL_SOCIO, $socio);
@@ -517,11 +514,11 @@ class Socio extends Model
             $this->db->where('spm.idSocio', $idsocio);
             $this->db->where('spm.eliminado', 0);
             $this->db->where("DATE(NOW()) BETWEEN spm.fechaInicio AND spm.fechaFin");
-            $this->db->update(TBL_SOCIOPAGOMTTO.' spm', array('spm.idPersona' => 0, 'spm.idSocio' => 0));
+            $this->db->update(TBL_SOCIOPAGOMTTO . ' spm', array('spm.idPersona' => 0, 'spm.idSocio' => 0));
         }
 
         $query2 = $this->db->query('SELECT sb.idSocioBaja FROM sociobaja sb ORDER BY 1 DESc LIMIT 1');
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->idSocioBaja;
     }
 
@@ -534,22 +531,22 @@ class Socio extends Model
      *
      * @return [type]                   [description]
      */
-    function cambialSocio($idPersona, $idSocio, $idUnicoMembresia)
+    public function cambialSocio($idPersona, $idSocio, $idUnicoMembresia)
     {
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
 
-        $socioAnterior=$this->obtenNombre($idSocio);
+        $socioAnterior = $this->obtenNombre($idSocio);
 
-        $socioNuevo=$ci->persona_model->nombre($idPersona);
-        $socioNuevo=strtoupper($socioNuevo);
+        $socioNuevo = $ci->persona_model->nombre($idPersona);
+        $socioNuevo = strtoupper($socioNuevo);
 
         $data = array('idPersona' => $idPersona);
         $this->db->where('idSocio', $idSocio);
-        $res=$this->db->update('socio', $data);
-        if ($res==TRUE) {
-            $this->permisos_model->log('Correccion de cambio de persona  (De '.$socioAnterior.' a '.$socioNuevo.')', LOG_MEMBRESIA, $idUnicoMembresia);
-            return $uno=1;
+        $res = $this->db->update('socio', $data);
+        if ($res == true) {
+            $this->permisos_model->log('Correccion de cambio de persona  (De ' . $socioAnterior . ' a ' . $socioNuevo . ')', LOG_MEMBRESIA, $idUnicoMembresia);
+            return $uno = 1;
         } else {
             return false;
         }
@@ -562,18 +559,18 @@ class Socio extends Model
      *
      * @return variable
      */
-    function cancelaBajaProgramada($idsocio)
+    public function cancelaBajaProgramada($idsocio)
     {
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
 
         $this->db->select('idUnicoMembresia, idPersona');
         $this->db->from(TBL_SOCIO);
         $this->db->where('idSocio', $idsocio);
-        $query1 = $this->db->get();
-        $row1 = $query1->row();
+        $query1           = $this->db->get();
+        $row1             = $query1->row();
         $idUnicoMembresia = $row1->idUnicoMembresia;
-        $idPersona = $row1->idPersona;
+        $idPersona        = $row1->idPersona;
 
         $da['nombrecompleto'] = $ci->persona_model->nombre($idPersona);
 
@@ -581,21 +578,21 @@ class Socio extends Model
         $this->db->from(TBL_SOCIOBAJA);
         $this->db->where('idSocio', $idsocio);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
-        $query3 = $this->db->get();
-        $row3 = $query3->row();
+        $query3      = $this->db->get();
+        $row3        = $query3->row();
         $idSocioBaja = $row3->idSocioBaja;
 
         if ($idSocioBaja > 0) {
-            $datos = array ('fechaEliminacion'  => date('Y-m-d H:i:s'));
+            $datos = array('fechaEliminacion' => date('Y-m-d H:i:s'));
             $this->db->where('idSocio', $idsocio);
             $this->db->where('idSocioBaja', $idSocioBaja);
             $this->db->update(TBL_SOCIOBAJA, $datos);
 
-            $datos = array ('fechaEliminacion'  => date('Y-m-d H:i:s'));
+            $datos = array('fechaEliminacion' => date('Y-m-d H:i:s'));
             $this->db->where('idSocio', $idsocio);
             $this->db->where('idRelacionExterna', $idSocioBaja);
             $this->db->update('respuestamotivobaja', $datos);
-            $this->permisos_model->log('Cancelaci&oacute;n de baja programada del socio ('.$da['nombrecompleto'].')', LOG_MEMBRESIA, $idUnicoMembresia);
+            $this->permisos_model->log('Cancelaci&oacute;n de baja programada del socio (' . $da['nombrecompleto'] . ')', LOG_MEMBRESIA, $idUnicoMembresia);
         }
     }
 
@@ -608,19 +605,19 @@ class Socio extends Model
      *
      * @return array
      */
-    function cuentaSocios($unico)
+    public function cuentaSocios($unico)
     {
         settype($unico, 'integer');
 
-        if ($unico==0) {
+        if ($unico == 0) {
             return 0;
         }
 
-        $this->db->from(TBL_SOCIO.' s');
-        $this->db->join(TBL_PERSONA.' p', 's.idPersona=p.idPersona');
-        $this->db->join(TBL_TIPOROLCLIENTE.' trc', 's.idTipoRolCliente=trc.idTipoRolCliente');
-        $this->db->join(TBL_PRODUCTOMANTENIMIENTO.' pma', 's.idMantenimiento=pma.idMantenimiento');
-        $this->db->join(TBL_PRODUCTO.' pro', 'pma.idProducto=pro.idProducto');
+        $this->db->from(TBL_SOCIO . ' s');
+        $this->db->join(TBL_PERSONA . ' p', 's.idPersona=p.idPersona');
+        $this->db->join(TBL_TIPOROLCLIENTE . ' trc', 's.idTipoRolCliente=trc.idTipoRolCliente');
+        $this->db->join(TBL_PRODUCTOMANTENIMIENTO . ' pma', 's.idMantenimiento=pma.idMantenimiento');
+        $this->db->join(TBL_PRODUCTO . ' pro', 'pma.idProducto=pro.idProducto');
         $this->db->where('s.idUnicoMembresia', $unico);
         $this->db->where('s.eliminado', 0);
         $this->db->where('s.idTipoEstatusSocio !=', ESTATUS_SOCIO_BAJA);
@@ -637,7 +634,7 @@ class Socio extends Model
      *
      * @return integer
      */
-    function datosDomicilioTitular($idUnicoMembresia)
+    public function datosDomicilioTitular($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
 
@@ -658,7 +655,7 @@ class Socio extends Model
             }
             return $data;
         } else {
-           return false;
+            return false;
         }
     }
 
@@ -669,15 +666,15 @@ class Socio extends Model
      *
      * @return integer
      */
-    function datosPrecioEspecialMtto($idSocio,$rolCliente,$mantenimiento)
+    public function datosPrecioEspecialMtto($idSocio, $rolCliente, $mantenimiento)
     {
-        settype($idSocio,'integer');
-        settype($rolCliente,'integer');
-        settype($mantenimiento,'integer');
+        settype($idSocio, 'integer');
+        settype($rolCliente, 'integer');
+        settype($mantenimiento, 'integer');
 
         $this->db->select('idSocioPrecioMtto,importe,porcentaje,fechaInicio,fechaFin,idEsquemaPago,idMantenimiento,idTipoRolCliente');
         $this->db->from(TBL_SOCIOPRECIOMTTO);
-        $this->db->where('idSocio', $idSocio,'idTipoRolCliente', $rolCliente,'idMantenimiento', $mantenimiento);
+        $this->db->where('idSocio', $idSocio, 'idTipoRolCliente', $rolCliente, 'idMantenimiento', $mantenimiento);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             return $query->row_array();
@@ -698,7 +695,7 @@ class Socio extends Model
         settype($idPersona, 'integer');
         $data = array();
 
-        if ($idPersona==0) {
+        if ($idPersona == 0) {
             return $data;
         }
 
@@ -707,10 +704,10 @@ class Socio extends Model
             s.idTipoEstatusSocio, s.idMantenimiento, s.idEsquemaPago, tc.idTipoCliente,
             tc.descripcion AS tipoCliente, s.fechaRegistro, s.numeroAusencias, YEAR(s.fechaEliminacion)AS eliminado, p.edad'
         );
-        $this->db->from(TBL_SOCIO." s");
-        $this->db->join(TBL_PERSONA." p", "s.idPersona = p.idPersona", "inner");
-        $this->db->join(TBL_TIPOROLCLIENTE." trc", "s.idTipoRolCliente = trc.idTipoRolCliente", "inner");
-        $this->db->join(TBL_TIPOCLIENTE." tc", "trc.idTipoCliente = tc.idTipoCliente", "inner");
+        $this->db->from(TBL_SOCIO . " s");
+        $this->db->join(TBL_PERSONA . " p", "s.idPersona = p.idPersona", "inner");
+        $this->db->join(TBL_TIPOROLCLIENTE . " trc", "s.idTipoRolCliente = trc.idTipoRolCliente", "inner");
+        $this->db->join(TBL_TIPOCLIENTE . " tc", "trc.idTipoCliente = tc.idTipoCliente", "inner");
         $this->db->where('s.idPersona', $idPersona);
         if ($validaEliminado) {
             $this->db->where('s.eliminado', 0);
@@ -736,7 +733,7 @@ class Socio extends Model
      *
      * @return array data
      */
-    function datosTitular($unico)
+    public function datosTitular($unico)
     {
         $sql = "SELECT CONCAT(p.nombre,' ',p.paterno,' ',p.materno) as nombreCompleto,
                 m.idMembresia, u.nombre as nombreUnidad, pro.nombre as tipoMembresia, tel.telefono, mail
@@ -748,7 +745,7 @@ class Socio extends Model
             INNER JOIN producto pro on m.idProducto=pro.idProducto
             LEFT JOIN telefono tel on s.idPersona=tel.idPersona
             LEFT JOIN mail on s.idPersona=mail.idPersona
-            WHERE s.idunicomembresia=".$unico." AND s.eliminado=0 AND trc.idTipoRolCliente=1 limit 1";
+            WHERE s.idunicomembresia=" . $unico . " AND s.eliminado=0 AND trc.idTipoRolCliente=1 limit 1";
         $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
@@ -757,7 +754,7 @@ class Socio extends Model
             }
             return $data;
         } else {
-           return false;
+            return false;
         }
     }
 
@@ -768,10 +765,11 @@ class Socio extends Model
      *
      * @return array data
      */
-    function edadesTSocio($idUn, $idMantenimiento, $tipoSocio){
+    public function edadesTSocio($idUn, $idMantenimiento, $tipoSocio)
+    {
         $this->db->select('edadMinima, edadMaxima');
         $this->db->from(TBL_MANTENIMIENTOCLIENTE);
-        $where=array('idUn'=>$idUn , 'idMantenimiento'=>$idMantenimiento, 'idTipoRolCliente'=>$tipoSocio);
+        $where = array('idUn' => $idUn, 'idMantenimiento' => $idMantenimiento, 'idTipoRolCliente' => $tipoSocio);
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
@@ -780,7 +778,7 @@ class Socio extends Model
             }
             return $data;
         } else {
-           return false;
+            return false;
         }
     }
 
@@ -798,7 +796,7 @@ class Socio extends Model
      *
      * @return boolean
      */
-    function eliminaAusencia ($idPersona = 0, $idUnicoMembresia = 0, $accion = 'cancelar')
+    public function eliminaAusencia($idPersona = 0, $idUnicoMembresia = 0, $accion = 'cancelar')
     {
         settype($idPersona, 'integer');
 
@@ -819,15 +817,15 @@ class Socio extends Model
             return false;
         }
 
-        $set = array('idTipoEstatusSocio' => ESTATUS_SOCIO_ACTIVO, 'numeroAusencias' => 0);
+        $set   = array('idTipoEstatusSocio' => ESTATUS_SOCIO_ACTIVO, 'numeroAusencias' => 0);
         $where = array('idSocio' => $idSocio);
         $this->db->update(TBL_SOCIO, $set, $where); #echo $this->db->last_query();
 
-        $set = array('fechaRegresoAusencia' => date('Y-m-d H:i:s'));
+        $set   = array('fechaRegresoAusencia' => date('Y-m-d H:i:s'));
         $where = array('idSocio' => $idSocio, 'fechaRegresoAusencia' => '0000-00-00 00:00:00');
         $this->db->update(TBL_SOCIOAUSENCIA, $set, $where); #echo $this->db->last_query();
 
-        $this->permisos_model->log('Se cancela ausencia para Socio ('.$idPersona.')', LOG_MEMBRESIA, $idUnicoMembresia, $idPersona);
+        $this->permisos_model->log('Se cancela ausencia para Socio (' . $idPersona . ')', LOG_MEMBRESIA, $idUnicoMembresia, $idPersona);
 
         return true;
     }
@@ -839,19 +837,19 @@ class Socio extends Model
      *
      * @return array
      */
-    function eliminarTarjetaPagoAutomatico($id, $idUnicoMembresia = 0, $mensaje = '', $idConvenioDetalle = 0)
+    public function eliminarTarjetaPagoAutomatico($id, $idUnicoMembresia = 0, $mensaje = '', $idConvenioDetalle = 0)
     {
-        settype($id,'integer');
-        settype($idUnicoMembresia,'integer');
-        settype($idConvenioDetalle,'integer');
+        settype($id, 'integer');
+        settype($idUnicoMembresia, 'integer');
+        settype($idConvenioDetalle, 'integer');
 
-        $CI =& get_instance();
+        $CI = &get_instance();
 
         if ($idConvenioDetalle) {
             $where = array('idConvenioDatosTarjeta' => $id);
-            $set   = array (
+            $set   = array(
                 'fechaEliminacion'  => date("Y-m-d H:i:s"),
-                'motivoCancelacion' => $mensaje
+                'motivoCancelacion' => $mensaje,
             );
 
             $this->db->update(TBL_CONVENIODATOSTARJETA, $set, $where);
@@ -859,21 +857,21 @@ class Socio extends Model
             $CI->load->model('persona_model');
 
             $this->db->select('st.idSocioDatosTarjeta,st.idSocio,st.numeroTarjetaCta,s.idPersona');
-            $this->db->from(TBL_SOCIODATOSTARJETA.' st');
-            $this->db->join(TBL_SOCIO.' s', 's.idSocio=st.idSocio');
+            $this->db->from(TBL_SOCIODATOSTARJETA . ' st');
+            $this->db->join(TBL_SOCIO . ' s', 's.idSocio=st.idSocio');
             $this->db->where('st.idSocioDatosTarjeta', $id);
             $this->db->where('st.fechaEliminacion', '0000-00-00 00:00:00');
             $query = $this->db->get();
 
             if ($query->num_rows() > 0) {
-                $fila = $query->row_array();
-                $idSocio=$fila['idSocio'];
-                $idPersona=$fila['idPersona'];
-                $numTarjeta=$fila['numeroTarjetaCta'];
+                $fila       = $query->row_array();
+                $idSocio    = $fila['idSocio'];
+                $idPersona  = $fila['idPersona'];
+                $numTarjeta = $fila['numeroTarjetaCta'];
                 $this->db->where('idSocioDatosTarjeta', $fila['idSocioDatosTarjeta']);
                 $datos = array(
                     'fechaEliminacion'  => date("Y-m-d H:i:s"),
-                    'motivoCancelacion' => $mensaje
+                    'motivoCancelacion' => $mensaje,
                 );
                 $this->db->update(TBL_SOCIODATOSTARJETA, $datos);
             }
@@ -883,9 +881,9 @@ class Socio extends Model
             return false;
         } else {
             if ($idConvenioDetalle) {
-                $this->permisos_model->log("Se elimino tarjeta de idConvenioDetalle (".$idConvenioDetalle.") (".date('Y-m').")", LOG_CONVENIO);
+                $this->permisos_model->log("Se elimino tarjeta de idConvenioDetalle (" . $idConvenioDetalle . ") (" . date('Y-m') . ")", LOG_CONVENIO);
             } else {
-                $this->permisos_model->log("Se elimino tarjeta (xxxx xxxx xxxx ".substr ($numTarjeta,-4,4).") de socio (".$CI->persona_model->nombre($idPersona).") (".date('Y-m').")", LOG_MEMBRESIA, $idUnicoMembresia);
+                $this->permisos_model->log("Se elimino tarjeta (xxxx xxxx xxxx " . substr($numTarjeta, -4, 4) . ") de socio (" . $CI->persona_model->nombre($idPersona) . ") (" . date('Y-m') . ")", LOG_MEMBRESIA, $idUnicoMembresia);
             }
             return true;
         }
@@ -900,14 +898,14 @@ class Socio extends Model
      *
      * @return boolean
      */
-    function elite($idPersona)
+    public function elite($idPersona)
     {
         settype($idPersona, 'integer');
 
         $this->db->select('idSocio');
-        $this->db->from(TBL_SOCIO.' s');
-        $this->db->join(TBL_MEMBRESIA.' mem', "mem.idUnicoMembresia=s.idUnicoMembresia and mem.eliminado=0");
-        $this->db->join(TBL_MEMBRESIAFIDELIDAD.' mf', "mf.idUnicoMembresia=mem.idUnicoMembresia AND mf.fechaEliminacion='00000-00-00 00:00:00' AND mf.idTipoFidelidad=5");
+        $this->db->from(TBL_SOCIO . ' s');
+        $this->db->join(TBL_MEMBRESIA . ' mem', "mem.idUnicoMembresia=s.idUnicoMembresia and mem.eliminado=0");
+        $this->db->join(TBL_MEMBRESIAFIDELIDAD . ' mf', "mf.idUnicoMembresia=mem.idUnicoMembresia AND mf.fechaEliminacion='00000-00-00 00:00:00' AND mf.idTipoFidelidad=5");
 
         $this->db->where('s.idPersona', $idPersona);
         $this->db->where('s.eliminado', 0);
@@ -928,10 +926,10 @@ class Socio extends Model
      *
      * @return [type]          [description]
      */
-    function estatusSocio($idSocio)
+    public function estatusSocio($idSocio)
     {
         $this->db->select('idTipoEstatusSocio');
-        $where=array('idSocio'=>$idSocio);
+        $where = array('idSocio' => $idSocio);
         $this->db->where($where);
         $this->db->from(TBL_SOCIO);
         $query = $this->db->get();
@@ -951,14 +949,14 @@ class Socio extends Model
      *
      * @return variable fechabaja
      */
-    function fechaBaja($idSocio)
+    public function fechaBaja($idSocio)
     {
         $this->db->select('fechaBaja');
         $this->db->where('idSocio', $idSocio);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $query = $this->db->get(TBL_SOCIOBAJA);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             $fila = $query->row_array();
             return $fila['fechaBaja'];
         } else {
@@ -979,7 +977,7 @@ class Socio extends Model
         settype($idTipoSocio, 'integer');
         settype($idPersona, 'integer');
 
-        $CI =& get_instance();
+        $CI = &get_instance();
         $CI->load->model('un_model');
         $CI->load->model('membresia_model');
         $CI->load->model('tipocliente_model');
@@ -1002,7 +1000,7 @@ class Socio extends Model
         $dat['nombreUnidad']       = $CI->un_model->nombre($club);
         $dat['tipoMembresia']      = utf8_encode($tm['nombre']);
 
-        $datosNuevo             = $this->datosSocio($idPersona);
+        $datosNuevo = $this->datosSocio($idPersona);
 
         $dat['nombreSocio']     = $CI->persona_model->nombre($idPersona);
         $dat['tipoRolSocio']    = $CI->tipocliente_model->nombreRolCliente($datosNuevo['idTipoRolCliente']);
@@ -1013,14 +1011,14 @@ class Socio extends Model
         $membresiaDatos = $CI->membresia_model->obtenerTipoMembresia($idUnicoMembresia);
         $tipoMembresia  = $membresiaDatos['nombre'];
         $meses          = meses();
-        $mesActual      = (int)date('m');
+        $mesActual      = (int) date('m');
 
         /**********************************/
 
-        $formato = 0;
-        $idEmpresa = $CI->un_model->obtenerEmpresa($club);
-        $edad = $CI->persona_model->edad($idPersona);
-        $datosPersona = $CI->persona_model->datosGenerales($idPersona);
+        $formato                   = 0;
+        $idEmpresa                 = $CI->un_model->obtenerEmpresa($club);
+        $edad                      = $CI->persona_model->edad($idPersona);
+        $datosPersona              = $CI->persona_model->datosGenerales($idPersona);
         $dat['edad']               = $edad;
         $dat['fecha']              = $datosPersona['fecha'];
         $json['docAutoriacionMed'] = 0;
@@ -1035,46 +1033,46 @@ class Socio extends Model
         $dat['direccionSocial']  = $datosOperador[0]['direccionSocial'];
 
         /*if ($edad >= 65) {
-            if (file_exists(verificaRuta(RUTA_LOCAL.'/system/application/views/socio/HTML/CotitularMayor65_'.$datosUn['idOperador'].'.php'))) {
-                $html2                     = $this->load->view('socio/HTML/CotitularMayor65_'.$datosUn['idOperador'], $dat, true);
-                $idDocumento2              = $CI->documentos_model->insertaGeneralHTML($html2, TIPO_AUTORIZACION_MEDICA, $idPersona, $idUnicoMembresia );
-                $json['docAutoriacionMed'] = $idDocumento2;
-            }
+        if (file_exists(verificaRuta(RUTA_LOCAL.'/system/application/views/socio/HTML/CotitularMayor65_'.$datosUn['idOperador'].'.php'))) {
+        $html2                     = $this->load->view('socio/HTML/CotitularMayor65_'.$datosUn['idOperador'], $dat, true);
+        $idDocumento2              = $CI->documentos_model->insertaGeneralHTML($html2, TIPO_AUTORIZACION_MEDICA, $idPersona, $idUnicoMembresia );
+        $json['docAutoriacionMed'] = $idDocumento2;
+        }
         }*/
 
-        $movimiento=12;
+        $movimiento = 12;
 
         $dat['digital']       = $CI->digital_model->validaAutorizacionDigital($idUnicoMembresia) ? 1 : 0;
         $dat['fechaRegistro'] = date('Y-m-d');
 
-         if (file_exists(verificaRuta(RUTA_LOCAL.'/system/application/views/socio/HTML/ReporteAltaIntegrante_'.$datosUn['idOperador'].'.php'))) {
+        if (file_exists(verificaRuta(RUTA_LOCAL . '/system/application/views/socio/HTML/ReporteAltaIntegrante_' . $datosUn['idOperador'] . '.php'))) {
             $dat['tipoRolSocio'] = $datosNuevo['tipoRolCliente'];
-            $html = $this->load->view('socio/HTML/ReporteAltaIntegrante_'.$datosUn['idOperador'], $dat, true);
+            $html                = $this->load->view('socio/HTML/ReporteAltaIntegrante_' . $datosUn['idOperador'], $dat, true);
 
-            $datosRes = $CI->digital_model->guardaDocumentoDigital($idPersona, TIPO_DOCUMENTO_ALTA_INTEGRANTE, '', $html, 0, '', 'Frente', $idUnicoMembresia, 1, $dat['digital'], 0);
+            $datosRes    = $CI->digital_model->guardaDocumentoDigital($idPersona, TIPO_DOCUMENTO_ALTA_INTEGRANTE, '', $html, 0, '', 'Frente', $idUnicoMembresia, 1, $dat['digital'], 0);
             $idDocumento = $datosRes['idDocumento'];
 
-            $uno = $idDocumento."::".$club."::".$idPersona."::".$movimiento."::".$formato;
+            $uno         = $idDocumento . "::" . $club . "::" . $idPersona . "::" . $movimiento . "::" . $formato;
             $json['uno'] = $uno;
-         }
-         #}
-         $idProductoUn = $CI->membresia_model->obtenIdProductoUn($datos['generales'][0]->idUnicoMembresia, $datos['generales'][0]->idUn);
-         $datosTipoMem = $CI->membresia_model->obtenDatosTipoMembresia($idProductoUn);
+        }
+        #}
+        $idProductoUn = $CI->membresia_model->obtenIdProductoUn($datos['generales'][0]->idUnicoMembresia, $datos['generales'][0]->idUn);
+        $datosTipoMem = $CI->membresia_model->obtenDatosTipoMembresia($idProductoUn);
 
         $listaTelefonos = $CI->persona_model->listaTelefonos($titular);
         if ($listaTelefonos != null) {
             $datosTelefonos = $CI->persona_model->datosTelefono($titular, $listaTelefonos[0]['idTelefono']);
 
             $datos['telefono'] = $datosTelefonos['telefono'];
-            $lt1 = $CI->persona_model->listaTelefonos($titular, '30');
+            $lt1               = $CI->persona_model->listaTelefonos($titular, '30');
             if ($lt1 == null) {
                 $datos['telefono_casa'] = "";
             } else {
-                $datos['telefono_casa']    = $lt1[0]['telefono'];
+                $datos['telefono_casa'] = $lt1[0]['telefono'];
             }
         }
 
-        $listaMails  = $CI->persona_model->listaMails($titular);
+        $listaMails = $CI->persona_model->listaMails($titular);
 
         if ($listaMails != null) {
             $datosMail = $CI->persona_model->datosMail($titular, $listaMails[0]['idMail']);
@@ -1091,8 +1089,8 @@ class Socio extends Model
             }
         }
 
-         if ($idTipoSocio == ROL_CLIENTE_NIETO_SOBRINO and $datosTipoMem['idTipoMembresia'] == TIPO_MEMBRESIA_FAMILIAR) {
-            if (file_exists(verificaRuta(RUTA_LOCAL.'/system/application/views/documentos/HTML/'.TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_SOBRINO.'_'.$datosUn['idOperador'].'.php'))) {
+        if ($idTipoSocio == ROL_CLIENTE_NIETO_SOBRINO and $datosTipoMem['idTipoMembresia'] == TIPO_MEMBRESIA_FAMILIAR) {
+            if (file_exists(verificaRuta(RUTA_LOCAL . '/system/application/views/documentos/HTML/' . TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_SOBRINO . '_' . $datosUn['idOperador'] . '.php'))) {
                 if ($edad < 18) {
                     $datosResponsiva['tipoMembresia'] = $tipoMembresia;
                     $datosResponsiva['nuevoSocio']    = $dat['nombreSocio'];
@@ -1109,18 +1107,18 @@ class Socio extends Model
                     $datosResponsiva['responsable']      = $dat['responsable'];
                     $datosResponsiva['firmaResponsable'] = $dat['firmaResponsable'];
 
-                    $html = $this->load->view('documentos/HTML/'.TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_SOBRINO.'_'.$datosUn['idOperador'], $datosResponsiva, true);
-                    $datosRes = $CI->digital_model->guardaDocumentoDigital($idPersona, TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_SOBRINO, '', $html, 0, '', 'Frente', $idUnicoMembresia, 1, 0, 0);
-                    $documento = $datosRes['idDocumento'];
+                    $html                    = $this->load->view('documentos/HTML/' . TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_SOBRINO . '_' . $datosUn['idOperador'], $datosResponsiva, true);
+                    $datosRes                = $CI->digital_model->guardaDocumentoDigital($idPersona, TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_SOBRINO, '', $html, 0, '', 'Frente', $idUnicoMembresia, 1, 0, 0);
+                    $documento               = $datosRes['idDocumento'];
                     $datos['id'][]           = TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_SOBRINO;
                     $datos['doc'][]          = $documento;
                     $datos['concepto'][]     = $CI->documentos_model->nombreTipoDocumento(TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_SOBRINO);
                     $json['idDocResponsiva'] = $documento;
                 }
             }
-         }
-         if ($edad < 18 and $datosTipoMem['idTipoMembresia'] == TIPO_MEMBRESIA_GRUPAL) {
-            if (file_exists(verificaRuta(RUTA_LOCAL.'/system/application/views/documentos/HTML/'.TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_GRUPAL.'_'.$datosUn['idOperador'].'.php'))) {
+        }
+        if ($edad < 18 and $datosTipoMem['idTipoMembresia'] == TIPO_MEMBRESIA_GRUPAL) {
+            if (file_exists(verificaRuta(RUTA_LOCAL . '/system/application/views/documentos/HTML/' . TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_GRUPAL . '_' . $datosUn['idOperador'] . '.php'))) {
                 if ($edad < 18) {
                     $datosResponsiva['tipoMembresia'] = $tipoMembresia;
                     $datosResponsiva['nuevoSocio']    = $dat['nombreSocio'];
@@ -1139,24 +1137,24 @@ class Socio extends Model
                     $datosResponsiva['firmaResponsable'] = $dat['firmaResponsable'];
                     $datosResponsiva['direccionSocial']  = $dat['direccionSocial'];
 
-                    $html = $this->load->view('documentos/HTML/'.TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_GRUPAL.'_'.$datosUn['idOperador'], $datosResponsiva, true);
-                    $datosRes = $CI->digital_model->guardaDocumentoDigital($idPersona, TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_GRUPAL, '', $html, 0, '', 'Frente', $idUnicoMembresia, 1, 0, 0);
-                    $documento = $datosRes['idDocumento'];
+                    $html                    = $this->load->view('documentos/HTML/' . TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_GRUPAL . '_' . $datosUn['idOperador'], $datosResponsiva, true);
+                    $datosRes                = $CI->digital_model->guardaDocumentoDigital($idPersona, TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_GRUPAL, '', $html, 0, '', 'Frente', $idUnicoMembresia, 1, 0, 0);
+                    $documento               = $datosRes['idDocumento'];
                     $datos['id'][]           = TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_GRUPAL;
                     $datos['doc'][]          = $documento;
                     $datos['concepto'][]     = $CI->documentos_model->nombreTipoDocumento(TIPO_DOCUMENTO_RESPONSIVA_MENORES_EDAD_GRUPAL);
                     $json['idDocResponsiva'] = $documento;
                 }
             }
-         }
-         if ( ! $datos['generales'][0]->idConvenioDetalle and ($idTipoSocio == ROL_CLIENTE_COTITULAR or $idTipoSocio == ROL_CLIENTE_COTITULAR_GRUPAL) and strtotime($datos['generales'][0]->fechaRegistro) >= strtotime(date('2014-05-01')) and $datos['generales'][0]->idUn != 68 and $datos['generales'][0]->idUn != 7) {
-            if (file_exists(verificaRuta(RUTA_LOCAL.'/system/application/views/documentos/HTML/'.TIPO_DOCUMENTO_IRL.'.php'))) {
+        }
+        if (!$datos['generales'][0]->idConvenioDetalle and ($idTipoSocio == ROL_CLIENTE_COTITULAR or $idTipoSocio == ROL_CLIENTE_COTITULAR_GRUPAL) and strtotime($datos['generales'][0]->fechaRegistro) >= strtotime(date('2014-05-01')) and $datos['generales'][0]->idUn != 68 and $datos['generales'][0]->idUn != 7) {
+            if (file_exists(verificaRuta(RUTA_LOCAL . '/system/application/views/documentos/HTML/' . TIPO_DOCUMENTO_IRL . '.php'))) {
                 $this->load->library('documentos');
                 $this->documentos->formatoIRL($idUnicoMembresia);
             }
-         }
-         $datosView = json_encode_sw($json);
-         return $datosView;
+        }
+        $datosView = json_encode_sw($json);
+        return $datosView;
     }
 
     /*
@@ -1172,7 +1170,7 @@ class Socio extends Model
         settype($idUnicoMembresia, 'integer');
         settype($persona, 'integer');
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('membresia_model');
         $ci->load->model('persona_model');
         $ci->load->model('un_model');
@@ -1186,27 +1184,27 @@ class Socio extends Model
         $datos['idUnicoMembresia'] = $idUnicoMembresia;
         $datos['persona']          = $persona;
         /*******Creacion del archivo HTML-pdf******/
-        $doc['tipoEmpresa']=$this->tipoEmpresa($datos['idPersona']);
+        $doc['tipoEmpresa'] = $this->tipoEmpresa($datos['idPersona']);
 
         $datos['idTitular'] = $ci->membresia_model->obtenerTitular($datos['idUnicoMembresia']);
-        $titular = $datos['idTitular']['idPersona'];
-        $club = $ci->membresia_model->club($datos['idUnicoMembresia']);
-        $tm = $ci->membresia_model->obtenerTipoMembresia($datos['idUnicoMembresia']);
-        $idEmpresaGrupo = $ci->un_model->obtenerEmpresaGrupo($club);
+        $titular            = $datos['idTitular']['idPersona'];
+        $club               = $ci->membresia_model->club($datos['idUnicoMembresia']);
+        $tm                 = $ci->membresia_model->obtenerTipoMembresia($datos['idUnicoMembresia']);
+        $idEmpresaGrupo     = $ci->un_model->obtenerEmpresaGrupo($club);
 
         $dat['nombreTitular'] = $ci->persona_model->nombre($titular);
 
         $d = $ci->membresia_model->obtenerDatosGeneralesMem($datos['idUnicoMembresia']);
-        foreach($d as $fila) {
+        foreach ($d as $fila) {
             $dat['idMembresia']     = $fila->idMembresia;
             $dat["idTipoMembresia"] = $fila->idTipoMembresia;
             $dat["idTipoFidelidad"] = $fila->idTipoFidelidad;
         }
 
         $dat['nombreUnidad'] = $ci->un_model->nombre($club);
-        $datosUn = $ci->un_model->obtenDatosUn($club);
-        $domicilio = $ci->socio_model->datosDomicilioTitular($datos['idUnicoMembresia']);
-        if ($domicilio > 0 ) {
+        $datosUn             = $ci->un_model->obtenDatosUn($club);
+        $domicilio           = $ci->socio_model->datosDomicilioTitular($datos['idUnicoMembresia']);
+        if ($domicilio > 0) {
             foreach ($domicilio as $fila1) {
                 $dato['calle']     = $fila1->calle;
                 $dato['numero']    = $fila1->numero;
@@ -1215,7 +1213,7 @@ class Socio extends Model
                 $dato['municipio'] = $fila1->municipio;
                 $dato['cp']        = $fila1->cp;
             }
-            $dat['domicilio'] = $dato['calle']." #".$dato['numero']." ".$dato['colonia']." C.P.".$dato['cp'].", ".$dato['municipio'].", ".$dato['estado'];
+            $dat['domicilio'] = $dato['calle'] . " #" . $dato['numero'] . " " . $dato['colonia'] . " C.P." . $dato['cp'] . ", " . $dato['municipio'] . ", " . $dato['estado'];
         } else {
             $dat['domicilio'] = '';
         }
@@ -1223,10 +1221,10 @@ class Socio extends Model
         $dat['domicilio'] = strtoupper($dat['domicilio']);
 
         $dat['cargoPrimeros'] = 0;
-        $dat['cargoUltimos'] = 0;
+        $dat['cargoUltimos']  = 0;
 
         $dt = $this->obtenDatosTarjeta($datos['idUnicoMembresia'], $titular);
-        foreach ($dt as $fila2){
+        foreach ($dt as $fila2) {
             $dat['banco']            = $fila2->banco;
             $dat['numeroTarjetaCta'] = $fila2->numeroTarjetaCta;
             $dat['nombreTarjeta']    = $fila2->nombreTarjeta;
@@ -1237,23 +1235,23 @@ class Socio extends Model
         }
         $idMantenimiento = $ci->mantenimientos_model->activoFecha($datos['idUnicoMembresia'], date('Y-m-d H:i:s'));
 
-        $z1 = 0;
-        $z2 = 0;
-        $iA1 = 0;
-        $iA2 = 0;
-        $idPers = $this->obtenSocios($idUnicoMembresia);
+        $z1             = 0;
+        $z2             = 0;
+        $iA1            = 0;
+        $iA2            = 0;
+        $idPers         = $this->obtenSocios($idUnicoMembresia);
         $numIntegrantes = count($idPers);
-        $nI = 0;
+        $nI             = 0;
         foreach ($idPers as $renglones) {
-            if ($renglones->idTipoRolCliente!=ROL_CLIENTE_AGREGADO and $renglones->idTipoRolCliente != ROL_CLIENTE_2X1) {
-                if ($renglones->idTipoRolCliente!=ROL_CLIENTE_BEBE) {
+            if ($renglones->idTipoRolCliente != ROL_CLIENTE_AGREGADO and $renglones->idTipoRolCliente != ROL_CLIENTE_2X1) {
+                if ($renglones->idTipoRolCliente != ROL_CLIENTE_BEBE) {
                     $nI++;
                 }
                 $contI = $nI;
-                if ($dat["idTipoMembresia"]>=TIPO_MEMBRESIA_GRUPAL) {
+                if ($dat["idTipoMembresia"] >= TIPO_MEMBRESIA_GRUPAL) {
                     $contI = 0;
                 }
-                $fechaMtto = date('Y-m').'-01';
+                $fechaMtto = date('Y-m') . '-01';
                 //if (strtotime($datosUn['fechaApertura']) > strtotime(date('Y-m-d')) and strtotime($datosUn['fechaApertura'])) {
                 //    $fechaMtto = date("Y-m", strtotime($datosUn['fechaApertura']))."-01";
                 //}
@@ -1286,7 +1284,7 @@ class Socio extends Model
             }
         }
 
-        if ( (int)$z1 > 0 ) {
+        if ((int) $z1 > 0) {
             $dat['cargoP']        = number_format($z1, 2, '.', ',');
             $dat['cargoU']        = number_format($z2, 2, '.', ',');
             $dat['nombreGerente'] = $ci->un_model->obtenGerenteGeneral($club);
@@ -1304,13 +1302,13 @@ class Socio extends Model
                 $f['fechaPreventa'] = $fila3->fechaPreventa;
             }
 
-            if ($f['fechaApertura']!='0000-00-00' && $f['fechaPreventa']!='0000-00-00' ) {
-                $ahora = time();
+            if ($f['fechaApertura'] != '0000-00-00' && $f['fechaPreventa'] != '0000-00-00') {
+                $ahora    = time();
                 $apertura = strtotime($f['fechaApertura']);
                 $preventa = strtotime($f['fechaPreventa']);
 
-                if ($preventa<$ahora && $ahora<$apertura) {
-                    if ($this->session->userdata('idUn')!=$club) {
+                if ($preventa < $ahora && $ahora < $apertura) {
+                    if ($this->session->userdata('idUn') != $club) {
                         $fin = 2;
                     } else {
                         $fin = 1;
@@ -1329,15 +1327,15 @@ class Socio extends Model
             $dat['responsable']      = $datosOperador[0]['responsable'];
             $dat['firmaResponsable'] = $datosOperador[0]['firmaResponsable'];
 
-            if (file_exists(verificaRuta(RUTA_LOCAL.'/system/application/views/socio/HTML/alta_cargoautomatico_'.$idEmpresaGrupo.'.php'))) {
-                $html = $this->load->view('socio/HTML/alta_cargoautomatico_'.$idEmpresaGrupo, $dat, true);
-                $datosRes = $ci->digital_model->guardaDocumentoDigital($titular, TIPO_DOCUMENTO_ALTA_CARGO_AUTOMATICO, '', $html, 0, '', 'Frente', $datos['idUnicoMembresia'], 1, $dat['digital'], 0);
+            if (file_exists(verificaRuta(RUTA_LOCAL . '/system/application/views/socio/HTML/alta_cargoautomatico_' . $idEmpresaGrupo . '.php'))) {
+                $html        = $this->load->view('socio/HTML/alta_cargoautomatico_' . $idEmpresaGrupo, $dat, true);
+                $datosRes    = $ci->digital_model->guardaDocumentoDigital($titular, TIPO_DOCUMENTO_ALTA_CARGO_AUTOMATICO, '', $html, 0, '', 'Frente', $datos['idUnicoMembresia'], 1, $dat['digital'], 0);
                 $idDocumento = $datosRes['idDocumento'];
-                $uno = $idDocumento.'::'.$doc['tipoEmpresa'].'::'.$datos['idPersona'].'::'.$movimiento;
+                $uno         = $idDocumento . '::' . $doc['tipoEmpresa'] . '::' . $datos['idPersona'] . '::' . $movimiento;
                 return $uno;
             }
         } else {
-            $movimiento = 17;
+            $movimiento     = 17;
             $dat['digital'] = $ci->digital_model->validaAutorizacionDigital($datos['idUnicoMembresia']) ? 1 : 0;
 
             $datosRes = $ci->digital_model->guardaDocumentoDigital(
@@ -1365,14 +1363,14 @@ class Socio extends Model
      *
      * @return [type]        [description]
      */
-    function guardaDatosTarjeta($datos)
+    public function guardaDatosTarjeta($datos)
     {
-        $sql1 = "CALL crm.spGuardaDatosCAT(".$datos['idUnicoMembresia'].", '".$datos['datosTarjeta']."', ".$datos['idEsquemaPago'].",".$this->db->escape(utf8_decode($datos['motivoCanc'])).",".$datos['idTipoDocumento'].",".$datos['idConvenioDetalle'].",".$datos['idpersonasess'].",".$datos['idusuariosess'].", ".$datos['guardaocancela'].", ".$datos['procedencia'].", @respuesta)";
+        $sql1 = "CALL crm.spGuardaDatosCAT(" . $datos['idUnicoMembresia'] . ", '" . $datos['datosTarjeta'] . "', " . $datos['idEsquemaPago'] . "," . $this->db->escape(utf8_decode($datos['motivoCanc'])) . "," . $datos['idTipoDocumento'] . "," . $datos['idConvenioDetalle'] . "," . $datos['idpersonasess'] . "," . $datos['idusuariosess'] . ", " . $datos['guardaocancela'] . ", " . $datos['procedencia'] . ", @respuesta)";
 
         $query1 = $this->db->query($sql1);
-        $sql2 = "SELECT IF((@respuesta IS NOT NULL OR @respuesta!=0),1,0)  AS resp";
+        $sql2   = "SELECT IF((@respuesta IS NOT NULL OR @respuesta!=0),1,0)  AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
 
@@ -1383,41 +1381,41 @@ class Socio extends Model
      *
      * @return integer
      */
-    function guardaPrecioEspecial($idSocio, $idUnicoMembresia, $inicio, $fin, $precio=0, $descuento=0, $rolCliente, $mantenimiento, $idEsquemaPago)
+    public function guardaPrecioEspecial($idSocio, $idUnicoMembresia, $inicio, $fin, $precio = 0, $descuento = 0, $rolCliente, $mantenimiento, $idEsquemaPago)
     {
-        settype($idSocio,'integer');
-        settype($rolCliente,'integer');
-        settype($idUnicoMembresia,'integer');
-        settype($precio,'float');
-        settype($descuento,'float');
-        settype($mantenimiento,'integer');
-        settype($idEsquemaPago,'integer');
-        $ci =& get_instance();
+        settype($idSocio, 'integer');
+        settype($rolCliente, 'integer');
+        settype($idUnicoMembresia, 'integer');
+        settype($precio, 'float');
+        settype($descuento, 'float');
+        settype($mantenimiento, 'integer');
+        settype($idEsquemaPago, 'integer');
+        $ci = &get_instance();
         $ci->load->model('empleados_model');
 
         $datos = array(
-           'idSocio'          => $idSocio,
-           'idTipoRolCliente' => $rolCliente,
-           'idMantenimiento'  => $mantenimiento,
-           'idEsquemaPago'    => $idEsquemaPago,
-           'idPersona'        => $ci->empleados_model->obtenIdEmpleado($this->session->userdata('idPersona')),
-           'fechaInicio'      => $inicio,
-           'fechaFin'         => $fin,
-           'importe'          => $precio,
-           'porcentaje'       => $descuento
+            'idSocio'          => $idSocio,
+            'idTipoRolCliente' => $rolCliente,
+            'idMantenimiento'  => $mantenimiento,
+            'idEsquemaPago'    => $idEsquemaPago,
+            'idPersona'        => $ci->empleados_model->obtenIdEmpleado($this->session->userdata('idPersona')),
+            'fechaInicio'      => $inicio,
+            'fechaFin'         => $fin,
+            'importe'          => $precio,
+            'porcentaje'       => $descuento,
         );
 
         $data = array(
-           'idPersona'   => $ci->empleados_model->obtenIdEmpleado($this->session->userdata('idPersona')),
-           'fechaInicio' => $inicio,
-           'fechaFin'    => $fin,
-           'importe'     => $precio,
-           'porcentaje'  => $descuento
+            'idPersona'   => $ci->empleados_model->obtenIdEmpleado($this->session->userdata('idPersona')),
+            'fechaInicio' => $inicio,
+            'fechaFin'    => $fin,
+            'importe'     => $precio,
+            'porcentaje'  => $descuento,
         );
 
         $this->db->select('idSocioPrecioMtto');
         $this->db->from(TBL_SOCIOPRECIOMTTO);
-        $this->db->where('idSocio', $idSocio,'idTipoRolCliente', $rolCliente,'idMantenimiento', $mantenimiento);
+        $this->db->where('idSocio', $idSocio, 'idTipoRolCliente', $rolCliente, 'idMantenimiento', $mantenimiento);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
             $fila = $query->row_array();
@@ -1437,16 +1435,16 @@ class Socio extends Model
     }
 
     /**
-    *   FUNCION OBTENER CLUB
-    *   @author Ruben Alcocer
-    *
-    *   @return idUN
-    *
-    **/
-    function obtenerclub($idunicomembresia)
+     *   FUNCION OBTENER CLUB
+     *   @author Ruben Alcocer
+     *
+     *   @return idUN
+     *
+     **/
+    public function obtenerclub($idunicomembresia)
     {
-        $query = $this->db->query('select m.idUn from membresia m where m.idUnicoMembresia='.$idunicomembresia.' LIMIT 1;');
-        $row = $query->row();
+        $query = $this->db->query('select m.idUn from membresia m where m.idUnicoMembresia=' . $idunicomembresia . ' LIMIT 1;');
+        $row   = $query->row();
         return $row->idUn;
     }
 
@@ -1457,25 +1455,25 @@ class Socio extends Model
      *
      * @return array data
      */
-    function guardaNuevoSocio($datos)
+    public function guardaNuevoSocio($datos)
     {
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $ci->load->model('membresia_model');
         $this->load->model('socio_model');
-        if(!isset($datos['idTipoPaquete'])) {
+        if (!isset($datos['idTipoPaquete'])) {
             $datos['idTipoPaquete'] = 0;
         }
-        if(!isset($datos['memnueva'])) {
+        if (!isset($datos['memnueva'])) {
             $datos['memnueva'] = 0;
         }
-        if(!isset($datos['fechamtto'])) {
+        if (!isset($datos['fechamtto'])) {
             $datos['fechamtto'] = date('Y-m-d');
         }
-        if(!isset($datos['idEsquemaPago'])) {
+        if (!isset($datos['idEsquemaPago'])) {
             $datos['idEsquemaPago'] = '0';
         }
-        if(!isset($datos['idMantenimiento'])) {
+        if (!isset($datos['idMantenimiento'])) {
             $datos['idMantenimiento'] = '0';
         }
 
@@ -1489,31 +1487,31 @@ class Socio extends Model
             $this->session->userdata('idUsuario'),
             $this->session->userdata('idPersona'),
             $datos['memnueva'],
-            $datos['idTipoPaquete']
+            $datos['idTipoPaquete'],
         );
 
-        $sql1 = "CALL crm.spGuardarNuevoSocio(?, ?, ?, ?, ?, ?, ?, ?, ?, 0, @respuesta, ?)";
+        $sql1   = "CALL crm.spGuardarNuevoSocio(?, ?, ?, ?, ?, ?, ?, ?, ?, 0, @respuesta, ?)";
         $query1 = $this->db->query($sql1, $info);
 
-        $sql2 = "SELECT @respuesta AS resp";
+        $sql2   = "SELECT @respuesta AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
 
         $movimientos = $this->insertaCargoCredencial($datos);
 
         #   ENVIO A SS
-        if($ci->persona_model->edad($datos['idPersona']) < 15){
+        if ($ci->persona_model->edad($datos['idPersona']) < 15) {
             $tipoMembresia = $ci->membresia_model->obtenerTipoMembresia($datos['idUnicoMembresia']);
-            if($tipoMembresia['idProducto'] == 7 || $tipoMembresia['idProducto'] == 43){
+            if ($tipoMembresia['idProducto'] == 7 || $tipoMembresia['idProducto'] == 43) {
                 $origen = 'mf';
-            }else if($tipoMembresia['idProducto'] == 1 ){
+            } else if ($tipoMembresia['idProducto'] == 1) {
                 $origen = 'fk';
             }
-            $idUn = $this->obtenerclub($datos['idUnicoMembresia']);       #       No existe la funcion
+            $idUn           = $this->obtenerclub($datos['idUnicoMembresia']); #       No existe la funcion
             $personaTitular = $ci->membresia_model->obtenerTitular($datos['idUnicoMembresia']);
 
-            $idMembresia=$ci->membresia_model->getIdMembresia($datos['idUnicoMembresia']);
-            $socioSafe = $this->socio_model->AddBoySafeSplash($personaTitular['idPersona'],$datos['idPersona'],$origen,$idUn,'yes',$idMembresia);
+            $idMembresia = $ci->membresia_model->getIdMembresia($datos['idUnicoMembresia']);
+            $socioSafe   = $this->socio_model->AddBoySafeSplash($personaTitular['idPersona'], $datos['idPersona'], $origen, $idUn, 'yes', $idMembresia);
         }
         return $row->resp;
     }
@@ -1532,9 +1530,8 @@ class Socio extends Model
      * @param  integer $bandera                   [description]
      * @return [type]                             [description]
      */
-    function guardaRespuestaMotivoBaja($unico, $idSocio, $idPersona, $idOrigenTramite, $idTipoTramite, $idRelacionRespuesta,
-            $idRespuestaUsuario, $idRespuestaUsuarioDetalle, $motivo, $bandera=1)
-    {
+    public function guardaRespuestaMotivoBaja($unico, $idSocio, $idPersona, $idOrigenTramite, $idTipoTramite, $idRelacionRespuesta,
+        $idRespuestaUsuario, $idRespuestaUsuarioDetalle, $motivo, $bandera = 1) {
         settype($unico, 'integer');
         settype($idSocio, 'integer');
         settype($idOrigenTramite, 'integer');
@@ -1544,11 +1541,11 @@ class Socio extends Model
         settype($idRespuestaUsuarioDetall3, 'integer');
         settype($bandera, 'integer');
 
-        $sql1 = "CALL crm.spGuardaRespuestaMotivoBaja(".$unico.", '".$idSocio."', ".$idPersona.",".$idOrigenTramite.",".$idTipoTramite.",".$idRelacionRespuesta.",".$idRespuestaUsuario.",".$idRespuestaUsuarioDetalle.", '".$motivo."', ".$bandera.",  @respuesta)";
+        $sql1   = "CALL crm.spGuardaRespuestaMotivoBaja(" . $unico . ", '" . $idSocio . "', " . $idPersona . "," . $idOrigenTramite . "," . $idTipoTramite . "," . $idRelacionRespuesta . "," . $idRespuestaUsuario . "," . $idRespuestaUsuarioDetalle . ", '" . $motivo . "', " . $bandera . ",  @respuesta)";
         $query1 = $this->db->query($sql1);
-        $sql2 = "SELECT @respuesta AS resp";
+        $sql2   = "SELECT @respuesta AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
 
@@ -1559,26 +1556,26 @@ class Socio extends Model
      *
      * @return array
      */
-    function guardarDatosTarjetaNuevoSocio($idSocio, $idNuevoSocio)
+    public function guardarDatosTarjetaNuevoSocio($idSocio, $idNuevoSocio)
     {
         settype($idSocio, 'integer');
         settype($idNuevoSocio, 'integer');
 
         $sql = "INSERT INTO  sociodatostarjeta (idSocio,idBanco, numeroTarjetaCta, nombreTarjeta, tipoPago, TipoTarjeta,
                 mesExpiracion, anioExpiracion, diaCargo, motivoCancelacion, activo)
-            SELECT '".$idNuevoSocio."',idBanco, numeroTarjetaCta, nombreTarjeta, tipoPago,
+            SELECT '" . $idNuevoSocio . "',idBanco, numeroTarjetaCta, nombreTarjeta, tipoPago,
                 TipoTarjeta, mesExpiracion, anioExpiracion, diaCargo, motivoCancelacion, activo
             FROM sociodatostarjeta
-            WHERE idSocio='".$idSocio."' and fechaEliminacion='0000-00-00 00:00:00'";
-        $query=$this->db->query($sql);
+            WHERE idSocio='" . $idSocio . "' and fechaEliminacion='0000-00-00 00:00:00'";
+        $query = $this->db->query($sql);
         $this->permisos_model->log('Replica los datos de la tarjeta del titular', LOG_SISTEMAS);
         if ($this->db->affected_rows() > 0) {
-           $res=1;
+            $res = 1;
         } else {
-           $res=0;
+            $res = 0;
         }
 
-       return $res;
+        return $res;
     }
 
     /**
@@ -1589,40 +1586,39 @@ class Socio extends Model
      *
      * @return integer
      */
-    function insertaMotivoCancelacion ($idSocio = 0,$motivoCanc = '', $id = 0, $idConvenioDetalle = 0)
+    public function insertaMotivoCancelacion($idSocio = 0, $motivoCanc = '', $id = 0, $idConvenioDetalle = 0)
     {
-        $m = '';
+        $m          = '';
         $motivoCanc = utf8_decode($motivoCanc);
 
         if ($idConvenioDetalle) {
-            $sql = "update ".TBL_CONVENIODATOSTARJETA." set motivoCancelacion='".$motivoCanc."'
-                  where fechaEliminacion='0000-00-00 00:00:00' and idConvenioDatosTarjeta=".$id;
+            $sql = "update " . TBL_CONVENIODATOSTARJETA . " set motivoCancelacion='" . $motivoCanc . "'
+                  where fechaEliminacion='0000-00-00 00:00:00' and idConvenioDatosTarjeta=" . $id;
             $this->permisos_model->log('Se cancela tarjeta asociada a convenio', LOG_SISTEMAS);
         } else {
             if ($id == 0) {
-                $m = ' and idSocio='.$idSocio;
+                $m = ' and idSocio=' . $idSocio;
             } else {
-                $m = ' and idSocioDatosTarjeta='.$id;
+                $m = ' and idSocioDatosTarjeta=' . $id;
             }
-            $sql = "update ".TBL_SOCIODATOSTARJETA." set motivoCancelacion='".$motivoCanc."'
+            $sql = "update " . TBL_SOCIODATOSTARJETA . " set motivoCancelacion='" . $motivoCanc . "'
                   where fechaEliminacion='0000-00-00 00:00:00' $m ";
             $this->permisos_model->log('Se cancela tarjeta asociada a socio', LOG_SISTEMAS);
         }
-        $query=$this->db->query($sql);
-
+        $query = $this->db->query($sql);
 
         if ($this->db->affected_rows() > 0) {
             if ($id == 0) {
-                $z = 'sdt.idSocio IN ('.$idSocio.')';
+                $z = 'sdt.idSocio IN (' . $idSocio . ')';
             } else {
-                $z = 'sdt.idSocioDatosTarjeta IN ('.$id.')';
+                $z = 'sdt.idSocioDatosTarjeta IN (' . $id . ')';
             }
-            $query2 = $this->db->query('SELECT sdt.idSocioDatosTarjeta FROM crm.sociodatostarjeta sdt WHERE '.$z.' ORDER BY sdt.fechaActualizacion DESC LIMIT 1;');
-            $row = $query2->row();
+            $query2 = $this->db->query('SELECT sdt.idSocioDatosTarjeta FROM crm.sociodatostarjeta sdt WHERE ' . $z . ' ORDER BY sdt.fechaActualizacion DESC LIMIT 1;');
+            $row    = $query2->row();
             return $row->idSocioDatosTarjeta;
             #return $data=1;
         } else {
-           return false;
+            return false;
         }
     }
 
@@ -1691,18 +1687,18 @@ class Socio extends Model
         } else {
             $datos['origen'] = '';
         }
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('membresia_model');
         $ci->load->model('un_model');
-        $datos['idSocio']=$this->obtenIdSocio($datos["idPersona"],$datos['idUnicoMembresia']);
-        $datosGral=$ci->membresia_model->obtenerDatosGeneralesMem($datos['idUnicoMembresia']);
-        $club=$ci->un_model->nombre($datosGral[0]->idUn);
-        $membresia=$datosGral[0]->idMembresia;
-        if (isset ($datos["porcentaje"])) {
+        $datos['idSocio'] = $this->obtenIdSocio($datos["idPersona"], $datos['idUnicoMembresia']);
+        $datosGral        = $ci->membresia_model->obtenerDatosGeneralesMem($datos['idUnicoMembresia']);
+        $club             = $ci->un_model->nombre($datosGral[0]->idUn);
+        $membresia        = $datosGral[0]->idMembresia;
+        if (isset($datos["porcentaje"])) {
         } else {
             $datos["porcentaje"] = 100;
         }
-        $valores = array (
+        $valores = array(
             'fechaInicio'      => $datos["fechaInicio"],
             'fechaFin'         => $datos["fechaFin"],
             'idMovimiento'     => $datos["idMovimiento"],
@@ -1713,7 +1709,7 @@ class Socio extends Model
             'activo'           => $datos["activo"],
             'origen'           => $datos["origen"],
             'porcentaje'       => $datos["porcentaje"],
-            'idSocio'          => $datos["idSocio"]
+            'idSocio'          => $datos["idSocio"],
         );
 
         $this->db->insert(TBL_SOCIOPAGOMTTO, $valores);
@@ -1724,9 +1720,9 @@ class Socio extends Model
             return (-5);
         }
         if ($ausencia) {
-            $logMensaje = ("Proporcional por regreso de ausencia (".$membresia."  del club ".$club.")");
+            $logMensaje = ("Proporcional por regreso de ausencia (" . $membresia . "  del club " . $club . ")");
         } else {
-            $logMensaje = ("Proporcional por reactivación de Membresía([".$datos['fechaInicio']."]-[".$datos["fechaFin"]."])(".$datos['idPersona'].")(".$membresia."  del club ".$club.")");
+            $logMensaje = ("Proporcional por reactivación de Membresía([" . $datos['fechaInicio'] . "]-[" . $datos["fechaFin"] . "])(" . $datos['idPersona'] . ")(" . $membresia . "  del club " . $club . ")");
         }
         $this->permisos_model->log(utf8_decode($logMensaje), LOG_MEMBRESIA, $datos['idUnicoMembresia']);
         return $idPagoMtto;
@@ -1745,7 +1741,7 @@ class Socio extends Model
         settype($idPersona, 'Integer');
         settype($idSocio, 'Integer');
 
-        $CI =& get_instance();
+        $CI = &get_instance();
         $CI->load->model('persona_model');
 
         $nombre = $CI->persona_model->nombre($idPersona);
@@ -1753,7 +1749,7 @@ class Socio extends Model
         $this->db->select('idSocioPagoMtto');
         $this->db->from(TBL_SOCIOPAGOMTTO);
 
-        $where = array('idUnicoMembresia' => $idUnicoMembresia,'idPersona'=>0,'activo'=>1,'fechaEliminacion'=>'0000-00-00 00:00:00');
+        $where = array('idUnicoMembresia' => $idUnicoMembresia, 'idPersona' => 0, 'activo' => 1, 'fechaEliminacion' => '0000-00-00 00:00:00');
 
         $this->db->where($where);
         $query = $this->db->get();
@@ -1761,10 +1757,10 @@ class Socio extends Model
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $this->db->where('idSocioPagoMtto', $fila->idSocioPagoMtto);
-                if($idMantenimiento != 0){
-                    $datos = array ('idPersona' => $idPersona,'idSocio' => $idSocio,'idMantenimiento' => $idMantenimiento);
+                if ($idMantenimiento != 0) {
+                    $datos = array('idPersona' => $idPersona, 'idSocio' => $idSocio, 'idMantenimiento' => $idMantenimiento);
                 } else {
-                    $datos = array ('idPersona' => $idPersona,'idSocio'=>$idSocio);
+                    $datos = array('idPersona' => $idPersona, 'idSocio' => $idSocio);
                 }
                 $this->db->update(TBL_SOCIOPAGOMTTO, $datos);
                 break;
@@ -1774,27 +1770,27 @@ class Socio extends Model
         if ($total == 0) {
             return 0;
         } else {
-            $this->permisos_model->log('Se registro en pago de mantenimiento a ('.$nombre.')('.date('Y-m-d').')', LOG_MEMBRESIA,$idUnicoMembresia);
+            $this->permisos_model->log('Se registro en pago de mantenimiento a (' . $nombre . ')(' . date('Y-m-d') . ')', LOG_MEMBRESIA, $idUnicoMembresia);
             return true;
         }
     }
 
     /**
-    * Obtiene la configuracion de edades por tipo de mantenimiento y concepto seleccionado
-    *
-    * @param integer $idTipoSocio identificador tipo rol cliente
-    * @param integer $idClub      identificador de la unidad de negocio
-    * @param integer $idProducto  identificador del producto
-    *
-    * @author Santa Garcia
-    *
-    * @return array
-    */
-    public function listaConfiguracionEdad($idTipoSocio,$idClub, $idProducto)
+     * Obtiene la configuracion de edades por tipo de mantenimiento y concepto seleccionado
+     *
+     * @param integer $idTipoSocio identificador tipo rol cliente
+     * @param integer $idClub      identificador de la unidad de negocio
+     * @param integer $idProducto  identificador del producto
+     *
+     * @author Santa Garcia
+     *
+     * @return array
+     */
+    public function listaConfiguracionEdad($idTipoSocio, $idClub, $idProducto)
     {
         $this->db->select('idMantenimiento');
         $this->db->from(TBL_PRODUCTOMANTENIMIENTO);
-        $where=array('idProducto'=>$idProducto);
+        $where = array('idProducto' => $idProducto);
         $this->db->where($where);
         $query = $this->db->get();
         if ($query->num_rows() > 0) {
@@ -1803,11 +1799,11 @@ class Socio extends Model
             }
         }
         $this->db->select('idMantenimientoCliente,idTipoRolCliente,idUn,edadMinima,edadMaxima');
-        $where=array('fechaEliminacion'=>'0000-00-00 00:00:00');
+        $where = array('fechaEliminacion' => '0000-00-00 00:00:00');
         $this->db->where($where);
         $this->db->from(TBL_MANTENIMIENTOCLIENTE);
 
-        if ($idMantenimiento!=0) {
+        if ($idMantenimiento != 0) {
             $this->db->where('idMantenimiento', $idMantenimiento);
         }
         $this->db->where('idUn', $idClub);
@@ -1834,16 +1830,16 @@ class Socio extends Model
      *
      * @return array
      */
-    function listaDatosCargoAutomatico($idUnicoMembresia,$idPersona,$idSocioDatosTarjeta=0)
+    public function listaDatosCargoAutomatico($idUnicoMembresia, $idPersona, $idSocioDatosTarjeta = 0)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idPersona, 'integer');
 
         $this->db->select('st.activo,st.tipoPago,st.nombreTarjeta,s.idPersona, st.idSocioDatosTarjeta AS id,st.numeroTarjetaCta, b.descripcion, st.diaCargo, b.idBanco, st.mesExpiracion, st.anioExpiracion', false);
-        $this->db->from(TBL_SOCIODATOSTARJETA.' st');
-        $this->db->join(TBL_SOCIO.' s', 's.idSocio=st.idSocio');
-        $this->db->join(TBL_MEMBRESIA .' m', 'm.idUnicoMembresia=s.idUnicoMembresia');
-        $this->db->join(TBL_BANCO .' b', 'b.idBanco=st.idBanco');
+        $this->db->from(TBL_SOCIODATOSTARJETA . ' st');
+        $this->db->join(TBL_SOCIO . ' s', 's.idSocio=st.idSocio');
+        $this->db->join(TBL_MEMBRESIA . ' m', 'm.idUnicoMembresia=s.idUnicoMembresia');
+        $this->db->join(TBL_BANCO . ' b', 'b.idBanco=st.idBanco');
         if ($idSocioDatosTarjeta != 0) {
             $this->db->where('st.idSocioDatosTarjeta', $idSocioDatosTarjeta);
         } else {
@@ -1870,14 +1866,14 @@ class Socio extends Model
      *
      * @return array
      */
-    function listaEstatusSocio($todos = false)
+    public function listaEstatusSocio($todos = false)
     {
         $data = array();
 
         if ($todos) {
             $data[] = 'Seleccione';
         } else {
-            $this->db->where('activo',1);
+            $this->db->where('activo', 1);
         }
         $this->db->select('idTipoEstatusSocio, descripcion');
         $this->db->from(TBL_TIPOESTATUSSOCIO);
@@ -1898,14 +1894,14 @@ class Socio extends Model
      *
      * @return array
      */
-    function listaEstatusSocioDirectorio($todos = false)
+    public function listaEstatusSocioDirectorio($todos = false)
     {
         $data = array();
 
         $sql = "SELECT idEstatusEstadistica, nombre
             FROM crm_estadisticas.estatusestadistica
             WHERE idEstatusEstadistica IN (1,2,4,5,15,17)";
-        $query=$this->db->query($sql);
+        $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
@@ -1921,13 +1917,13 @@ class Socio extends Model
      *
      * @return type
      */
-    function listaFormaPagoSocioDirectorio()
+    public function listaFormaPagoSocioDirectorio()
     {
         $data = array();
 
-        $sql="SELECT idEsquemaPago, descripcion
-        FROM ".TBL_ESQUEMAPAGO." WHERE activo=1 AND idEsquemaPago IN (2,6)";
-        $query=$this->db->query($sql);
+        $sql = "SELECT idEsquemaPago, descripcion
+        FROM " . TBL_ESQUEMAPAGO . " WHERE activo=1 AND idEsquemaPago IN (2,6)";
+        $query = $this->db->query($sql);
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $data[$fila->idEsquemaPago] = $fila->descripcion;
@@ -1943,22 +1939,22 @@ class Socio extends Model
      *
      * @return array
      */
-    function listaMantenimientoSocioDirectorio($idUn=0)
+    public function listaMantenimientoSocioDirectorio($idUn = 0)
     {
         $data = array();
 
-        $sql="SELECT pm.idmantenimiento, pr.nombre
+        $sql = "SELECT pm.idmantenimiento, pr.nombre
         FROM producto pr
             INNER JOIN productomantenimiento pm ON pm.idproducto=pr.idproducto";
-        if ($idUn!=0) {
-             $sql.=" INNER JOIN productoun pu ON pu.idproducto=pr.idproducto";
+        if ($idUn != 0) {
+            $sql .= " INNER JOIN productoun pu ON pu.idproducto=pr.idproducto";
         }
-        $sql.=" WHERE pr.activo=1 AND pr.fechaEliminacion='0000-00-00 00:00:00'";
-        if ($idUn!=0) {
-             $sql.=" AND pu.idUn IN (".$idUn.")";
+        $sql .= " WHERE pr.activo=1 AND pr.fechaEliminacion='0000-00-00 00:00:00'";
+        if ($idUn != 0) {
+            $sql .= " AND pu.idUn IN (" . $idUn . ")";
         }
-        $sql.=" GROUP BY pr.idProducto";
-        $query=$this->db->query($sql);
+        $sql .= " GROUP BY pr.idProducto";
+        $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
@@ -1975,20 +1971,20 @@ class Socio extends Model
      *
      * @return array
      */
-    function listaMembresiaSocioDirectorio($idUn=0)
+    public function listaMembresiaSocioDirectorio($idUn = 0)
     {
         $data = array();
 
-        $sql="SELECT pr.idProducto, pr.nombre FROM producto pr";
-        if ($idUn!=0) {
-            $sql.=" JOIN productoun pu ON pu.idproducto=pr.idproducto";
+        $sql = "SELECT pr.idProducto, pr.nombre FROM producto pr";
+        if ($idUn != 0) {
+            $sql .= " JOIN productoun pu ON pu.idproducto=pr.idproducto";
         }
-        $sql.=" WHERE pr.idcategoria IN (6, 8, 9) AND pr.activo=1";
-        if ($idUn!=0) {
-            $sql.=" AND pu.idUn IN (".$idUn.")";
+        $sql .= " WHERE pr.idcategoria IN (6, 8, 9) AND pr.activo=1";
+        if ($idUn != 0) {
+            $sql .= " AND pu.idUn IN (" . $idUn . ")";
         }
-        $sql.=" GROUP BY pr.idProducto";
-        $query=$this->db->query($sql);
+        $sql .= " GROUP BY pr.idProducto";
+        $query = $this->db->query($sql);
 
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
@@ -2009,15 +2005,15 @@ class Socio extends Model
      * @param type $orden
      * @return type
      */
-    function listaSociosClub($opciones, $totales = 0, $posicion = 0, $registros = REGISTROS_POR_PAGINA, $orden = '')
+    public function listaSociosClub($opciones, $totales = 0, $posicion = 0, $registros = REGISTROS_POR_PAGINA, $orden = '')
     {
         set_time_limit(0);
 
-        $uno = array("*");
-        $dos   = array("%");
+        $uno    = array("*");
+        $dos    = array("%");
         $nombre = str_replace($uno, $dos, $opciones['nombre']);
 
-        $data = Array();
+        $data = array();
 
         $sql = "SELECT
             u. nombre AS Club, u.clave, et.idMembresia, p.idPersona, CONCAT_WS(' ', p.nombre, p.paterno, p.materno) AS Nombre,
@@ -2041,29 +2037,29 @@ class Socio extends Model
                 , et.fechaFin AS finMtto
             FROM crm_estadisticas.estadisticatemporal et
             INNER JOIN crm.membresiafidelidad mf ON mf.idUnicoMembresia=et.idUnicoMembresia AND mf.fechaEliminacion='0000-00-00 00:00:00'";
-        if ($opciones['fidelidad']!='' ) {
-            $sql.=" AND  mf.idTipoFidelidad IN (".$opciones['fidelidad'].")";
+        if ($opciones['fidelidad'] != '') {
+            $sql .= " AND  mf.idTipoFidelidad IN (" . $opciones['fidelidad'] . ")";
         }
         $sql .= " INNER JOIN crm.tipofidelidad tf ON tf.idTipoFidelidad=mf.idTipoFidelidad
             INNER JOIN crm.un u ON u.idUn=et.idUn
             INNER JOIN crm.empresa emp ON emp.idEmpresa=u.idEmpresa ";
-        if ($opciones['idUn']==0 ) {
-            $sql .= " AND emp.idEmpresaGrupo=".$this->session->userdata('idEmpresaGrupo');
+        if ($opciones['idUn'] == 0) {
+            $sql .= " AND emp.idEmpresaGrupo=" . $this->session->userdata('idEmpresaGrupo');
         }
-        if ($opciones['idEmpresa']!=0 ) {
-            $sql.=" AND  u.idEmpresa IN (".$opciones['idEmpresa'].")";
+        if ($opciones['idEmpresa'] != 0) {
+            $sql .= " AND  u.idEmpresa IN (" . $opciones['idEmpresa'] . ")";
         }
-        if ($opciones['idUn']!=0 ) {
-            $sql.=" AND  u.idUn IN (".$opciones['idUn'].")";
+        if ($opciones['idUn'] != 0) {
+            $sql .= " AND  u.idUn IN (" . $opciones['idUn'] . ")";
         }
-        $sql.=" INNER JOIN crm.persona p ON p.idPersona=et.idPersona";
-        if ($opciones['idPersona']!='') {
-            $sql.=" AND p.idPersona=".$opciones['idPersona'];
+        $sql .= " INNER JOIN crm.persona p ON p.idPersona=et.idPersona";
+        if ($opciones['idPersona'] != '') {
+            $sql .= " AND p.idPersona=" . $opciones['idPersona'];
         }
-        if ($opciones['nombre']!='') {
-            $sql.=" AND  CONCAT_WS(' ',p.nombre, p.paterno, p.materno) LIKE '%".$nombre."%'";
+        if ($opciones['nombre'] != '') {
+            $sql .= " AND  CONCAT_WS(' ',p.nombre, p.paterno, p.materno) LIKE '%" . $nombre . "%'";
         }
-        $sql.=" INNER JOIN crm.tiporolcliente trc ON trc.idTipoRolCliente = et.idTipoRolCliente
+        $sql .= " INNER JOIN crm.tiporolcliente trc ON trc.idTipoRolCliente = et.idTipoRolCliente
             INNER JOIN crm.producto p1 ON p1.idProducto = et.idProducto
             INNER JOIN crm.tipomembresia tm ON tm.idTipoMembresia=et.idTipoMembresia
             INNER JOIN crm.productomantenimiento pm ON pm.idMantenimiento=et.idMantenimiento
@@ -2075,30 +2071,30 @@ class Socio extends Model
             LEFT JOIN crm.membresiadigital md ON md.idUnicoMembresia = et.idUnicoMembresia AND md.fechaEliminacion='0000-00-00 00:00:00'
             WHERE
             et.fecha = DATE(DATE_SUB(NOW(), INTERVAL 1 DAY))";
-        if ($opciones['estatus']!='') {
-            $sql.=" AND et.idEstatusEstadistica IN (".$opciones['estatus'].")";
+        if ($opciones['estatus'] != '') {
+            $sql .= " AND et.idEstatusEstadistica IN (" . $opciones['estatus'] . ")";
         }
-        if($opciones['membresia']!='') {
-            $sql.=" AND et.idProducto IN (".$opciones['membresia'].")";
+        if ($opciones['membresia'] != '') {
+            $sql .= " AND et.idProducto IN (" . $opciones['membresia'] . ")";
         }
-        if($opciones['mantenimiento']!='') {
-            $sql.=" AND et.idMantenimiento IN (".$opciones['mantenimiento'].")";
+        if ($opciones['mantenimiento'] != '') {
+            $sql .= " AND et.idMantenimiento IN (" . $opciones['mantenimiento'] . ")";
         }
-        if($opciones['formapago']!='') {
-            $sql.=" AND et.idEsquemaPago IN (".$opciones['formapago'].")";
+        if ($opciones['formapago'] != '') {
+            $sql .= " AND et.idEsquemaPago IN (" . $opciones['formapago'] . ")";
         }
-        if($opciones['corporativo']=='0') {
-            $sql.=" AND et.idConvenioDetalle IN (".$opciones['corporativo'].")";
+        if ($opciones['corporativo'] == '0') {
+            $sql .= " AND et.idConvenioDetalle IN (" . $opciones['corporativo'] . ")";
         }
-        if($opciones['corporativo']=='1') {
-            $sql.=" AND et.idConvenioDetalle  NOT IN (0)";
+        if ($opciones['corporativo'] == '1') {
+            $sql .= " AND et.idConvenioDetalle  NOT IN (0)";
         }
-        $sql.=" ORDER BY idMembresia DESC";
+        $sql .= " ORDER BY idMembresia DESC";
         if ($totales == 0) {
             if ($posicion == '') {
                 $posicion = 0;
             }
-            $sql.=" LIMIT ".$posicion.", ".$registros." ";
+            $sql .= " LIMIT " . $posicion . ", " . $registros . " ";
         }
         $query = $this->db->query($sql);
 
@@ -2115,7 +2111,6 @@ class Socio extends Model
             return $data;
         }
     }
-
 
     /**
      * Obtiene rol del cliente, edades, y nombre de la tabla tiporolcliente
@@ -2151,16 +2146,16 @@ class Socio extends Model
         settype($AgregadosAdultos, 'integer');
         settype($AgregadosAdultosActuales, 'integer');
 
-        $lista = array();
+        $lista     = array();
         $intactual = $this->cuentaSocios($idUnicoMembresia);
 
-        $resta = $adultos-$adultosact;
+        $resta = $adultos - $adultosact;
         #$restagre = $agregados-($agregadoact+$AgregadosAdultosActuales);
-        $restagre = $agregados-($agregadoact);
+        $restagre = $agregados - ($agregadoact);
         #$sumatotal = $integrantes+$agregados;
-        $sumatotal = $integrantes;#+$agregados;
-        $restaint = $sumatotal-$intactual;
-        $restAgregadosAdultos = $AgregadosAdultos-$AgregadosAdultosActuales;
+        $sumatotal            = $integrantes; #+$agregados;
+        $restaint             = $sumatotal - $intactual;
+        $restAgregadosAdultos = $AgregadosAdultos - $AgregadosAdultosActuales;
 
         settype($resta, 'integer');
         settype($restagre, 'integer');
@@ -2177,55 +2172,55 @@ class Socio extends Model
                 AND mtto.fechaEliminacion='0000-00-00 00:00:00'
             WHERE pu.idUn=$idUn AND pu.idProducto=$idProducto AND mts.activo=1
                 AND pu.activo=1 AND mtto.idMantenimiento=$idMantenimiento";
-        $titular = 0;
+        $titular   = 0;
         $cotitular = 0;
-        $sqlad = "SELECT idTipoRolCliente
+        $sqlad     = "SELECT idTipoRolCliente
             FROM socio
             WHERE idUnicoMembresia=$idUnicoMembresia AND eliminado=0";
         $query = $this->db->query($sqlad);
         if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
-                if($fila->idTipoRolCliente==1) {
-                   $titular = 1;
+                if ($fila->idTipoRolCliente == 1) {
+                    $titular = 1;
                 }
-                if($fila->idTipoRolCliente==2) {
-                   $cotitular = 1;
+                if ($fila->idTipoRolCliente == 2) {
+                    $cotitular = 1;
                 }
             }
         }
-        if ($titular==1) {
+        if ($titular == 1) {
             #echo "1|||";
-            $sql.=" AND trc.idTipoRolCliente!=1";
+            $sql .= " AND trc.idTipoRolCliente!=1";
         }
-        if ($cotitular==1 && $resta>1) {
-            $sql.=" ";
+        if ($cotitular == 1 && $resta > 1) {
+            $sql .= " ";
         }
-        if ($cotitular==1 && ($resta==0 || ($resta==1 && $titular==0) ) ) {
+        if ($cotitular == 1 && ($resta == 0 || ($resta == 1 && $titular == 0))) {
             #echo "2|||";
-            $sql.=" AND trc.idTipoRolCliente!=2";
+            $sql .= " AND trc.idTipoRolCliente!=2";
         }
-        if ($titular==1 && $cotitular==1 && $resta==0 && $integrantes==$intactual && $sumatotal>$integrantes ) {
+        if ($titular == 1 && $cotitular == 1 && $resta == 0 && $integrantes == $intactual && $sumatotal > $integrantes) {
             #echo "3|||";
-            $sql.=" AND trc.idTipoRolCliente!=1 AND trc.idTipoRolCliente!=2 AND trc.idTipoRolCliente!=3 AND trc.idTipoRolCliente!=4 AND trc.idTipoRolCliente!=5";
+            $sql .= " AND trc.idTipoRolCliente!=1 AND trc.idTipoRolCliente!=2 AND trc.idTipoRolCliente!=3 AND trc.idTipoRolCliente!=4 AND trc.idTipoRolCliente!=5";
         }
-        if ($titular==1 && $cotitular==0 && $resta==1 && $restaint==1 && $sumatotal>$integrantes ) {
+        if ($titular == 1 && $cotitular == 0 && $resta == 1 && $restaint == 1 && $sumatotal > $integrantes) {
             #echo "4|||";
-            $sql.=" AND trc.idTipoRolCliente!=1  AND trc.idTipoRolCliente!=3 AND trc.idTipoRolCliente!=4 AND trc.idTipoRolCliente!=5";
+            $sql .= " AND trc.idTipoRolCliente!=1  AND trc.idTipoRolCliente!=3 AND trc.idTipoRolCliente!=4 AND trc.idTipoRolCliente!=5";
         }
-        if ($restagre==0) {
+        if ($restagre == 0) {
             #echo "5|||";
-            $sql.=" AND trc.idTipoRolCliente!=10 AND trc.idTipoRolCliente!=11";
+            $sql .= " AND trc.idTipoRolCliente!=10 AND trc.idTipoRolCliente!=11";
         }
         if ($restAgregadosAdultos == 0) {
             #echo "6|||";
-            $sql.=" AND trc.idTipoRolCliente!=10";
+            $sql .= " AND trc.idTipoRolCliente!=10";
         }
         $query = $this->db->query($sql);
 
         #echo "<pre>".$this->db->last_query()."</pre>";
         if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
-                $lista[0] = '';
+                $lista[0]                       = '';
                 $lista[$fila->idTipoRolCliente] = $fila->descripcion;
             }
         }
@@ -2241,7 +2236,7 @@ class Socio extends Model
      *
      * @return array
      */
-    function listaTipoSocio($idTipoRolCliente = 0)
+    public function listaTipoSocio($idTipoRolCliente = 0)
     {
         settype($idTipoRolCliente, 'integer');
 
@@ -2251,7 +2246,7 @@ class Socio extends Model
         $this->db->where('base', 0);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->where('activo', 1);
-        if ($idTipoRolCliente>0) {
+        if ($idTipoRolCliente > 0) {
             $this->db->where('idTipoRolCliente', $idTipoRolCliente);
         }
         $query = $this->db->get();
@@ -2259,7 +2254,7 @@ class Socio extends Model
         if ($query->num_rows() > 0) {
             foreach ($query->result_array() as $fila) {
                 $datos[0] = '';
-                $datos[] = $fila;
+                $datos[]  = $fila;
             }
             return $datos;
         } else {
@@ -2274,7 +2269,7 @@ class Socio extends Model
      *
      * @return array
      */
-    function nombreTipoEstatusMembresia($idUnicoMembresia)
+    public function nombreTipoEstatusMembresia($idUnicoMembresia)
     {
         settype($idUinocMembresia, 'integer');
 
@@ -2282,7 +2277,7 @@ class Socio extends Model
             "SELECT tem.idTipoEstatusMembresia, tem.descripcion
             FROM tipoestatusmembresia tem
             JOIN membresia m ON m.idTipoEstatusMembresia=tem.idTipoEstatusMembresia
-            WHERE m.idUnicoMembresia=".$idUnicoMembresia
+            WHERE m.idUnicoMembresia=" . $idUnicoMembresia
         );
         if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
@@ -2301,15 +2296,15 @@ class Socio extends Model
      *
      * @return [type]                   [description]
      */
-    function obtenAsignacionLealtad($idUnicoMembresia)
+    public function obtenAsignacionLealtad($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
 
-        $query  = $this->db->query(
+        $query = $this->db->query(
             "SELECT s.asignarLealtad
                 FROM socio s
             WHERE s.idUnicoMembresia IN ($idUnicoMembresia) AND s.idTipoRolCliente=1 AND s.eliminado=0");
-        if( $query->num_rows>0 ){
+        if ($query->num_rows > 0) {
             $row = $query->row();
             return $row->asignarLealtad;
         }
@@ -2321,11 +2316,11 @@ class Socio extends Model
      *
      * @return [type] [description]
      */
-    function obtenCatalogoEstatusSocioEstadistica()
+    public function obtenCatalogoEstatusSocioEstadistica()
     {
         $datos = array();
 
-        $query  = $this->db->query(
+        $query = $this->db->query(
             "SELECT idEstatusEstadistica, nombre, mantenimiento
             FROM crm_estadisticas.estatusestadistica ee
             WHERE ee.fechaEliminacion='0000-00-00 00:00:00'
@@ -2333,8 +2328,8 @@ class Socio extends Model
         );
         if ($query->num_rows) {
             foreach ($query->result() as $fila) {
-                if($fila->mantenimiento==1) {
-                    $datos[$fila->idEstatusEstadistica] = $fila->nombre."*";
+                if ($fila->mantenimiento == 1) {
+                    $datos[$fila->idEstatusEstadistica] = $fila->nombre . "*";
                 } else {
                     $datos[$fila->idEstatusEstadistica] = $fila->nombre;
                 }
@@ -2352,7 +2347,7 @@ class Socio extends Model
      *
      * @return object
      */
-    function obtenDatosSocio ($idSocio = 0, $verificaAusencia = false)
+    public function obtenDatosSocio($idSocio = 0, $verificaAusencia = false)
     {
         settype($idSocio, 'integer');
         $datos          = array();
@@ -2364,22 +2359,22 @@ class Socio extends Model
         }
         if ($verificaAusencia) {
             $selectAusencia = " , sa.fechaAusencia, m.idUn ";
-            $whereAusencia = " AND (sa.fechaEliminacion = '0000-00-00 00:00:00' OR sa.fechaEliminacion IS NULL) ";
+            $whereAusencia  = " AND (sa.fechaEliminacion = '0000-00-00 00:00:00' OR sa.fechaEliminacion IS NULL) ";
         }
         $sql = "
             SELECT s.idTipoEstatusSocio,s.idSocio, p.idPersona, m.idUnicoMembresia, m.idMembresia, CONCAT_WS(' ', p.nombre, p.paterno, p.materno) AS nombre,
-            un.nombre AS club, t.telefono, mail.mail, trc.descripcion AS rolCliente, s.idMantenimiento, s.idEsquemaPago ".$selectAusencia."
-            FROM ".TBL_SOCIO." s
-            INNER JOIN ".TBL_PERSONA." p ON s.idPersona = p.idPersona
-            INNER JOIN ".TBL_MEMBRESIA." m ON s.idUnicoMembresia = m.idUnicoMembresia
-            INNER JOIN ".TBL_UN." ON un.idUn = m.idUn
-            LEFT JOIN ".TBL_TELEFONO." t ON p.idPersona = t.idPersona
-            LEFT JOIN ".TBL_TIPOTELEFONO." tt ON t.idTipoTelefono = tt.idTipoTelefono
-            LEFT JOIN ".TBL_MAIL." ON p.idPersona = mail.idPersona
-            INNER JOIN ".TBL_TIPOROLCLIENTE." trc ON s.idTipoRolCliente = trc.idTipoRolCliente
-            LEFT JOIN ".TBL_SOCIOAUSENCIA." sa ON s.idSocio = sa.idSocio and sa.fechaRegresoAusencia='0000-00-00 00:00:00'
+            un.nombre AS club, t.telefono, mail.mail, trc.descripcion AS rolCliente, s.idMantenimiento, s.idEsquemaPago " . $selectAusencia . "
+            FROM " . TBL_SOCIO . " s
+            INNER JOIN " . TBL_PERSONA . " p ON s.idPersona = p.idPersona
+            INNER JOIN " . TBL_MEMBRESIA . " m ON s.idUnicoMembresia = m.idUnicoMembresia
+            INNER JOIN " . TBL_UN . " ON un.idUn = m.idUn
+            LEFT JOIN " . TBL_TELEFONO . " t ON p.idPersona = t.idPersona
+            LEFT JOIN " . TBL_TIPOTELEFONO . " tt ON t.idTipoTelefono = tt.idTipoTelefono
+            LEFT JOIN " . TBL_MAIL . " ON p.idPersona = mail.idPersona
+            INNER JOIN " . TBL_TIPOROLCLIENTE . " trc ON s.idTipoRolCliente = trc.idTipoRolCliente
+            LEFT JOIN " . TBL_SOCIOAUSENCIA . " sa ON s.idSocio = sa.idSocio and sa.fechaRegresoAusencia='0000-00-00 00:00:00'
             WHERE s.idSocio = ?
-            ".$whereAusencia.";";
+            " . $whereAusencia . ";";
         $query = $this->db->query($sql, array($idSocio));
 
         if ($query->num_rows > 0) {
@@ -2397,13 +2392,13 @@ class Socio extends Model
      *
      * @return integer
      */
-    function obtenDatosTarjeta($idUnicoMembresia, $idPersona, $idSocioDatosTarjeta=0, $numTarjeta = 0, $activo=0)
+    public function obtenDatosTarjeta($idUnicoMembresia, $idPersona, $idSocioDatosTarjeta = 0, $numTarjeta = 0, $activo = 0)
     {
         $this->db->select('st.idSocioDatosTarjeta, s.idPersona,st.idBanco, b.descripcion as banco, st.numeroTarjetaCta, st.nombreTarjeta, st.tipoTarjeta, st.mesExpiracion, st.anioExpiracion, st.diaCargo');
-        $this->db->from(TBL_SOCIODATOSTARJETA.' st');
-        $this->db->join(TBL_BANCO.' b', 'b.idBanco=st.idBanco', 'LEFT');
-        $this->db->join(TBL_SOCIO.' s', 's.idSocio=st.idSocio', 'LEFT');
-        if ($idSocioDatosTarjeta >0) {
+        $this->db->from(TBL_SOCIODATOSTARJETA . ' st');
+        $this->db->join(TBL_BANCO . ' b', 'b.idBanco=st.idBanco', 'LEFT');
+        $this->db->join(TBL_SOCIO . ' s', 's.idSocio=st.idSocio', 'LEFT');
+        if ($idSocioDatosTarjeta > 0) {
             $this->db->where('st.idSocioDatosTarjeta', $idSocioDatosTarjeta);
         } else {
             $this->db->where('s.idPersona', $idPersona);
@@ -2412,7 +2407,7 @@ class Socio extends Model
         if ($numTarjeta != 0) {
             $this->db->where('st.numeroTarjetaCta', $numTarjeta);
         }
-        if($activo != 0){
+        if ($activo != 0) {
             $this->db->where('st.activo', 1);
         }
         $this->db->where('st.fechaEliminacion', '0000-00-00 00:00:00');
@@ -2438,14 +2433,14 @@ class Socio extends Model
      *
      * @return integer
      */
-    function obtenDatosTarjetaAltaRegenerar($idPersona, $fechaRegistro)
+    public function obtenDatosTarjetaAltaRegenerar($idPersona, $fechaRegistro)
     {
         $this->db->select('st.idSocioDatosTarjeta, s.idPersona,st.idBanco, b.descripcion as banco, st.numeroTarjetaCta, st.nombreTarjeta, st.tipoTarjeta, st.mesExpiracion, st.anioExpiracion, st.diaCargo');
-        $this->db->from(TBL_SOCIODATOSTARJETA.' st');
-        $this->db->join(TBL_BANCO.' b', 'b.idBanco=st.idBanco', 'LEFT');
-        $this->db->join(TBL_SOCIO.' s', 's.idSocio=st.idSocio', 'LEFT');
-        $this->db->join(TBL_DOCUMENTOPERSONA.' dp', 'dp.idPersona=s.idPersona', 'LEFT');
-        $this->db->join(TBL_DOCUMENTO.' d', 'd.idDocumento=dp.idDocumento', 'LEFT');
+        $this->db->from(TBL_SOCIODATOSTARJETA . ' st');
+        $this->db->join(TBL_BANCO . ' b', 'b.idBanco=st.idBanco', 'LEFT');
+        $this->db->join(TBL_SOCIO . ' s', 's.idSocio=st.idSocio', 'LEFT');
+        $this->db->join(TBL_DOCUMENTOPERSONA . ' dp', 'dp.idPersona=s.idPersona', 'LEFT');
+        $this->db->join(TBL_DOCUMENTO . ' d', 'd.idDocumento=dp.idDocumento', 'LEFT');
         $this->db->where('s.idPersona', $idPersona);
         $this->db->where('d.fechaRegistro', $fechaRegistro);
         $this->db->where('st.fechaRegistro <=', $fechaRegistro);
@@ -2474,15 +2469,15 @@ class Socio extends Model
      *
      * @return integer
      */
-    function obtenDatosTarjetaCancelada($idPersona)
+    public function obtenDatosTarjetaCancelada($idPersona)
     {
         settype($idPersona, 'integer');
 
         $sql = "SELECT b.descripcion as banco, st.numeroTarjetaCta, st.nombreTarjeta, st.tipoTarjeta
-              FROM ".TBL_SOCIODATOSTARJETA." st
-              LEFT JOIN ".TBL_BANCO." b on b.idBanco=st.idBanco
-              LEFT JOIN ".TBL_SOCIO." s on s.idSocio=st.idSocio
-              WHERE s.idPersona=".$idPersona." and st.fechaeliminacion!='0000-00-00 00:00:00'
+              FROM " . TBL_SOCIODATOSTARJETA . " st
+              LEFT JOIN " . TBL_BANCO . " b on b.idBanco=st.idBanco
+              LEFT JOIN " . TBL_SOCIO . " s on s.idSocio=st.idSocio
+              WHERE s.idPersona=" . $idPersona . " and st.fechaeliminacion!='0000-00-00 00:00:00'
               ORDER BY st.idSocioDatosTarjeta desc limit 1";
         $query = $this->db->query($sql);
         if ($query->num_rows() > 0) {
@@ -2491,7 +2486,7 @@ class Socio extends Model
             }
             return $data;
         } else {
-           return false;
+            return false;
         }
     }
 
@@ -2504,23 +2499,23 @@ class Socio extends Model
      *
      * @return integer
      */
-    function obtenDatosTarjetaCanceladaRegenerar($idPersona, $fechaRegistro)
+    public function obtenDatosTarjetaCanceladaRegenerar($idPersona, $fechaRegistro)
     {
-       $sql = "SELECT b.descripcion as banco, st.numeroTarjetaCta, st.nombreTarjeta, st.tipoTarjeta, st.motivoCancelacion
+        $sql = "SELECT b.descripcion as banco, st.numeroTarjetaCta, st.nombreTarjeta, st.tipoTarjeta, st.motivoCancelacion
             FROM sociodatostarjeta st
             LEFT JOIN banco b on b.idBanco=st.idBanco
             LEFT JOIN socio s on s.idSocio=st.idSocio
-            WHERE s.idPersona=".$idPersona." and st.fechaEliminacion BETWEEN SUBTIME('".$fechaRegistro."', '00:00:05') AND ADDTIME('".$fechaRegistro."', '00:00:05')
+            WHERE s.idPersona=" . $idPersona . " and st.fechaEliminacion BETWEEN SUBTIME('" . $fechaRegistro . "', '00:00:05') AND ADDTIME('" . $fechaRegistro . "', '00:00:05')
             ORDER BY st.idSocioDatosTarjeta desc limit 1";
-       $query=$this->db->query($sql);
+        $query = $this->db->query($sql);
 
-       if ($query->num_rows() > 0) {
+        if ($query->num_rows() > 0) {
             foreach ($query->result() as $fila) {
                 $data[] = $fila;
             }
             return $data;
         } else {
-           return false;
+            return false;
         }
     }
 
@@ -2535,7 +2530,7 @@ class Socio extends Model
      *
      * @return array
      */
-    function obtenEstadisticas ($idUnicoMembresia, $idPersona = 0, $idSocio = 0)
+    public function obtenEstadisticas($idUnicoMembresia, $idPersona = 0, $idSocio = 0)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idPersona, 'integer');
@@ -2544,9 +2539,9 @@ class Socio extends Model
         $datos = array(
             'mensaje'              => 'Error faltan datos',
             'error'                => 1,
-            'idEstatusEstadistica' => ESTATUSESTADISTICA_INACTIVO
+            'idEstatusEstadistica' => ESTATUSESTADISTICA_INACTIVO,
         );
-        if ( ! $idUnicoMembresia or ( ! $idPersona and ! $idSocio)) {
+        if (!$idUnicoMembresia or (!$idPersona and !$idSocio)) {
             return $datos;
         }
         $datos['mensaje'] = '';
@@ -2559,7 +2554,7 @@ class Socio extends Model
         if ($idSocio) {
             $where['e.idSocio'] = $idSocio;
         }
-        $query = $this->db->select("e.idEstatusEstadistica", false)->get_where(TBL_ESTADISTICAS.' e', $where);
+        $query = $this->db->select("e.idEstatusEstadistica", false)->get_where(TBL_ESTADISTICAS . ' e', $where);
 
         if ($query->num_rows) {
             $datos['idEstatusEstadistica'] = $query->row()->idEstatusEstadistica;
@@ -2577,7 +2572,7 @@ class Socio extends Model
      *
      * @return string
      */
-    function obtenFechaAusencia ($idSocio)
+    public function obtenFechaAusencia($idSocio)
     {
         settype($idSocio, 'integer');
         $fechaAusencia = '';
@@ -2585,9 +2580,9 @@ class Socio extends Model
         if ($idSocio == 0) {
             return false;
         }
-        $where = array (
+        $where = array(
             'idSocio'          => $idSocio,
-            'fechaEliminacion' => '0000-00-00 00:00:00'
+            'fechaEliminacion' => '0000-00-00 00:00:00',
         );
         $query = $this->db->select('fechaAusencia')->get_where(TBL_SOCIOAUSENCIA, $where);
 
@@ -2606,11 +2601,11 @@ class Socio extends Model
      *
      * @return integer
      */
-    function obtenFechasUn($club)
+    public function obtenFechasUn($club)
     {
         $this->db->select('fechaApertura, fechaPreventa');
         $this->db->from('un');
-        $this->db->where('idUn',$club );
+        $this->db->where('idUn', $club);
         $query = $this->db->get();
 
         if ($query->num_rows() > 0) {
@@ -2630,7 +2625,7 @@ class Socio extends Model
      *
      * @return array
      */
-    function obtenFormasdePago()
+    public function obtenFormasdePago()
     {
         $datos = array();
         $this->db->select('idEsquemaPago , descripcion');
@@ -2655,7 +2650,7 @@ class Socio extends Model
      *
      * @return [type]          [description]
      */
-    function obtenIdPersona ($idSocio)
+    public function obtenIdPersona($idSocio)
     {
         settype($idSocio, 'integer');
         $idPersona = 0;
@@ -2684,7 +2679,7 @@ class Socio extends Model
      *
      * @return integer
      */
-    public static function obtenIdSocio ($idPersona = 0, $idUnicoMembresia = 0)
+    public static function obtenIdSocio($idPersona = 0, $idUnicoMembresia = 0)
     {
         settype($idPersona, 'integer');
         settype($idUnicoMembresia, 'integer');
@@ -2694,9 +2689,9 @@ class Socio extends Model
             return $idSocio;
         }
         $query = DB::connection('crm')->table(TBL_SOCIO)
-        ->select('idSocio')
-        ->where('idPersona', $idPersona)
-        ->where('eliminado', 0);
+            ->select('idSocio')
+            ->where('idPersona', $idPersona)
+            ->where('eliminado', 0);
         if ($idUnicoMembresia > 0) {
             $query = $query->where('idUnicoMembresia', $idUnicoMembresia);
         }
@@ -2717,7 +2712,7 @@ class Socio extends Model
      *
      * @return integer          Identificador de mantenimiento
      */
-    function obtenMtto ($idSocio)
+    public function obtenMtto($idSocio)
     {
         settype($idSocio, 'integer');
         $idMantenimiento = 0;
@@ -2744,17 +2739,17 @@ class Socio extends Model
      *
      * @return variable
      */
-    function obtenNombre($socio)
+    public function obtenNombre($socio)
     {
         $this->db->select('p.nombre, p.paterno, p.materno');
-        $this->db->from(TBL_PERSONA.' p');
-        $this->db->join(TBL_SOCIO.' s', 's.idPersona=p.idPersona');
+        $this->db->from(TBL_PERSONA . ' p');
+        $this->db->join(TBL_SOCIO . ' s', 's.idPersona=p.idPersona');
         $this->db->where('s.idSocio', $socio);
         $query = $this->db->get();
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             $fila = $query->row_array();
-            return $fila['nombre'].' '.$fila['paterno'].' '.$fila['materno'];
+            return $fila['nombre'] . ' ' . $fila['paterno'] . ' ' . $fila['materno'];
         } else {
             return '';
         }
@@ -2769,19 +2764,19 @@ class Socio extends Model
      *
      * @return array
      */
-    function obtenNombreMttoLealtad($idUnicoMembresia)
+    public function obtenNombreMttoLealtad($idUnicoMembresia)
     {
-        $nvoMtto= array();
+        $nvoMtto = array();
 
         $this->db->select('ml.idMantenimientoNuevo, p.nombre');
-        $this->db->from('mantenimientolealtad'.' ml');
-        $this->db->join(TBL_PRODUCTOMANTENIMIENTO.' pm', 'pm.idMantenimiento=ml.idMantenimientoNuevo','inner');
-        $this->db->join(TBL_PRODUCTO.' p', 'p.idProducto=pm.idProducto','inner');
-        $this->db->join(TBL_SOCIO.' s', 's.idMantenimiento=ml.idMantenimiento AND s.idTipoRolCliente=1','inner');
+        $this->db->from('mantenimientolealtad' . ' ml');
+        $this->db->join(TBL_PRODUCTOMANTENIMIENTO . ' pm', 'pm.idMantenimiento=ml.idMantenimientoNuevo', 'inner');
+        $this->db->join(TBL_PRODUCTO . ' p', 'p.idProducto=pm.idProducto', 'inner');
+        $this->db->join(TBL_SOCIO . ' s', 's.idMantenimiento=ml.idMantenimiento AND s.idTipoRolCliente=1', 'inner');
         $this->db->where('s.idUnicoMembresia', $idUnicoMembresia);
         $query = $this->db->get();
 
-        if ($query->num_rows >0) {
+        if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
                 $nvoMtto[] = $fila;
             }
@@ -2803,7 +2798,7 @@ class Socio extends Model
      *
      * @return integer
      */
-    function obtenNuevoRolSocio ($idProducto, $idUn, $idMantenimiento, $idTipoRolCliente, $idSocio, $edad, $validaEdad = true)
+    public function obtenNuevoRolSocio($idProducto, $idUn, $idMantenimiento, $idTipoRolCliente, $idSocio, $edad, $validaEdad = true)
     {
         settype($idProducto, 'integer');
         settype($idUn, 'integer');
@@ -2811,10 +2806,10 @@ class Socio extends Model
         settype($idTipoRolCliente, 'integer');
         settype($edad, 'integer');
 
-        $datosSocio = $this->obtenDatosSocio($idSocio);
+        $datosSocio      = $this->obtenDatosSocio($idSocio);
         $datosRolCliente = $datosRolCliente = array('idTipoRolCliente' => $idTipoRolCliente, 'descripcion' => $datosSocio->rolCliente);
 
-        if ($idTipoRolCliente == ROL_CLIENTE_TITULAR or ( ! $idProducto or ! $idUn or ! $idMantenimiento or ! $idTipoRolCliente)) {
+        if ($idTipoRolCliente == ROL_CLIENTE_TITULAR or (!$idProducto or !$idUn or !$idMantenimiento or !$idTipoRolCliente)) {
             return $datosRolCliente;
         }
         $where = array(
@@ -2827,22 +2822,22 @@ class Socio extends Model
             'pu.fechaEliminacion'       => '0000-00-00 00:00:00',
             'mc.fechaEliminacion'       => '0000-00-00 00:00:00',
             'trc.fechaEliminacion'      => '0000-00-00 00:00:00',
-            'mttoc.fechaEliminacion'    => '0000-00-00 00:00:00'
+            'mttoc.fechaEliminacion'    => '0000-00-00 00:00:00',
         );
         if ($validaEdad) {
-            $this->db->where($edad.' BETWEEN mttoc.edadMinima AND mttoc.edadMaxima', null, false);
+            $this->db->where($edad . ' BETWEEN mttoc.edadMinima AND mttoc.edadMaxima', null, false);
         }
-        $this->db->join(TBL_PRODUCTOUN.' pu', 'pu.idProductoUn = mc.idProductoUn', 'inner');
-        $this->db->join(TBL_MEMBRESIATIPOSOCIO.' mts', 'mts.idMembresiaConfiguracion = mc.idMembresiaConfiguracion', 'inner');
-        $this->db->join(TBL_TIPOROLCLIENTE.' trc', "trc.idTipoRolCliente = mts.idTipoRolCliente AND trc.fechaEliminacion = '0000-00-00 00:00:00'", 'inner');
-        $this->db->join(TBL_MANTENIMIENTOCLIENTE.' mttoc', "mttoc.idTipoRolCliente = trc.idTipoRolCliente AND mttoc.idUn = pu.idUn AND mttoc.fechaEliminacion = '0000-00-00 00:00:00'", 'inner');
+        $this->db->join(TBL_PRODUCTOUN . ' pu', 'pu.idProductoUn = mc.idProductoUn', 'inner');
+        $this->db->join(TBL_MEMBRESIATIPOSOCIO . ' mts', 'mts.idMembresiaConfiguracion = mc.idMembresiaConfiguracion', 'inner');
+        $this->db->join(TBL_TIPOROLCLIENTE . ' trc', "trc.idTipoRolCliente = mts.idTipoRolCliente AND trc.fechaEliminacion = '0000-00-00 00:00:00'", 'inner');
+        $this->db->join(TBL_MANTENIMIENTOCLIENTE . ' mttoc', "mttoc.idTipoRolCliente = trc.idTipoRolCliente AND mttoc.idUn = pu.idUn AND mttoc.fechaEliminacion = '0000-00-00 00:00:00'", 'inner');
 
         $query = $this->db->select(
             'trc.idTipoRolCliente, trc.descripcion, mttoc.edadMinima, mttoc.edadMaxima'
-        )->order_by('mttoc.idTipoRolCliente')->get_where(TBL_MEMBRESIACONFIGURACION.' mc', $where);
+        )->order_by('mttoc.idTipoRolCliente')->get_where(TBL_MEMBRESIACONFIGURACION . ' mc', $where);
 
         if ($query->num_rows) {
-            $rows = $query->result_array();
+            $rows            = $query->result_array();
             $datosRolCliente = $rows[0];
         } else {
             if ($validaEdad) {
@@ -2861,13 +2856,13 @@ class Socio extends Model
      *
      * @return array
      */
-    function obtenPrimerMttoTitular ($idUnicoMembresia)
+    public function obtenPrimerMttoTitular($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
 
         $idMantenimiento = 0;
 
-        if ($idUnicoMembresia<=0) {
+        if ($idUnicoMembresia <= 0) {
             return $idMantenimiento;
         }
 
@@ -2878,8 +2873,8 @@ class Socio extends Model
         $query = $this->db->get();
 
         if ($query->num_rows > 0) {
-            $fila = $query->row_array();
-            $idSocio = $fila['idSocio'];
+            $fila            = $query->row_array();
+            $idSocio         = $fila['idSocio'];
             $idMantenimiento = $fila['idMantenimiento'];
 
             $this->db->select('idMantenimiento');
@@ -2889,7 +2884,7 @@ class Socio extends Model
             $query2 = $this->db->get();
 
             if ($query2->num_rows > 0) {
-                $fila2 = $query2->row_array();
+                $fila2           = $query2->row_array();
                 $idMantenimiento = $fila2['idMantenimiento'];
             }
         }
@@ -2904,10 +2899,10 @@ class Socio extends Model
      *
      * @return int
      */
-    function obtenRelacionAlCaBaPro()
+    public function obtenRelacionAlCaBaPro()
     {
-        $data = Array();
-        $sql = "SELECT s.idUnicoMembresia, s.idPersona
+        $data = array();
+        $sql  = "SELECT s.idUnicoMembresia, s.idPersona
             FROM socio s
             INNER JOIN socioBaja sb ON sb.idSocio=s.idSocio
             WHERE s.eliminado=0 AND sb.fechaEliminacion='0000-00-00 00:00:00' AND DATE(sb.fechaBaja)=DATE(NOW())";
@@ -2919,11 +2914,11 @@ class Socio extends Model
             }
             return $data;
         } else {
-           return $data;
+            return $data;
         }
     }
 
-	/**
+    /**
      * Obtiene lista de socios
      *
      * @param type $unico
@@ -2935,7 +2930,7 @@ class Socio extends Model
      *
      * @return array
      */
-    function obtenSocios($unico, $idPersona=0, $todos=0)
+    public function obtenSocios($unico, $idPersona = 0, $todos = 0)
     {
         settype($unico, 'integer');
         settype($idPersona, 'integer');
@@ -2943,14 +2938,14 @@ class Socio extends Model
 
         $m = '';
         if ($idPersona > 0) {
-            $m = ' AND s.idPersona='.$idPersona;
+            $m = ' AND s.idPersona=' . $idPersona;
         }
         $h = '';
         $g = '';
         $i = '';
         if ($todos == 0) {
-          $h = " AND s.eliminado=0 AND s.idTipoEstatusSocio!=".ESTATUS_SOCIO_BAJA." ";
-          $i = " AND soc.eliminado=0 ";
+            $h = " AND s.eliminado=0 AND s.idTipoEstatusSocio!=" . ESTATUS_SOCIO_BAJA . " ";
+            $i = " AND soc.eliminado=0 ";
         }
 
         $sql = "DROP TEMPORARY TABLE IF EXISTS tmpSocioModel_obtenSocios";
@@ -3008,18 +3003,18 @@ class Socio extends Model
      *
      * @return array
      */
-    function obtenSociosParaCalculoMtto($idUnicoMembresia)
+    public function obtenSociosParaCalculoMtto($idUnicoMembresia)
     {
 
-        $datos=array();
-        $ids = array(81, 83);
+        $datos = array();
+        $ids   = array(81, 83);
         $this->db->select("idPersona", false);
         $this->db->from(TBL_SOCIO);
         $this->db->where("idUnicoMembresia", $idUnicoMembresia);
         $this->db->where("numeroAusencias <", "4");
         $this->db->where("eliminado", 0);
-        $this->db->where_in("idTipoEstatusSocio",$ids);
-        $rs=$this->db->get();
+        $this->db->where_in("idTipoEstatusSocio", $ids);
+        $rs = $this->db->get();
         if ($rs->num_rows > 0) {
             foreach ($rs->result() as $fila) {
                 $datos[] = $fila;
@@ -3039,7 +3034,7 @@ class Socio extends Model
      *
      * @return integer
      */
-    function obtenTipoAcceso($idUnicoMembresia)
+    public function obtenTipoAcceso($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
 
@@ -3047,7 +3042,7 @@ class Socio extends Model
             FROM tipoAcceso t
             LEFT JOIN mantenimiento m ON m.idTipoAcceso=t.idTipoAcceso
             LEFT JOIN socio s ON s.idMantenimiento=m.idMantenimiento
-            WHERE s.idUnicoMembresia=".$idUnicoMembresia." LIMIT 1";
+            WHERE s.idUnicoMembresia=" . $idUnicoMembresia . " LIMIT 1";
         $query = $this->db->query($sql);
         if ($query->num_rows() > 0) {
             $row = $query->row();
@@ -3064,7 +3059,7 @@ class Socio extends Model
      *
      * @return array
      */
-    function obtenTipoEstatus()
+    public function obtenTipoEstatus()
     {
         $datos = array();
         $this->db->select('idTipoEstatusMembresia , descripcion');
@@ -3086,11 +3081,11 @@ class Socio extends Model
      * [obtenTipoEstatusSocio description]
      * @return [type] [description]
      */
-    function obtenTipoEstatusSocio()
+    public function obtenTipoEstatusSocio()
     {
         $datos = array();
         $this->db->select('idTipoEstatusSocio , descripcion');
-        $this->db->where('activo',1);
+        $this->db->where('activo', 1);
         $this->db->from(TBL_TIPOESTATUSSOCIO);
         $query = $this->db->get();
 
@@ -3111,24 +3106,24 @@ class Socio extends Model
      *
      * @return array
      */
-    function obtenTipoEstatusSocioTitular($unico)
+    public function obtenTipoEstatusSocioTitular($unico)
     {
         settype($unico, 'integer');
         $idTipoEstatusSocio = ESTATUS_SOCIO_AUSENCIA;
 
-        if (! $unico) {
-           return $idTipoEstatusSocio;
+        if (!$unico) {
+            return $idTipoEstatusSocio;
         }
         $query = $this->db->query("
             SELECT idTipoEstatusSocio
             FROM socio
             WHERE idUnicoMembresia = $unico
-                AND idTipoRolcliente = '".ROL_CLIENTE_TITULAR."'
+                AND idTipoRolcliente = '" . ROL_CLIENTE_TITULAR . "'
                 AND eliminado = 0",
             false
         );
-        if($query->num_rows) {
-           $idTipoEstatusSocio = $query->row()->idTipoEstatusSocio;
+        if ($query->num_rows) {
+            $idTipoEstatusSocio = $query->row()->idTipoEstatusSocio;
         }
         return $idTipoEstatusSocio;
     }
@@ -3164,15 +3159,15 @@ class Socio extends Model
 
         $intactual = $this->cuentaSocios($idUnicoMembresia);
 
-        $resta = $adultos-$adultosact;
-        $restagre = $agregados-$agregadoact;
-        $sumatotal = $integrantes+$agregados;
-        $restaint = $sumatotal-$intactual;
+        $resta     = $adultos - $adultosact;
+        $restagre  = $agregados - $agregadoact;
+        $sumatotal = $integrantes + $agregados;
+        $restaint  = $sumatotal - $intactual;
 
-        settype($resta,'integer');
-        settype($restagre,'integer');
-        settype($sumatotal,'integer');
-        settype($restaint,'integer');
+        settype($resta, 'integer');
+        settype($restagre, 'integer');
+        settype($sumatotal, 'integer');
+        settype($restaint, 'integer');
 
         $datos = array();
 
@@ -3186,33 +3181,33 @@ class Socio extends Model
                 AND mtto.idUn=pu.idUn AND mtto.fechaEliminacion='0000-00-00 00:00:00'
             WHERE pu.idUn=$idUn AND pu.idProducto=$idProducto AND mts.activo=1 AND pu.activo=1
                 AND mtto.idMantenimiento=$idMantenimiento";
-        $titular = 0;
+        $titular   = 0;
         $cotitular = 0;
-        $sqlad = "SELECT idTipoRolCliente
+        $sqlad     = "SELECT idTipoRolCliente
             FROM socio
             WHERE idUnicoMembresia=$idUnicoMembresia AND eliminado=0";
-        $query=$this->db->query($sqlad);
+        $query = $this->db->query($sqlad);
         if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
-                if ($fila->idTipoRolCliente==1) {
-                   $titular = 1;
+                if ($fila->idTipoRolCliente == 1) {
+                    $titular = 1;
                 }
-                if ($fila->idTipoRolCliente==2) {
-                   $cotitular = 1;
+                if ($fila->idTipoRolCliente == 2) {
+                    $cotitular = 1;
                 }
             }
         }
 
-        if ($titular==1 && $tSocioactual!=1 ) {
+        if ($titular == 1 && $tSocioactual != 1) {
             $sql .= " AND trc.idTipoRolCliente!=1";
         }
-        $query=$this->db->query($sql);
+        $query = $this->db->query($sql);
 
         if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
                 $temp['text']  = $fila->idTipoRolCliente;
                 $temp['value'] = utf8_encode($fila->descripcion);
-                $datos[] = $temp;
+                $datos[]       = $temp;
             }
         }
         return $datos;
@@ -3233,7 +3228,7 @@ class Socio extends Model
 
         $total = 0;
 
-        if ( ! $idUn) {
+        if (!$idUn) {
             return $total;
         }
         $where = array('idUn' => $idUn, 'idEstatusEstadistica' => 1);
@@ -3256,7 +3251,7 @@ class Socio extends Model
      *
      * @return integer          Identificador unico de membresia
      */
-    public static function obtenUnicoMembresia ($idSocio)
+    public static function obtenUnicoMembresia($idSocio)
     {
         settype($idSocio, 'integer');
         $idUnicoMembresia = 0;
@@ -3264,12 +3259,12 @@ class Socio extends Model
         if ($idSocio == 0) {
             return $idUnicoMembresia;
         }
-        
+
         $query = DB::connection('crm')->table(TBL_SOCIO)
-        ->select('idUnicoMembresia')
-        ->where('idSocio', $idSocio)
-        ->where('eliminado', 0)->get()->toArray();
-        if(count($query) > 0) {
+            ->select('idUnicoMembresia')
+            ->where('idSocio', $idSocio)
+            ->where('eliminado', 0)->get()->toArray();
+        if (count($query) > 0) {
             $idUnicoMembresia = $query[0]->idUnicoMembresia;
         }
         return $idUnicoMembresia;
@@ -3284,22 +3279,22 @@ class Socio extends Model
      *
      * @return array
      */
-    function obtenUltimoAcceso ($idPersona)
+    public function obtenUltimoAcceso($idPersona)
     {
         settype($idPersona, 'integer');
 
         $datos = array();
 
-        if ( ! $idPersona) {
+        if (!$idPersona) {
             return $datos;
         }
         $where = array(
             'ra.idPersona' => $idPersona,
-            'ra.direccion' => 'Entrada'
+            'ra.direccion' => 'Entrada',
         );
         $query = $this->db->select(
             'MAX(ra.fecha)AS fechaUlitmoAcceso', false
-        )->get_where(TBL_REGISTROACCESO.' ra', $where);
+        )->get_where(TBL_REGISTROACCESO . ' ra', $where);
 
         if ($query->num_rows) {
             $datos = $query->row_array();
@@ -3316,14 +3311,14 @@ class Socio extends Model
      *
      * @return array
      */
-    function obtenerEsquemaFormaPago($idPersona, $idEsquemaPago = 0)
+    public function obtenerEsquemaFormaPago($idPersona, $idEsquemaPago = 0)
     {
         $this->db->select('e.descripcion');
-        $this->db->from(TBL_ESQUEMAPAGO.' e');
-        if ($idEsquemaPago >0){
+        $this->db->from(TBL_ESQUEMAPAGO . ' e');
+        if ($idEsquemaPago > 0) {
             $this->db->where('e.idEsquemaPago', $idEsquemaPago);
         } else {
-            $this->db->join(TBL_SOCIO.' s', 's.idEsquemaPago=e.idEsquemaPago');
+            $this->db->join(TBL_SOCIO . ' s', 's.idEsquemaPago=e.idEsquemaPago');
             $this->db->where('s.idPersona', $idPersona);
             $this->db->where('s.eliminado', 0);
         }
@@ -3345,7 +3340,7 @@ class Socio extends Model
      *
      * @return array data
      */
-    function obtenerDatosMembresia($idUnicoMembresia)
+    public function obtenerDatosMembresia($idUnicoMembresia)
     {
         $this->db->select('idMantenimiento, idEsquemaPago');
         $this->db->from(TBL_SOCIO);
@@ -3357,8 +3352,8 @@ class Socio extends Model
                 $data[] = $fila;
             }
             return $data;
-        }else{
-           return false;
+        } else {
+            return false;
         }
     }
 
@@ -3369,7 +3364,7 @@ class Socio extends Model
      *
      * @return array
      */
-    function tarjetaBloqueda($numeroTarjeta)
+    public function tarjetaBloqueda($numeroTarjeta)
     {
         $this->db->select("tb.numeroTarjeta, IFNULL(tb.tipoBloqueo, '') AS tipoBloqueo", false);
         $this->db->from("crm.finanzascatarjetasbloquedas tb");
@@ -3388,7 +3383,6 @@ class Socio extends Model
         }
     }
 
-
     /**
      * Verifica si existe una tarjeta registrada de esta persona
      *
@@ -3396,14 +3390,14 @@ class Socio extends Model
      *
      * @return array
      */
-    function tarjetaRepetidaSocio($idUnicoMembresia,$idPersona,$numeroTarjeta)
+    public function tarjetaRepetidaSocio($idUnicoMembresia, $idPersona, $numeroTarjeta)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idPersona, 'integer');
 
         $this->db->select('st.idSocioDatosTarjeta,st.idSocio');
-        $this->db->from(TBL_SOCIODATOSTARJETA.' st');
-        $this->db->join(TBL_SOCIO.' s', 's.idSocio=st.idSocio');
+        $this->db->from(TBL_SOCIODATOSTARJETA . ' st');
+        $this->db->join(TBL_SOCIO . ' s', 's.idSocio=st.idSocio');
         $this->db->where('s.idUnicoMembresia', $idUnicoMembresia);
         $this->db->where('s.idPersona', $idPersona);
         $this->db->where('s.eliminado', 0);
@@ -3445,12 +3439,12 @@ class Socio extends Model
         }
         $sql = "SELECT COUNT(*) AS total
             FROM socio s
-            WHERE s.idUnicoMembresia=$idUnicoMembresia ".$eliminado."
-                AND s.idTipoRolCliente=18 ".$eliminado2;
+            WHERE s.idUnicoMembresia=$idUnicoMembresia " . $eliminado . "
+                AND s.idTipoRolCliente=18 " . $eliminado2;
         $query = $this->db->query($sql);
-        $fila = $query->row_array();
+        $fila  = $query->row_array();
 
-        if ($fila['total']>0) {
+        if ($fila['total'] > 0) {
             $resultado = true;
         }
 
@@ -3506,9 +3500,9 @@ class Socio extends Model
             WHERE s.idUnicoMembresia=$idUnicoMembresia AND s.eliminado=0
                 AND s.idMantenimiento=105 AND s.idTipoEstatusSocio<>82";
         $query = $this->db->query($sql);
-        $fila = $query->row_array();
+        $fila  = $query->row_array();
 
-        if ($fila['total']==1) {
+        if ($fila['total'] == 1) {
             $resultado = true;
         }
 
@@ -3522,7 +3516,7 @@ class Socio extends Model
      *
      * @return variable fechabaja
      */
-    function tipoEmpresa($idPersona) 
+    public function tipoEmpresa($idPersona)
     {
         $sql = "SELECT u.idEmpresa
             FROM un u
@@ -3530,8 +3524,8 @@ class Socio extends Model
                 AND m.eliminado=0
             INNER JOIN socio s ON m.idUnicoMembresia=s.idUnicoMembresia
                 AND s.eliminado=0
-            WHERE s.idPersona=".$idPersona;
-        $query=$this->db->query($sql);
+            WHERE s.idPersona=" . $idPersona;
+        $query = $this->db->query($sql);
         if ($query->num_rows() > 0) {
             $row = $query->row();
             return $row->idEmpresa;
@@ -3549,12 +3543,12 @@ class Socio extends Model
      *
      * @return array
      */
-    function totalMesesConsecutivos($idUnicoMembresia)
+    public function totalMesesConsecutivos($idUnicoMembresia)
     {
         $mesesconsecutivos = 0;
 
         $this->db->select('s.mesesconsecutivos');
-        $this->db->from(TBL_SOCIO.' s');
+        $this->db->from(TBL_SOCIO . ' s');
         $this->db->where('s.idUnicoMembresia', $idUnicoMembresia);
         $this->db->where('s.idTipoRolCliente', '1');
         $query = $this->db->get();
@@ -3576,7 +3570,7 @@ class Socio extends Model
      *
      * @return int
      */
-    function unico($idSocio)
+    public function unico($idSocio)
     {
         settype($idSocio, 'integer');
 
@@ -3584,7 +3578,7 @@ class Socio extends Model
             $this->db->select('idUnicoMembresia');
             $where = array(
                 'idSocio'   => $idSocio,
-                'eliminado' => 0
+                'eliminado' => 0,
             );
             $this->db->where($where);
             $this->db->from(TBL_SOCIO);
@@ -3609,27 +3603,27 @@ class Socio extends Model
      *
      * @return boolean
      */
-    function validaAnualidad($idUnicoMembresia, $idPersona , $pagada = 1)
+    public function validaAnualidad($idUnicoMembresia, $idPersona, $pagada = 1)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idPersona, 'integer');
         $res = false;
 
-        if ( ! $idUnicoMembresia or ! $idPersona) {
+        if (!$idUnicoMembresia or !$idPersona) {
             return $res;
         }
         $where = array(
             'spm.activo'                => $pagada,
             'm.idTipoEstatusMovimiento' => MOVIMIENTO_PAGADO,
             'spm.eliminado'             => 0,
-            'm.eliminado'               => 0
+            'm.eliminado'               => 0,
         );
-        $this->db->join(TBL_MOVIMIENTO.' m', 'spm.idMovimiento = m.idMovimiento AND spm.idUnicoMembresia = '.$idUnicoMembresia.' AND spm.idPersona = '.$idPersona, 'inner');
+        $this->db->join(TBL_MOVIMIENTO . ' m', 'spm.idMovimiento = m.idMovimiento AND spm.idUnicoMembresia = ' . $idUnicoMembresia . ' AND spm.idPersona = ' . $idPersona, 'inner');
         $this->db->having('PERIOD_DIFF(EXTRACT(YEAR_MONTH FROM spm.fechaFin), EXTRACT(YEAR_MONTH FROM spm.fechaInicio)) >= 10');
         $query = $this->db->select(
             "spm.fechaInicio, spm.fechaFin",
             false
-            )->order_by('spm.idSocioPagoMtto', 'DESC')->get_where(TBL_SOCIOPAGOMTTO.' spm', $where);
+        )->order_by('spm.idSocioPagoMtto', 'DESC')->get_where(TBL_SOCIOPAGOMTTO . ' spm', $where);
 
         if ($query->num_rows) {
             $res = true;
@@ -3649,7 +3643,7 @@ class Socio extends Model
      *
      * @return array
      */
-    function validaEdad($idUnNuevo, $idMantenimiento, $idTipoRolCliente, $edad)
+    public function validaEdad($idUnNuevo, $idMantenimiento, $idTipoRolCliente, $edad)
     {
         settype($idUnNuevo, 'integer');
         settype($idMantenimiento, 'integer');
@@ -3680,7 +3674,7 @@ class Socio extends Model
      *
      * @return int
      */
-    function validaEsquemaPagoyTarjetaActiva($idUnicoMembresia)
+    public function validaEsquemaPagoyTarjetaActiva($idUnicoMembresia)
     {
         settype($idUnicoMembresia, 'integer');
 
@@ -3692,9 +3686,9 @@ class Socio extends Model
                 AND s.eliminado=0 AND s.idEsquemaPago=2";
         $query = $this->db->query($sql);
         if ($query->num_rows() == 1) {
-            $res='1';
+            $res = '1';
         } else {
-            $res='0';
+            $res = '0';
         }
 
         return $res;
@@ -3707,16 +3701,16 @@ class Socio extends Model
      *
      * @return boolean
      */
-    function validaPeriodoVacacional()
+    public function validaPeriodoVacacional()
     {
         $datos = array('fecha' => '0000-00-00');
-        $where = array('fecha >=' => date('Y-m').'-01', 'fecha <= ' => date('Y').'-12-01');
+        $where = array('fecha >=' => date('Y-m') . '-01', 'fecha <= ' => date('Y') . '-12-01');
         $query = $this->db->select('fecha')->order_by('fecha', 'ASC')->get_where(TBL_PERIODOVACACIONAL, $where);
 
         if ($query->num_rows) {
-            $datos['fecha']   = $query->row()->fecha;
+            $datos['fecha'] = $query->row()->fecha;
 
-            if ($datos['fecha'] == date('Y-m').'-01') {
+            if ($datos['fecha'] == date('Y-m') . '-01') {
                 $datos['error']   = 0;
                 $datos['mensaje'] = 'Periodo vacacional valido';
             } else {
@@ -3739,7 +3733,7 @@ class Socio extends Model
      *
      * @return integer
      */
-    function validaTitularAusente ($idUnicoMembresia, $idSocio)
+    public function validaTitularAusente($idUnicoMembresia, $idSocio)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idSocio, 'integer');
@@ -3747,12 +3741,12 @@ class Socio extends Model
         if (($idUnicoMembresia == 0) or ($idSocio == 0)) {
             return 0;
         }
-        $CI =& get_instance();
+        $CI = &get_instance();
         $CI->load->model('membresia_model');
 
         $datos['idTitular'] = $CI->membresia_model->obtenerTitular($idUnicoMembresia);
-        $idPersona = $datos['idTitular']['idPersona'];
-        $idSocioTitular = $this->obtenIdSocio($idPersona);
+        $idPersona          = $datos['idTitular']['idPersona'];
+        $idSocioTitular     = $this->obtenIdSocio($idPersona);
 
         if ($idSocioTitular == $idSocio) {
             return 0;
@@ -3760,7 +3754,7 @@ class Socio extends Model
         $where = array(
             'idSocio'              => $idSocioTitular,
             'fechaRegresoAusencia' => '0000-00-00 00:00:00',
-            'fechaEliminacion'     => '0000-00-00 00:00:00'
+            'fechaEliminacion'     => '0000-00-00 00:00:00',
         );
         $query = $this->db->select('COUNT(*)AS ausente')->get_where(TBL_SOCIOAUSENCIA, $where);
         return $query->row()->ausente;
@@ -3772,20 +3766,20 @@ class Socio extends Model
      * @param  [type] $idTipoSocio      [description]
      * @return [type]                   [description]
      */
-    function verifActTipoSocio($idUnicoMembresia, $idTipoSocio)
+    public function verifActTipoSocio($idUnicoMembresia, $idTipoSocio)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idTipoSocio, 'integer');
 
-        $sql="SELECT s.idSocio, s.idUnicoMembresia, s.idPersona, s.idTipoRolCliente, trc.Descripcion
+        $sql = "SELECT s.idSocio, s.idUnicoMembresia, s.idPersona, s.idTipoRolCliente, trc.Descripcion
             FROM socio s
             LEFT JOIN tiporolcliente trc on trc.idTipoRolCliente=s.idTipoRolCliente
-            WHERE s.idUnicoMembresia=$idUnicoMembresia and s.idTipoEstatusSocio!=82 and trc.idTipoRolCliente=".$idTipoSocio;
-        $query=$this->db->query($sql);
+            WHERE s.idUnicoMembresia=$idUnicoMembresia and s.idTipoEstatusSocio!=82 and trc.idTipoRolCliente=" . $idTipoSocio;
+        $query = $this->db->query($sql);
         if ($query->num_rows() > 0) {
-            $dat=1;
+            $dat = 1;
         } else {
-            $dat=0;
+            $dat = 0;
         }
         return $dat;
     }
@@ -3797,7 +3791,7 @@ class Socio extends Model
      *
      * @return integer
      */
-    function verifSocio($idSocio)
+    public function verifSocio($idSocio)
     {
         settype($idSocio, 'integer');
         if ($idSocio == 0) {
@@ -3820,10 +3814,10 @@ class Socio extends Model
      *
      * @return array
      */
-    function verificaAusencia ($idSocio)
+    public function verificaAusencia($idSocio)
     {
         settype($idSocio, 'integer');
-        $datos = array();
+        $datos                    = array();
         $datos['idSocioAusencia'] = 0;
         $datos['fechaAusencia']   = '';
 
@@ -3852,11 +3846,11 @@ class Socio extends Model
      *
      * @return array data
      */
-    function verificaSiReingreso($idUnicoMembresia, $idPersona)
+    public function verificaSiReingreso($idUnicoMembresia, $idPersona)
     {
         $this->db->select('fechaEliminacion');
         $this->db->from(TBL_SOCIO);
-        $where=array('idUnicoMembresia'=>$idUnicoMembresia , 'idPersona'=>$idPersona, 'idTipoEstatusSocio'=>'82', );
+        $where = array('idUnicoMembresia' => $idUnicoMembresia, 'idPersona' => $idPersona, 'idTipoEstatusSocio' => '82');
         $this->db->where($where);
         $this->db->where('fechaEliminacion !=', '0000-00-00 00:00:00');
         $query = $this->db->get();
@@ -3868,11 +3862,10 @@ class Socio extends Model
 
             return $data;
         } else {
-           $data='';
-           return $data;
+            $data = '';
+            return $data;
         }
     }
-
 
     /**
      * [obtenSociosSinComprobante description]
@@ -3884,21 +3877,20 @@ class Socio extends Model
      *
      * @return array
      */
-    public function obtenSociosSinComprobante($idUnicoMembresia,$idTipoComprobante)
+    public function obtenSociosSinComprobante($idUnicoMembresia, $idTipoComprobante)
     {
         settype($idUnicoMembresia, 'integer');
         settype($idTipoComprobante, 'integer');
 
-
-        $subquery =  "SELECT dp.idPersona
+        $subquery = "SELECT dp.idPersona
             FROM documentopersona dp
             JOIN documento d ON dp.idDocumento = d.idDocumento
             JOIN comprobantedocumento cd ON cd.idTipoDocumento=d.idTipoDocumento
             WHERE cd.idTipoComprobante = $idTipoComprobante";
 
         $query = $this->db->from('socio')
-           ->where('idUnicoMembresia',$idUnicoMembresia)
-           ->where('idPersona not in',$subquery);
+            ->where('idUnicoMembresia', $idUnicoMembresia)
+            ->where('idPersona not in', $subquery);
         if ($query->num_rows > 0) {
             return $query->result_array();
         } else {
@@ -3917,7 +3909,7 @@ class Socio extends Model
      */
     public function insertaCargoCredencial($datos)
     {
-        $CI =& get_instance();
+        $CI = &get_instance();
         $CI->load->model('un_model');
         $CI->load->model('producto_model');
         $CI->load->model('movimientos_model');
@@ -3926,12 +3918,12 @@ class Socio extends Model
 
         $movimiento = 0;
 
-        $tc = ROL_CLIENTE_NINGUNO;
+        $tc   = ROL_CLIENTE_NINGUNO;
         $idUn = $this->session->userdata('idUn');
-        $iva = $CI->un_model->iva($idUn);
-        if ($datos['idUnicoMembresia']>0) {
-            $idUn  = $CI->membresia_model->club($datos['idUnicoMembresia']);
-            $tc = ROL_CLIENTE_SOCIO;
+        $iva  = $CI->un_model->iva($idUn);
+        if ($datos['idUnicoMembresia'] > 0) {
+            $idUn = $CI->membresia_model->club($datos['idUnicoMembresia']);
+            $tc   = ROL_CLIENTE_SOCIO;
         }
 
         $imp = $CI->producto_model->precio(CARGO_CREDENCIAL_PREMIER, $idUn, $tc);
@@ -3941,8 +3933,8 @@ class Socio extends Model
         #    $status_mov = MOVIMIENTO_EXCEPCION_PAGO;
         #}
 
-        if ($this->session->userdata('idEmpresaGrupo')==1) {
-            $cargoCredencial = array (
+        if ($this->session->userdata('idEmpresaGrupo') == 1) {
+            $cargoCredencial = array(
                 'fecha'                   => date('Y-m-d'),
                 'persona'                 => $datos['idPersona'],
                 'tipo'                    => TIPO_MOVIMIENTO_OTROSINGRESOS,
@@ -3959,7 +3951,7 @@ class Socio extends Model
                 'numeroCuenta'            => $imp['numCuenta'],
                 'cantidad'                => 1,
                 'cveProductoServicio'     => $CI->producto_model->cveProducto(CARGO_CREDENCIAL_PREMIER),
-                'cveUnidad'               => $CI->producto_model->cveUnidad(CARGO_CREDENCIAL_PREMIER)
+                'cveUnidad'               => $CI->producto_model->cveUnidad(CARGO_CREDENCIAL_PREMIER),
             );
 
             $movimiento = $CI->movimientos_model->inserta($cargoCredencial);
@@ -3976,39 +3968,39 @@ class Socio extends Model
      *
      * @return [type]            [description]
      */
-    public function AddBoySafeSplash($idPersonaTutor,$idPersonaHijo,$origen,$idUn,$royalties,$idMembresia=0)
+    public function AddBoySafeSplash($idPersonaTutor, $idPersonaHijo, $origen, $idUn, $royalties, $idMembresia = 0)
     {
         $nombreClubsSafe[31] = 'Altavista';
         $nombreClubsSafe[11] = 'Arboledas';
         $nombreClubsSafe[68] = 'Carmen';
-        $nombreClubsSafe[5]= 'Centenario';
-        $nombreClubsSafe[26]= 'Coacalco';
-        $nombreClubsSafe[62]='Cuernavaca';
-        $nombreClubsSafe[72]='Cumbres';
-        $nombreClubsSafe[58]='Felix%20Cuevas';
-        $nombreClubsSafe[13]='Hermosillo';
-        $nombreClubsSafe[14]='Interlomas';
-        $nombreClubsSafe[77]='Rioja';
-        $nombreClubsSafe[61]='Leon';
-        $nombreClubsSafe[59]='Loreto';
-        $nombreClubsSafe[69]='Miguel%20Angel';
-        $nombreClubsSafe[76]='Merida';
-        $nombreClubsSafe[66]='Metepec';
-        $nombreClubsSafe[10]='Monterrey';
-        $nombreClubsSafe[75]='Obrero%20Mundial';
-        $nombreClubsSafe[30]='Palmas';
-        $nombreClubsSafe[8]='Patriotismo';
-        $nombreClubsSafe[33]='Pedregal';
-        $nombreClubsSafe[9]='Puebla';
-        $nombreClubsSafe[3]='San%20Angel';
-        $nombreClubsSafe[32]='San%20Jeronimo';
-        $nombreClubsSafe[16]='Santa%20Fe';
-        $nombreClubsSafe[4]='Satelite';
-        $nombreClubsSafe[63]= 'Sonata';
-        $nombreClubsSafe[6] = 'Tecamachalco';
-        $nombreClubsSafe[56] ='Universidad';
-        $nombreClubsSafe[2]= 'Valle';
-        $nombreClubsSafe[36]='Veracruz';
+        $nombreClubsSafe[5]  = 'Centenario';
+        $nombreClubsSafe[26] = 'Coacalco';
+        $nombreClubsSafe[62] = 'Cuernavaca';
+        $nombreClubsSafe[72] = 'Cumbres';
+        $nombreClubsSafe[58] = 'Felix%20Cuevas';
+        $nombreClubsSafe[13] = 'Hermosillo';
+        $nombreClubsSafe[14] = 'Interlomas';
+        $nombreClubsSafe[77] = 'Rioja';
+        $nombreClubsSafe[61] = 'Leon';
+        $nombreClubsSafe[59] = 'Loreto';
+        $nombreClubsSafe[69] = 'Miguel%20Angel';
+        $nombreClubsSafe[76] = 'Merida';
+        $nombreClubsSafe[66] = 'Metepec';
+        $nombreClubsSafe[10] = 'Monterrey';
+        $nombreClubsSafe[75] = 'Obrero%20Mundial';
+        $nombreClubsSafe[30] = 'Palmas';
+        $nombreClubsSafe[8]  = 'Patriotismo';
+        $nombreClubsSafe[33] = 'Pedregal';
+        $nombreClubsSafe[9]  = 'Puebla';
+        $nombreClubsSafe[3]  = 'San%20Angel';
+        $nombreClubsSafe[32] = 'San%20Jeronimo';
+        $nombreClubsSafe[16] = 'Santa%20Fe';
+        $nombreClubsSafe[4]  = 'Satelite';
+        $nombreClubsSafe[63] = 'Sonata';
+        $nombreClubsSafe[6]  = 'Tecamachalco';
+        $nombreClubsSafe[56] = 'Universidad';
+        $nombreClubsSafe[2]  = 'Valle';
+        $nombreClubsSafe[36] = 'Veracruz';
         $nombreClubsSafe[64] = 'Xola';
         $nombreClubsSafe[67] = 'Zona%20Esmeralda';
 
@@ -4023,37 +4015,37 @@ class Socio extends Model
         $nombreClubsSafe[90] = 'PASEO%20INTERLOMAS';
         $nombreClubsSafe[85] = 'Cabo%20Norte';
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $ci->load->model('un_model');
 
-        $dataStudent = $ci->persona_model->datosGenerales($idPersonaHijo);
+        $dataStudent   = $ci->persona_model->datosGenerales($idPersonaHijo);
         $genderStudent = $ci->persona_model->sexo($idPersonaHijo);
 
         if ($genderStudent == 'Femenino') {
             $sexStudent = 0;
-        } else if($genderStudent == 'Masculino') {
+        } else if ($genderStudent == 'Masculino') {
             $sexStudent = 1;
         }
 
         $nombreClub = $nombreClubsSafe[$idUn];
 
-        $CustomerID = $this->AddResponsableSafeSplash($idPersonaTutor,$origen,$nombreClub,$idMembresia);
+        $CustomerID = $this->AddResponsableSafeSplash($idPersonaTutor, $origen, $nombreClub, $idMembresia);
 
         if ($CustomerID > 0) {
             $url = "https://services.safesplash.com/api/customers/addCustomerStudent";
             $url .= "?";
-            $url .= "customerID=".$CustomerID;
-            $url .= "&studentFirstName=".urlencode($dataStudent['nombre']);
-            $url .= "&studentLastName=".urlencode($dataStudent['paterno']." ".$dataStudent['materno']);
-            $url .= "&notes=".urlencode("Test Safe Splash SW"); //Quitar comentario de test una vez liberado a prod
-            $url .= "&DOB=".$dataStudent['fecha'];
-            $url .= "&gender=".$sexStudent;
-            $url .= "&origen=".$origen;
-            $url .= "&club=".$nombreClub;
-			$url .= "&royalties=".$royalties;
-            $url .= "&personID=".$idPersonaHijo;
-            $login = 'safesplashmx@safesplash.com';
+            $url .= "customerID=" . $CustomerID;
+            $url .= "&studentFirstName=" . urlencode($dataStudent['nombre']);
+            $url .= "&studentLastName=" . urlencode($dataStudent['paterno'] . " " . $dataStudent['materno']);
+            $url .= "&notes=" . urlencode("Test Safe Splash SW"); //Quitar comentario de test una vez liberado a prod
+            $url .= "&DOB=" . $dataStudent['fecha'];
+            $url .= "&gender=" . $sexStudent;
+            $url .= "&origen=" . $origen;
+            $url .= "&club=" . $nombreClub;
+            $url .= "&royalties=" . $royalties;
+            $url .= "&personID=" . $idPersonaHijo;
+            $login    = 'safesplashmx@safesplash.com';
             $password = 'Spl@shMX1';
 
             // $jsonService = curl_init($url);
@@ -4067,29 +4059,28 @@ class Socio extends Model
             // curl_setopt($jsonService, CURLOPT_SSL_VERIFYHOST, false);
             // curl_setopt($jsonService, CURLOPT_USERPWD, $login.':'.$password);
 
-            $jsonService=$this->curl_config($url,$login,$password);
+            $jsonService  = $this->curl_config($url, $login, $password);
             $jsonResponse = curl_exec($jsonService);
             if ($jsonResponse === false) {
                 $err = 'Curl error: ' . curl_error($jsonService);
                 curl_close($jsonService);
-                $resp = $err;
+                $resp              = $err;
                 $customerStudentID = 0;
             } else {
                 curl_close($jsonService);
-                $resp = $jsonResponse;
-                $respJSON = json_decode($resp);
-                $customerStudentID =  $respJSON->customerStudentID;
+                $resp              = $jsonResponse;
+                $respJSON          = json_decode($resp);
+                $customerStudentID = $respJSON->customerStudentID;
             }
 
-            if ($customerStudentID>0) {
-                $this->SendSafeSplash($idPersonaHijo,$customerStudentID, 2);
+            if ($customerStudentID > 0) {
+                $this->SendSafeSplash($idPersonaHijo, $customerStudentID, 2);
             }
-            $this->logEnvioSafeSplash($idPersonaHijo,$url,$resp,$jsonResponse,2);
-            return  $resp;
+            $this->logEnvioSafeSplash($idPersonaHijo, $url, $resp, $jsonResponse, 2);
+            return $resp;
         }
         return 0;
     }
-
 
     /**
      * [agregarSocioSafeSplash description]     NO FUNCIONA
@@ -4100,40 +4091,40 @@ class Socio extends Model
      *
      * @return [type]            [description]
      */
-    public function agregarSocioSafeSplash($idPersona,$idPersonaResponsable,$origen,$idUn)
+    public function agregarSocioSafeSplash($idPersona, $idPersonaResponsable, $origen, $idUn)
     {
         #harcodeado para despues ingresarse a una tabla a peticion de ruben
         $nombreClubsSafe[31] = 'Altavista';
         $nombreClubsSafe[11] = 'Arboledas';
         $nombreClubsSafe[68] = 'Carmen';
-        $nombreClubsSafe[5]= 'Centenario';
-        $nombreClubsSafe[26]= 'Coacalco';
-        $nombreClubsSafe[62]='Cuernavaca';
-        $nombreClubsSafe[72]='Cumbres';
-        $nombreClubsSafe[58]='Felix%20Cuevas';
-        $nombreClubsSafe[13]='Hermosillo';
-        $nombreClubsSafe[14]='Interlomas';
-        $nombreClubsSafe[77]='Rioja';
-        $nombreClubsSafe[61]='Leon';
-        $nombreClubsSafe[59]='Loreto';
-        $nombreClubsSafe[69]='Miguel%20Angel';
-        $nombreClubsSafe[76]='Merida';
-        $nombreClubsSafe[66]='Metepec';
-        $nombreClubsSafe[10]='Monterrey';
-        $nombreClubsSafe[75]='Obrero%20Mundial';
-        $nombreClubsSafe[30]='Palmas';
-        $nombreClubsSafe[8]='Patriotismo';
-        $nombreClubsSafe[33]='Pedregal';
-        $nombreClubsSafe[9]='Puebla';
-        $nombreClubsSafe[3]='San%20Angel';
-        $nombreClubsSafe[32]='San%20Jeronimo';
-        $nombreClubsSafe[16]='Santa%20Fe';
-        $nombreClubsSafe[4]='Satelite';
-        $nombreClubsSafe[63]= 'Sonata';
-        $nombreClubsSafe[6] = 'Tecamachalco';
-        $nombreClubsSafe[56] ='Universidad';
-        $nombreClubsSafe[2]= 'Valle';
-        $nombreClubsSafe[36]='Veracruz';
+        $nombreClubsSafe[5]  = 'Centenario';
+        $nombreClubsSafe[26] = 'Coacalco';
+        $nombreClubsSafe[62] = 'Cuernavaca';
+        $nombreClubsSafe[72] = 'Cumbres';
+        $nombreClubsSafe[58] = 'Felix%20Cuevas';
+        $nombreClubsSafe[13] = 'Hermosillo';
+        $nombreClubsSafe[14] = 'Interlomas';
+        $nombreClubsSafe[77] = 'Rioja';
+        $nombreClubsSafe[61] = 'Leon';
+        $nombreClubsSafe[59] = 'Loreto';
+        $nombreClubsSafe[69] = 'Miguel%20Angel';
+        $nombreClubsSafe[76] = 'Merida';
+        $nombreClubsSafe[66] = 'Metepec';
+        $nombreClubsSafe[10] = 'Monterrey';
+        $nombreClubsSafe[75] = 'Obrero%20Mundial';
+        $nombreClubsSafe[30] = 'Palmas';
+        $nombreClubsSafe[8]  = 'Patriotismo';
+        $nombreClubsSafe[33] = 'Pedregal';
+        $nombreClubsSafe[9]  = 'Puebla';
+        $nombreClubsSafe[3]  = 'San%20Angel';
+        $nombreClubsSafe[32] = 'San%20Jeronimo';
+        $nombreClubsSafe[16] = 'Santa%20Fe';
+        $nombreClubsSafe[4]  = 'Satelite';
+        $nombreClubsSafe[63] = 'Sonata';
+        $nombreClubsSafe[6]  = 'Tecamachalco';
+        $nombreClubsSafe[56] = 'Universidad';
+        $nombreClubsSafe[2]  = 'Valle';
+        $nombreClubsSafe[36] = 'Veracruz';
         $nombreClubsSafe[64] = 'Xola';
         $nombreClubsSafe[67] = 'Zona%20Esmeralda';
 
@@ -4148,31 +4139,31 @@ class Socio extends Model
         $nombreClubsSafe[90] = 'PASEO%20INTERLOMAS';
         $nombreClubsSafe[85] = 'Cabo%20Norte';
 
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $ci->load->model('un_model');
-        $dataStudent = $ci->persona_model->datosGenerales($idPersona);
+        $dataStudent   = $ci->persona_model->datosGenerales($idPersona);
         $genderStudent = $ci->persona_model->sexo($idPersona);
 
         if ($genderStudent == 'Femenino') {
             $sexStudent = 0;
-        } else if($genderStudent == 'Masculino') {
+        } else if ($genderStudent == 'Masculino') {
             $sexStudent = 1;
         }
         $nombreClub = $nombreClubsSafe[$idUn];
-        $idCustomer = $this->agregarResponsableSafeSplash($idPersona, $idPersonaResponsable,$origen,$nombreClub);
-        $url = "https://services.safesplash.com/api/customers/addCustomerStudent";
+        $idCustomer = $this->agregarResponsableSafeSplash($idPersona, $idPersonaResponsable, $origen, $nombreClub);
+        $url        = "https://services.safesplash.com/api/customers/addCustomerStudent";
 
         $url .= "?";
-        $url .= "customerID=".$idCustomer;
-        $url .= "&studentFirstName=".urlencode($dataStudent['nombre']);
-        $url .= "&studentLastName=".urlencode($dataStudent['paterno']." ".$dataStudent['materno']);
-        $url .= "&notes=".urlencode("Test Safe Splash SW"); //Quitar comentario de test una vez liberado a prod
-        $url .= "&DOB=".$dataStudent['fecha'];
-        $url .= "&gender=".$sexStudent;
-        $url .= "&origen=".$origen;
-        $url .= "&club=".$nombreClub;
-        $login = 'safesplashmx@safesplash.com';
+        $url .= "customerID=" . $idCustomer;
+        $url .= "&studentFirstName=" . urlencode($dataStudent['nombre']);
+        $url .= "&studentLastName=" . urlencode($dataStudent['paterno'] . " " . $dataStudent['materno']);
+        $url .= "&notes=" . urlencode("Test Safe Splash SW"); //Quitar comentario de test una vez liberado a prod
+        $url .= "&DOB=" . $dataStudent['fecha'];
+        $url .= "&gender=" . $sexStudent;
+        $url .= "&origen=" . $origen;
+        $url .= "&club=" . $nombreClub;
+        $login    = 'safesplashmx@safesplash.com';
         $password = 'Spl@shMX1';
 
         // $jsonService = curl_init($url);
@@ -4185,7 +4176,7 @@ class Socio extends Model
         // curl_setopt($jsonService, CURLOPT_SSL_VERIFYPEER, false);
         // curl_setopt($jsonService, CURLOPT_SSL_VERIFYHOST, false);
         // curl_setopt($jsonService, CURLOPT_USERPWD, $login.':'.$password);
-        $jsonService=$this->curl_config($url,$login,$password);
+        $jsonService  = $this->curl_config($url, $login, $password);
         $jsonResponse = curl_exec($jsonService);
         if ($jsonResponse === false) {
             $err = 'Curl error: ' . curl_error($jsonService);
@@ -4195,8 +4186,8 @@ class Socio extends Model
             curl_close($jsonService);
             $resp = $jsonResponse;
         }
-        $registrar =  $this->registrarEnvioSafeSplash($idPersona,$idCustomer, $resp);
-        return  $resp;
+        $registrar = $this->registrarEnvioSafeSplash($idPersona, $idCustomer, $resp);
+        return $resp;
     }
 
     /**
@@ -4209,30 +4200,29 @@ class Socio extends Model
      *
      * @return [type]                       [description]
      */
-    public function AddResponsableSafeSplash($idPersonaTutor,$origen,$nombreClub,$idMembresia=0)
+    public function AddResponsableSafeSplash($idPersonaTutor, $origen, $nombreClub, $idMembresia = 0)
     {
-        $idTutor =  $this->ValidaIdtutor($idPersonaTutor);
+        $idTutor = $this->ValidaIdtutor($idPersonaTutor);
 
-        if ($idTutor== 0) {
-            $ci =& get_instance();
+        if ($idTutor == 0) {
+            $ci = &get_instance();
             $ci->load->model('persona_model');
             $data = $ci->persona_model->datosGenerales($idPersonaTutor);
-            $mail = $ci->persona_model->mail($idPersonaTutor,34);
+            $mail = $ci->persona_model->mail($idPersonaTutor, 34);
 
             $url = "https://services.safesplash.com/api/customers/addCustomer";
 
             $url .= "?";
-            $url .= "&firstName=".urlencode($data['nombre']);
-            $url .= "&lastName=".urlencode($data['paterno']." ".$data['materno']);
-            $url .= "&email=".  urlencode($mail);
-            $url .= "&origen=".  $origen;
-            $url .= "&club=".$nombreClub;
-            if($idMembresia!=0)
-            {
-                $url .= "&membershipNumber=".$idMembresia;
+            $url .= "&firstName=" . urlencode($data['nombre']);
+            $url .= "&lastName=" . urlencode($data['paterno'] . " " . $data['materno']);
+            $url .= "&email=" . urlencode($mail);
+            $url .= "&origen=" . $origen;
+            $url .= "&club=" . $nombreClub;
+            if ($idMembresia != 0) {
+                $url .= "&membershipNumber=" . $idMembresia;
             }
-            
-            $login = 'safesplashmx@safesplash.com';
+
+            $login    = 'safesplashmx@safesplash.com';
             $password = 'Spl@shMX1';
 
             // $jsonService = curl_init($url);
@@ -4245,25 +4235,25 @@ class Socio extends Model
             // curl_setopt($jsonService, CURLOPT_SSL_VERIFYPEER, false);
             // curl_setopt($jsonService, CURLOPT_SSL_VERIFYHOST, false);
             // curl_setopt($jsonService, CURLOPT_USERPWD, $login.':'.$password);
-            $jsonService=$this->curl_config($url,$login,$password);
+            $jsonService  = $this->curl_config($url, $login, $password);
             $jsonResponse = curl_exec($jsonService);
 
             if ($jsonResponse === false) {
                 $err = 'Curl error: ' . curl_error($jsonService);
                 curl_close($jsonService);
-                $resp = $err;
+                $resp       = $err;
                 $idCustomer = 0;
             } else {
                 curl_close($jsonService);
-                $resp = $jsonResponse;
-                $respJSON = json_decode($resp);
-                $idCustomer =  $respJSON->customerID;
+                $resp       = $jsonResponse;
+                $respJSON   = json_decode($resp);
+                $idCustomer = $respJSON->customerID;
             }
 
-            $this->logEnvioSafeSplash($idPersonaTutor,$url,$resp,$jsonResponse,1);
+            $this->logEnvioSafeSplash($idPersonaTutor, $url, $resp, $jsonResponse, 1);
 
-            if ($idCustomer>0) {
-               $this->SendSafeSplash($idPersonaTutor,$idCustomer, 1);
+            if ($idCustomer > 0) {
+                $this->SendSafeSplash($idPersonaTutor, $idCustomer, 1);
             }
         } else {
             $idCustomer = $idTutor;
@@ -4284,20 +4274,20 @@ class Socio extends Model
      */
     public function agregarResponsableSafeSplash($idPersona, $idPersonaResponsable, $origen, $nombreClub)
     {
-        $ci =& get_instance();
+        $ci = &get_instance();
         $ci->load->model('persona_model');
         $data = $ci->persona_model->datosGenerales($idPersonaResponsable);
-        $mail = $ci->persona_model->mail($idPersonaResponsable,34);
+        $mail = $ci->persona_model->mail($idPersonaResponsable, 34);
 
         $url = "https://services.safesplash.com/api/customers/addCustomer";
 
         $url .= "?";
-        $url .= "&firstName=".urlencode($data['nombre']);
-        $url .= "&lastName=".urlencode($data['paterno']." ".$data['materno']);
-        $url .= "&email=".  urlencode($mail);
-        $url .= "&origen=".  $origen;
-        $url .= "&club=".$nombreClub;
-        $login = 'safesplashmx@safesplash.com';
+        $url .= "&firstName=" . urlencode($data['nombre']);
+        $url .= "&lastName=" . urlencode($data['paterno'] . " " . $data['materno']);
+        $url .= "&email=" . urlencode($mail);
+        $url .= "&origen=" . $origen;
+        $url .= "&club=" . $nombreClub;
+        $login    = 'safesplashmx@safesplash.com';
         $password = 'Spl@shMX1';
 
         // $jsonService = curl_init($url);
@@ -4310,7 +4300,7 @@ class Socio extends Model
         // curl_setopt($jsonService, CURLOPT_SSL_VERIFYPEER, false);
         // curl_setopt($jsonService, CURLOPT_SSL_VERIFYHOST, false);
         // curl_setopt($jsonService, CURLOPT_USERPWD, $login.':'.$password);
-        $jsonService=$this->curl_config($url,$login,$password);
+        $jsonService  = $this->curl_config($url, $login, $password);
         $jsonResponse = curl_exec($jsonService);
 
         if ($jsonResponse === false) {
@@ -4322,12 +4312,11 @@ class Socio extends Model
             $resp = $jsonResponse;
         }
 
-        $respJSON = json_decode($resp);
-        $idCustomer =  $respJSON->customerID;
-        $registrar =  $this->registrarEnvioSafeSplash($idPersona,$idCustomer, $resp);
-        return  $idCustomer;
+        $respJSON   = json_decode($resp);
+        $idCustomer = $respJSON->customerID;
+        $registrar  = $this->registrarEnvioSafeSplash($idPersona, $idCustomer, $resp);
+        return $idCustomer;
     }
-
 
     /**
      * [registrarEnvioSafeSplash description]
@@ -4339,16 +4328,16 @@ class Socio extends Model
      *
      * @return [type]            [description]
      */
-    public function registrarEnvioSafeSplash($idPersona,$idCustomer, $response)
+    public function registrarEnvioSafeSplash($idPersona, $idCustomer, $response)
     {
         $datosInsert = [
             'personaId'        => $idPersona,
             'idCustomer'       => $idCustomer,
-            'descripcion'      => 'Registro de la persona con id: '.$idPersona.', fecha: '.date('Y-m-d H:i:s'),
+            'descripcion'      => 'Registro de la persona con id: ' . $idPersona . ', fecha: ' . date('Y-m-d H:i:s'),
             'mensajeRespuesta' => $response,
-            'fechaRegistro'    => date('Y-m-d H:i:s')
+            'fechaRegistro'    => date('Y-m-d H:i:s'),
         ];
-        $this->db->insert('safesplashenvio',$datosInsert);
+        $this->db->insert('safesplashenvio', $datosInsert);
     }
 
     /**
@@ -4361,15 +4350,15 @@ class Socio extends Model
      *
      *
      */
-    public function SendSafeSplash($idPersonaTutor,$idCustomer,$parentesco)
+    public function SendSafeSplash($idPersonaTutor, $idCustomer, $parentesco)
     {
         $datosInsert = [
             'idPersona'     => $idPersonaTutor,
             'idCustomer'    => $idCustomer,
             'parentesco'    => $parentesco,
-            'fechaRegistro' => date('Y-m-d H:i:s')
+            'fechaRegistro' => date('Y-m-d H:i:s'),
         ];
-        $this->db->insert('safesplashtutor',$datosInsert);
+        $this->db->insert('safesplashtutor', $datosInsert);
     }
 
     /**
@@ -4381,16 +4370,16 @@ class Socio extends Model
      *
      * @return int
      */
-    function ValidaIdtutor($idPersona)
+    public function ValidaIdtutor($idPersona)
     {
         settype($idPersona, 'integer');
 
         if ($idPersona > 0) {
             $this->db->select('idCustomer');
             $where = array(
-                'idPersona' => $idPersona,
+                'idPersona'        => $idPersona,
                 'fechaEliminacion' => '0000-00-00 00:00:00',
-                'parentesco' => 1,
+                'parentesco'       => 1,
             );
             $this->db->where($where);
             $this->db->from('safesplashtutor');
@@ -4416,7 +4405,7 @@ class Socio extends Model
      *
      * @return [type]               [description]
      */
-    function logEnvioSafeSplash($idPersona,$url,$resp,$jsonResponse,$parentesco)
+    public function logEnvioSafeSplash($idPersona, $url, $resp, $jsonResponse, $parentesco)
     {
         $datosInsert = [
             'idPersona'     => $idPersona,
@@ -4424,9 +4413,9 @@ class Socio extends Model
             'respuesta'     => $resp,
             'parentesco'    => $parentesco,
             'estatus'       => $jsonResponse,
-            'fechaRegistro' => date('Y-m-d H:i:s')
+            'fechaRegistro' => date('Y-m-d H:i:s'),
         ];
-        $this->db->insert('safesplashlogenvio',$datosInsert);
+        $this->db->insert('safesplashlogenvio', $datosInsert);
     }
 
     /**
@@ -4436,20 +4425,22 @@ class Socio extends Model
      *
      * @return bool
      */
-    function credencialEntregada($idMovimiento,$idPersona)
+    public function credencialEntregada($idMovimiento, $idPersona)
     {
-        settype($idMovimiento,'integer');
-        settype($idPersona,'integer');
+        settype($idMovimiento, 'integer');
+        settype($idPersona, 'integer');
 
-        $registros = $this->db->get_where('crm.credencialenvio',array(
+        $registros = $this->db->get_where('crm.credencialenvio', array(
             'idMovimiento' => $idMovimiento,
-            'idPersona' => $idPersona,
+            'idPersona'    => $idPersona,
         ));
 
         if ($registros->num_rows() > 0) {
             $registros = $registros->row_array();
-            if ($registros['fechaEntrega']=='0000-00-00 00:00:00')
+            if ($registros['fechaEntrega'] == '0000-00-00 00:00:00') {
                 return false;
+            }
+
         }
         return true;
     }
@@ -4461,19 +4452,22 @@ class Socio extends Model
      *
      * @return bool
      */
-    function entregaCredencial($idMovimiento,$idPersona)
+    public function entregaCredencial($idMovimiento, $idPersona)
     {
-        settype($idMovimiento,'integer');
-        settype($idPersona,'integer');
+        settype($idMovimiento, 'integer');
+        settype($idPersona, 'integer');
 
         $this->db->where(array(
             'idMovimiento' => $idMovimiento,
-            'idPersona' => $idPersona
-        ))->update('crm.credencialenvio',array(
+            'idPersona'    => $idPersona,
+        ))->update('crm.credencialenvio', array(
             'fechaEntrega' => date('Y-m-d H:i:s'))
         );
 
-        if($this->db->affected_rows()>0) return true;
+        if ($this->db->affected_rows() > 0) {
+            return true;
+        }
+
         return false;
     }
 
@@ -4482,15 +4476,15 @@ class Socio extends Model
         $jsonService = curl_init();
 
         curl_setopt_array($jsonService, array(
-            CURLOPT_URL => $url,
+            CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => "",
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => "GET",
-            CURLOPT_HTTPHEADER => array(
-                "Authorization: Basic ".base64_encode($login.':'.$password),
+            CURLOPT_ENCODING       => "",
+            CURLOPT_MAXREDIRS      => 10,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST  => "GET",
+            CURLOPT_HTTPHEADER     => array(
+                "Authorization: Basic " . base64_encode($login . ':' . $password),
                 "Cache-Control: no-cache",
             ),
         ));
@@ -4498,12 +4492,11 @@ class Socio extends Model
         return $jsonService;
     }
 
-
     /**
      * Valida si la membresia cuenta con algun Invitado PartTime registrado
-     * 
+     *
      * @param  integer $idUnicoMembresia Identeficador de membresia a validar
-     * 
+     *
      * @return boolean
      */
     public function validaInvitadoPT($idUnicoMembresia)
@@ -4512,19 +4505,18 @@ class Socio extends Model
 
         $res = false;
 
-        $sql = "SELECT idSocio 
-            FROM socio 
+        $sql = "SELECT idSocio
+            FROM socio
             WHERE idUnicoMembresia=$idUnicoMembresia AND eliminado=0 AND idTipoEstatusSocio<>82
-                AND idTipoRolCliente=".ROL_CLIENTE_PT;
+                AND idTipoRolCliente=" . ROL_CLIENTE_PT;
         $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             $res = true;
         }
 
         return $res;
     }
-
 
     /**
      * Valida si se puede activar el tipousuario
@@ -4541,17 +4533,17 @@ class Socio extends Model
             FROM socio
             WHERE idUnicoMembresia=$idUnicoMembresia
                 AND idMantenimiento IN (
-                    SELECT idMantenimiento 
-                    FROM productomantenimiento 
+                    SELECT idMantenimiento
+                    FROM productomantenimiento
                     WHERE idProducto IN (
-                        SELECT idProducto 
-                        FROM producto 
+                        SELECT idProducto
+                        FROM producto
                         WHERE nombre LIKE '%weekend%')
                     ) AND idTipoRolCliente NOT IN (19,17)
                 AND eliminado=0"; //idMantenimiento weeken
         $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             return 1;
         }
         return 0;

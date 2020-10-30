@@ -1,6 +1,6 @@
 <?php
 
-namespace API_EPS\Providers;
+namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 

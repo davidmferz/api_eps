@@ -1,22 +1,17 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use Carbon\Carbon;
-use API_EPS\Models\CatRutinas;
-use API_EPS\Models\MenuActividad;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use API_EPS\Models\Permiso;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Categoria extends Model
 {
     use SoftDeletes;
     protected $connection = 'crm';
-    protected $table = 'crm.categoria';
+    protected $table      = 'crm.categoria';
     protected $primaryKey = 'idCategoria';
 
     const CREATED_AT = 'fechaRegistro';
@@ -59,15 +54,15 @@ class Categoria extends Model
             }
         }
 
-        $datos = array (
-            'activo' => $estatus
+        $datos = array(
+            'activo' => $estatus,
         );
 
         $this->db->where('idCategoria', $id);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->update(TBL_CATEGORIA, $datos);
 
-        $this->permisos_model->log('Se cambio el estatus de activo para la categoria ('.$id.')', LOG_CATEGORIA);
+        $this->permisos_model->log('Se cambio el estatus de activo para la categoria (' . $id . ')', LOG_CATEGORIA);
 
         return true;
     }
@@ -99,9 +94,9 @@ class Categoria extends Model
         if ($categorias) {
             $categoriasHijo = array();
 
-            foreach($categorias as $idRow => $categoria) {
+            foreach ($categorias as $idRow => $categoria) {
                 $categoriasDatos = explode('-', $categoria);
-                if ( ! in_array($categoriasDatos[0], $categoriasHijo)) {
+                if (!in_array($categoriasDatos[0], $categoriasHijo)) {
                     $categoriasHijo[] = $categoriasDatos[0];
                 }
             }
@@ -112,14 +107,14 @@ class Categoria extends Model
                 $this->db->where('tipo', $tipo);
                 $total = $this->db->count_all_results();
                 if ($total == 0) {
-                    $datos = array (
+                    $datos = array(
                         'idCategoria' => $idCategoriaHijo,
                         'idPersona'   => $idRevisor,
-                        'tipo'        => $tipo
+                        'tipo'        => $tipo,
                     );
                     $this->db->insert(TBL_CATEGORIAREVISOR, $datos);
                 }
-                $this->permisos_model->log('Se agrego al revisor ('.$idRevisor.') para la categoria ('.$id.') tipo '.$tipo , LOG_CATEGORIA);
+                $this->permisos_model->log('Se agrego al revisor (' . $idRevisor . ') para la categoria (' . $id . ') tipo ' . $tipo, LOG_CATEGORIA);
             }
         }
         return true;
@@ -138,12 +133,11 @@ class Categoria extends Model
     public static function campo($id, $campo)
     {
         settype($id, 'integer');
-        
-        
+
         $query = DB::connection('crm')->table(TBL_CATEGORIA)
-        ->select(DB::connection('crm')->raw("$campo as campo"))
-        ->where('fechaEliminacion', '0000-00-00 00:00:00')
-        ->where('idCategoria', $id)->get()->toArray();
+            ->select(DB::connection('crm')->raw("$campo as campo"))
+            ->where('fechaEliminacion', '0000-00-00 00:00:00')
+            ->where('idCategoria', $id)->get()->toArray();
         if (count($query) > 0) {
             $fila = $query[0];
             return $fila->campo;
@@ -184,12 +178,12 @@ class Categoria extends Model
      *
      * @return boolean
      */
-    public function eliminaResponsable ($idCategoriaPadre, $idPersona)
+    public function eliminaResponsable($idCategoriaPadre, $idPersona)
     {
         settype($idCategoriaPadre, 'integer');
         settype($idPersona, 'integer');
 
-        if (! $idCategoriaPadre or ! $idPersona) {
+        if (!$idCategoriaPadre or !$idPersona) {
             return false;
         }
         $categorias = array($idCategoriaPadre);
@@ -200,7 +194,7 @@ class Categoria extends Model
             $idCategoria = $infoCat[0];
             $where       = array(
                 'idCategoria' => $idCategoria,
-                'idPersona'   => $idPersona
+                'idPersona'   => $idPersona,
             );
             $query = $this->db->select(
                 "idCategoriaResponsable"
@@ -210,7 +204,7 @@ class Categoria extends Model
                 $where = array('idCategoriaResponsable' => $query->row()->idCategoriaResponsable);
                 $res   = $this->db->delete(TBL_CATEGORIARESPONSABLE, $where);
                 if ($res) {
-                    $this->permisos_model->log('Se elimino al responsable ('.$idPersona.') de la categoria ('.$idCategoria.')', LOG_CATEGORIA);
+                    $this->permisos_model->log('Se elimino al responsable (' . $idPersona . ') de la categoria (' . $idCategoria . ')', LOG_CATEGORIA);
                 } else {
                     return false;
                 }
@@ -250,16 +244,16 @@ class Categoria extends Model
 
         }
 
-        $datos = array (
+        $datos = array(
             'fechaEliminacion' => date("Y-m-d H:i:s"),
-            'activo'           => 0
+            'activo'           => 0,
         );
 
         $this->db->where('idCategoria', $id);
         $this->db->where('fechaEliminacion', '0000-00-00 00:00:00');
         $this->db->update(TBL_CATEGORIA, $datos);
 
-        $this->permisos_model->log('Se elimino la categoria con ID '.$id, LOG_CATEGORIA);
+        $this->permisos_model->log('Se elimino la categoria con ID ' . $id, LOG_CATEGORIA);
 
         return true;
     }
@@ -290,9 +284,9 @@ class Categoria extends Model
         if ($categorias) {
             $categoriasHijo = array();
 
-            foreach($categorias as $idRow => $categoria) {
+            foreach ($categorias as $idRow => $categoria) {
                 $categoriasDatos = explode('-', $categoria);
-                if ( ! in_array($categoriasDatos[0], $categoriasHijo)) {
+                if (!in_array($categoriasDatos[0], $categoriasHijo)) {
                     $categoriasHijo[] = $categoriasDatos[0];
                 }
             }
@@ -303,13 +297,13 @@ class Categoria extends Model
                 $this->db->where('tipo', $tipo);
                 $total = $this->db->count_all_results();
                 if ($total == 0) {
-                    $datos = array (
+                    $datos = array(
                         'idCategoria' => $idCategoriaHijo,
-                        'idPersona'   => $idRevisor
+                        'idPersona'   => $idRevisor,
                     );
                     $this->db->delete(TBL_CATEGORIAREVISOR, $datos);
 
-                    $this->permisos_model->log('Se elimino al revisor ('.$idRevisor.') de la categoria ('.$idCategoriaHijo.')', LOG_CATEGORIA);
+                    $this->permisos_model->log('Se elimino al revisor (' . $idRevisor . ') de la categoria (' . $idCategoriaHijo . ')', LOG_CATEGORIA);
                 }
             }
         }
@@ -326,12 +320,12 @@ class Categoria extends Model
      *
      * @return boolean
      */
-    public function guardaResponsable ($idCategoriaPadre, $idPersona)
+    public function guardaResponsable($idCategoriaPadre, $idPersona)
     {
         settype($idCategoriaPadre, 'integer');
         settype($idPersona, 'integer');
 
-        if (! $idCategoriaPadre or ! $idPersona) {
+        if (!$idCategoriaPadre or !$idPersona) {
             return false;
         }
         $categorias = array($idCategoriaPadre);
@@ -342,17 +336,17 @@ class Categoria extends Model
             $idCategoria = $infoCat[0];
             $where       = array(
                 'idCategoria' => $idCategoria,
-                'idPersona'   => $idPersona
+                'idPersona'   => $idPersona,
             );
             $query = $this->db->select(
                 "idCategoriaResponsable"
             )->get_where(TBL_CATEGORIARESPONSABLE, $where);
 
-            if (! $query->num_rows) {
-                $set =& $where;
+            if (!$query->num_rows) {
+                $set = &$where;
                 $res = $this->db->insert(TBL_CATEGORIARESPONSABLE, $set);
                 if ($res) {
-                    $this->permisos_model->log('Se agrego al responsable ('.$idPersona.') para la categoria ('.$idCategoria.')', LOG_CATEGORIA);
+                    $this->permisos_model->log('Se agrego al responsable (' . $idPersona . ') para la categoria (' . $idCategoria . ')', LOG_CATEGORIA);
                 } else {
                     return false;
                 }
@@ -373,7 +367,7 @@ class Categoria extends Model
      *
      * @return integer
      */
-    public function guardaTipoProducto ($idCategoriaPadre, $idTipoProducto, $activo, $id)
+    public function guardaTipoProducto($idCategoriaPadre, $idTipoProducto, $activo, $id)
     {
         settype($idCategoriaPadre, 'integer');
         settype($idTipoProducto, 'integer');
@@ -381,12 +375,12 @@ class Categoria extends Model
         settype($id, 'integer');
         $datos = array('error' => 0, 'mensaje' => 'Se actualizó exitosamente la información', 'idCategoriaTipoProducto' => $id);
 
-        if (! $idCategoriaPadre or ! $idTipoProducto) {
-            $datos['error'] = 1;
+        if (!$idCategoriaPadre or !$idTipoProducto) {
+            $datos['error']   = 1;
             $datos['mensaje'] = 'Error faltan tados';
             return $datos;
         }
-        $categorias = array($idCategoriaPadre.'-');
+        $categorias = array($idCategoriaPadre . '-');
         $categorias = array_merge($categorias, $this->obtenSubCategorias($idCategoriaPadre));
 
         if (count($categorias) > 1) {
@@ -400,7 +394,7 @@ class Categoria extends Model
                     $where = array('idCategoriaTipoProducto' => $idCategoriaTipoProducto);
                     $res   = $this->db->update(TBL_CATEGORIATIPOPRODUCTO, $set, $where);
 
-                    if (! $res) {
+                    if (!$res) {
                         $datos['error']   = 1;
                         $datos['mensaje'] = 'Error al actualizar subcategoria';
                         return $datos;
@@ -412,11 +406,11 @@ class Categoria extends Model
                     $set = array(
                         'idCategoria'    => $idCategoria,
                         'idTipoProducto' => $idTipoProducto,
-                        'activo'         => $activo
+                        'activo'         => $activo,
                     );
                     $res = $this->db->insert(TBL_CATEGORIATIPOPRODUCTO, $set);
-                    if (! $res) {
-                        $datos['error'] = 1;
+                    if (!$res) {
+                        $datos['error']   = 1;
                         $datos['mensaje'] = 'Error al insertar subcategoria';
                         return $datos;
                     }
@@ -436,9 +430,9 @@ class Categoria extends Model
                 $set = array(
                     'idCategoria'    => $idCategoriaPadre,
                     'idTipoProducto' => $idTipoProducto,
-                    'activo'         => $activo
+                    'activo'         => $activo,
                 );
-                $res = $this->db->insert(TBL_CATEGORIATIPOPRODUCTO, $set);
+                $res                              = $this->db->insert(TBL_CATEGORIATIPOPRODUCTO, $set);
                 $datos['idCategoriaTipoProducto'] = $res ? $this->db->insert_id() : 0;
             }
         }
@@ -473,24 +467,24 @@ class Categoria extends Model
             return false;
         }
 
-        $datos = array (
+        $datos = array(
             'nombre'      => $nombre,
             'descripcion' => $descripcion,
             'activo'      => $activo,
             'orden'       => $orden,
             'rutaImagen'  => $imagen,
-            'idAntecesor' => $antecesor
+            'idAntecesor' => $antecesor,
         );
 
-        if ($id>0) {
+        if ($id > 0) {
             $this->db->where('idCategoria', $id);
             $this->db->update(TBL_CATEGORIA, $datos);
 
-            $this->permisos_model->log('Se modifico la categoria con ID '.$id, LOG_CATEGORIA);
+            $this->permisos_model->log('Se modifico la categoria con ID ' . $id, LOG_CATEGORIA);
         } else {
             $this->db->insert(TBL_CATEGORIA, $datos);
 
-            $this->permisos_model->log('Se agrego categoria '.$nombre, LOG_CATEGORIA);
+            $this->permisos_model->log('Se agrego categoria ' . $nombre, LOG_CATEGORIA);
         }
 
         return true;
@@ -508,12 +502,12 @@ class Categoria extends Model
      *
      * @return array
      */
-    public function lista($antecesor=0, $base=0, $activo=1, $orden="")
+    public function lista($antecesor = 0, $base = 0, $activo = 1, $orden = "")
     {
         settype($antecesor, 'integer');
         settype($base, 'integer');
 
-        if ($orden=='') {
+        if ($orden == '') {
             $orden = 'nombre';
         } else {
             if ($this->db->field_exists($orden, TBL_CATEGORIA) == false) {
@@ -542,18 +536,18 @@ class Categoria extends Model
                 $f['total'] = $this->db->count_all_results();
 
                 $f['nombre'] = $fila->nombre;
-                $f['orden'] = $fila->orden;
+                $f['orden']  = $fila->orden;
                 $f['activo'] = $fila->activo;
 
-                $k = $this->pertenceCategoria($f['idCategoria'], $antecesor);
+                $k      = $this->pertenceCategoria($f['idCategoria'], $antecesor);
                 $data[] = $f;
 
-                if ($k==true) {
+                if ($k == true) {
                     $r = $this->lista($antecesor, $f['idCategoria'], $activo, $orden);
                     if ($r != null) {
                         foreach ($r as $k) {
-                            $k['nombre'] = '<pre style="display:inline">&#09;</pre>'.$k['nombre'];
-                            $data[] = $k;
+                            $k['nombre'] = '<pre style="display:inline">&#09;</pre>' . $k['nombre'];
+                            $data[]      = $k;
                         }
                     }
                 }
@@ -575,71 +569,71 @@ class Categoria extends Model
     public function listaAntecesores($idAntecesor, $validaResponsable = 1)
     {
         settype($idAntecesor, 'integer');
-        $data  = null;
+        $data = null;
 
         $where = array(
             'c.idAntecesor'      => $idAntecesor,
             'c.activo'           => 1,
-            'c.fechaEliminacion' => '0000-00-00 00:00:00'
+            'c.fechaEliminacion' => '0000-00-00 00:00:00',
         );
         $query = $this->db->select(
             "c.idCategoria, c.nombre"
-        )->order_by("c.nombre")->get_where(TBL_CATEGORIA." c", $where);
+        )->order_by("c.nombre")->get_where(TBL_CATEGORIA . " c", $where);
 
         if ($query->num_rows) {
             foreach ($query->result() as $fila) {
-                $f['id'] = $fila->idCategoria;
+                $f['id']     = $fila->idCategoria;
                 $f['nombre'] = utf8_encode($fila->nombre);
-                $data[] = $f;
+                $data[]      = $f;
             }
         }
 
         /*
         if ($this->permisos_model->validaAdmin($this->session->userdata('idUsuario'))) {
-            $where = array(
-                'c.idAntecesor'      => $idAntecesor,
-                'c.activo'           => 1,
-                'c.fechaEliminacion' => '0000-00-00 00:00:00'
-            );
-            $query = $this->db->select(
-                "c.idCategoria, c.nombre"
-            )->order_by("c.nombre")->get_where(TBL_CATEGORIA." c", $where);
+        $where = array(
+        'c.idAntecesor'      => $idAntecesor,
+        'c.activo'           => 1,
+        'c.fechaEliminacion' => '0000-00-00 00:00:00'
+        );
+        $query = $this->db->select(
+        "c.idCategoria, c.nombre"
+        )->order_by("c.nombre")->get_where(TBL_CATEGORIA." c", $where);
 
-            if ($query->num_rows) {
-                foreach ($query->result() as $fila) {
-                    $f['id'] = $fila->idCategoria;
-                    $f['nombre'] = utf8_encode($fila->nombre);
-                    $data[] = $f;
-                }
-            }
+        if ($query->num_rows) {
+        foreach ($query->result() as $fila) {
+        $f['id'] = $fila->idCategoria;
+        $f['nombre'] = utf8_encode($fila->nombre);
+        $data[] = $f;
+        }
+        }
         } else {
-            if ($validaResponsable == 0) {
-              $where = array(
-                    'c.idAntecesor'      => $idAntecesor,
-                    'c.activo'           => 1,
-                    'c.fechaEliminacion' => '0000-00-00 00:00:00'
-                );
-            } else {
-                $where = array(
-                    'c.idAntecesor'      => $idAntecesor,
-                    'cr.idPersona'       => $this->session->userdata('idPersona'),
-                    'c.activo'           => 1,
-                    'c.fechaEliminacion' => '0000-00-00 00:00:00'
-                );
-                $this->db->join(TBL_CATEGORIARESPONSABLE." cr", "c.idCategoria = cr.idCategoria", "inner");
-            }
+        if ($validaResponsable == 0) {
+        $where = array(
+        'c.idAntecesor'      => $idAntecesor,
+        'c.activo'           => 1,
+        'c.fechaEliminacion' => '0000-00-00 00:00:00'
+        );
+        } else {
+        $where = array(
+        'c.idAntecesor'      => $idAntecesor,
+        'cr.idPersona'       => $this->session->userdata('idPersona'),
+        'c.activo'           => 1,
+        'c.fechaEliminacion' => '0000-00-00 00:00:00'
+        );
+        $this->db->join(TBL_CATEGORIARESPONSABLE." cr", "c.idCategoria = cr.idCategoria", "inner");
+        }
 
-            $query = $this->db->select(
-                "c.idCategoria, c.nombre"
-            )->order_by("c.nombre")->get_where(TBL_CATEGORIA." c", $where);
+        $query = $this->db->select(
+        "c.idCategoria, c.nombre"
+        )->order_by("c.nombre")->get_where(TBL_CATEGORIA." c", $where);
 
-            if ($query->num_rows) {
-                foreach ($query->result() as $fila) {
-                    $f['id'] = $fila->idCategoria;
-                    $f['nombre'] = utf8_encode($fila->nombre);
-                    $data[] = $f;
-                }
-            }
+        if ($query->num_rows) {
+        foreach ($query->result() as $fila) {
+        $f['id'] = $fila->idCategoria;
+        $f['nombre'] = utf8_encode($fila->nombre);
+        $data[] = $f;
+        }
+        }
         } */
 
         return $data;
@@ -663,20 +657,20 @@ class Categoria extends Model
 
         $data = null;
         $this->db->select(
-            TBL_CATEGORIARESPONSABLE.'.idPersona, '.
-            TBL_PERSONA.'.nombre, '.
-            TBL_PERSONA.'.paterno, '.
-            TBL_PERSONA.'.materno'
+            TBL_CATEGORIARESPONSABLE . '.idPersona, ' .
+            TBL_PERSONA . '.nombre, ' .
+            TBL_PERSONA . '.paterno, ' .
+            TBL_PERSONA . '.materno'
         );
         $this->db->from(TBL_CATEGORIARESPONSABLE);
-        $this->db->join(TBL_PERSONA, TBL_PERSONA.'.idPersona = '.TBL_CATEGORIARESPONSABLE.'.idPersona', 'inner');
+        $this->db->join(TBL_PERSONA, TBL_PERSONA . '.idPersona = ' . TBL_CATEGORIARESPONSABLE . '.idPersona', 'inner');
         $this->db->where('idCategoria', $id);
         $query = $this->db->order_by('nombre, paterno, materno')->get();
         if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
                 $f['idPersona'] = $fila->idPersona;
-                $f['nombre'] = $fila->nombre.' '.$fila->paterno.' '.$fila->materno;
-                $data[] = $f;
+                $f['nombre']    = $fila->nombre . ' ' . $fila->paterno . ' ' . $fila->materno;
+                $data[]         = $f;
             }
         }
         return $data;
@@ -700,11 +694,11 @@ class Categoria extends Model
 
         $data = null;
         $this->db->where('cr.idCategoria', $id);
-        $this->db->join(TBL_PERSONA.' p', 'p.idPersona = cr.idPersona', 'inner');
+        $this->db->join(TBL_PERSONA . ' p', 'p.idPersona = cr.idPersona', 'inner');
         $query = $this->db->select(
             "p.idPersona, CONCAT_WS(' ', p.nombre, p.materno, p.paterno)AS nombre, cr.tipo",
             false
-        )->order_by('nombre')->get(TBL_CATEGORIAREVISOR.' cr');
+        )->order_by('nombre')->get(TBL_CATEGORIAREVISOR . ' cr');
         if ($query->num_rows > 0) {
             $data = $query->result_array();
         }
@@ -723,17 +717,21 @@ class Categoria extends Model
         $data = null;
         $this->db->select('idCategoria, nombre, idAntecesor');
         $this->db->where('activo', '1');
-        if ($idAntecesor>0)
+        if ($idAntecesor > 0) {
             $this->db->where('idAntecesor', $idAntecesor);
-        if ($idCategoria>0)
+        }
+
+        if ($idCategoria > 0) {
             $this->db->where('idCategoria', $idCategoria);
+        }
+
         $query = $this->db->order_by('nombre')->get(TBL_CATEGORIA);
         if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
                 $f['idCategoria'] = $fila->idCategoria;
-                $f['nombre'] = $fila->nombre;
+                $f['nombre']      = $fila->nombre;
                 $f['idAntecesor'] = $fila->idAntecesor;
-                $data[] = $f;
+                $data[]           = $f;
 
             }
         }
@@ -753,7 +751,7 @@ class Categoria extends Model
         $this->db->select('idCategoria, nombre, idAntecesor');
         $this->db->where('activo', '1');
         $query = $this->db->order_by('nombre')->get(TBL_CATEGORIA);
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             foreach ($query->result() as $fila) {
                 $data[] = $fila;
             }
@@ -770,12 +768,12 @@ class Categoria extends Model
      *
      * @return array
      */
-    public function listaTipoProducto ($idCategoria)
+    public function listaTipoProducto($idCategoria)
     {
         settype($idCategoria, 'integer');
         $datos = array();
 
-        if (! $idCategoria) {
+        if (!$idCategoria) {
             return $datos;
         }
         $where = array("tp.activo" => 1);
@@ -786,7 +784,7 @@ class Categoria extends Model
                         SELECT ctp.idCategoriaTipoProducto
                         FROM categoriatipoproducto ctp
                         WHERE ctp.idTipoProducto = tp.idTipoProducto
-                        AND ctp.idCategoria = '".$idCategoria."'
+                        AND ctp.idCategoria = '" . $idCategoria . "'
                     ),0
             )AS idCategoriaTipoProducto,
             IFNULL(
@@ -794,11 +792,11 @@ class Categoria extends Model
                         SELECT ctp.activo
                         FROM categoriatipoproducto ctp
                         WHERE ctp.idTipoProducto = tp.idTipoProducto
-                        AND ctp.idCategoria = '".$idCategoria."'
+                        AND ctp.idCategoria = '" . $idCategoria . "'
                     ),0
             )AS activo",
             false
-        )->get_where(TBL_TIPOPRODUCTO." tp");
+        )->get_where(TBL_TIPOPRODUCTO . " tp");
 
         if ($query->num_rows) {
             $datos = $query->result_array();
@@ -816,32 +814,32 @@ class Categoria extends Model
      *
      * @return array
      */
-    public function obtenSubCategorias ($idCategoriaPadre, $idPersona = 0)
+    public function obtenSubCategorias($idCategoriaPadre, $idPersona = 0)
     {
         settype($idCategoriaPadre, 'integer');
         settype($idPersona, 'integer');
         $datos = array();
 
-        if (! $idCategoriaPadre) {
+        if (!$idCategoriaPadre) {
             return $datos;
         }
         if ($idPersona) {
-            $this->db->join(TBL_CATEGORIARESPONSABLE." cr", 'c.idCategoria = cr.idCategoria', 'inner');
+            $this->db->join(TBL_CATEGORIARESPONSABLE . " cr", 'c.idCategoria = cr.idCategoria', 'inner');
             $this->db->where('cr.idPersona', $idPersona);
         }
         $where = array(
             'c.activo'           => 1,
             'c.fechaEliminacion' => '0000-00-00 00:00:00',
-            'c.idAntecesor'      => $idCategoriaPadre
+            'c.idAntecesor'      => $idCategoriaPadre,
         );
         $query = $this->db->select(
             "c.idCategoria, c.nombre AS categoria",
             false
-        )->get_where(TBL_CATEGORIA." c", $where);
+        )->get_where(TBL_CATEGORIA . " c", $where);
 
         if ($query->num_rows) {
             foreach ($query->result_array() as $fila) {
-                $datos[] = $fila['idCategoria'].'-'.$fila['categoria'];
+                $datos[] = $fila['idCategoria'] . '-' . $fila['categoria'];
                 $hijos   = $this->obtenSubCategorias($fila['idCategoria'], $idPersona);
                 if ($hijos) {
                     $datos = array_merge($datos, $hijos);
@@ -874,7 +872,7 @@ class Categoria extends Model
             return true;
         }
 
-        $r = false;
+        $r  = false;
         $id = $this->campo($antecesor, "idAntecesor");
         if ($id == $base) {
             $r = true;
@@ -894,7 +892,7 @@ class Categoria extends Model
      *
      * @return integer
      */
-    public function siguienteOrden($id=0)
+    public function siguienteOrden($id = 0)
     {
         settype($id, 'integer');
 
@@ -904,7 +902,7 @@ class Categoria extends Model
         $query = $this->db->get();
 
         $fila = $query->row_array();
-        return $fila['orden']+10;
+        return $fila['orden'] + 10;
     }
 
     /**
@@ -923,11 +921,11 @@ class Categoria extends Model
             return "";
         }
 
-        $nombre = $this->campo($id, "nombre");
+        $nombre      = $this->campo($id, "nombre");
         $idAntecesor = $this->campo($id, "idAntecesor");
-        $anterior = $this->rutaAntecesor($idAntecesor);
+        $anterior    = $this->rutaAntecesor($idAntecesor);
 
-        return $anterior ." >> ".$nombre;
+        return $anterior . " >> " . $nombre;
     }
 
     /**
@@ -940,20 +938,20 @@ class Categoria extends Model
      *
      * @return integer
      */
-    public function validaIipoProducto ($idCategoria, $idTipoProducto)
+    public function validaIipoProducto($idCategoria, $idTipoProducto)
     {
         settype($idCategoria, 'integer');
         settype($idTipoProducto, 'integer');
 
-        if (! $idCategoria or ! $idTipoProducto) {
+        if (!$idCategoria or !$idTipoProducto) {
             return 0;
         }
         $where = array(
             'idCategoria'    => $idCategoria,
-            'idTipoProducto' => $idTipoProducto
+            'idTipoProducto' => $idTipoProducto,
         );
         $query = $this->db->select(
-                "idCategoriaTipoProducto"
+            "idCategoriaTipoProducto"
         )->get_where(TBL_CATEGORIATIPOPRODUCTO, $where);
 
         return $query->num_rows ? $query->row()->idCategoriaTipoProducto : 0;

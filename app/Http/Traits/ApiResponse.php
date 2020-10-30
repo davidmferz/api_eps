@@ -1,6 +1,6 @@
 <?php
 
-namespace API_EPS\Traits;
+namespace App\Http\Traits;
 
 trait ApiResponse
 {
