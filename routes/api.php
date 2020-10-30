@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Artisan;
  */
 
 Route::group(['prefix' => 'v1/'], function () {
+    Route::get('getFullCatalog', 'EPController@getFullCatalog');
     Route::middleware(['cors'])->group(function () {
 
         Route::get('clear', function () {
@@ -21,8 +22,6 @@ Route::group(['prefix' => 'v1/'], function () {
             return "Cache is cleared";
         });
         Route::post('creaRutina', 'RutinasController@creaRutina');
-
-        Route::get('getFullCatalog', 'EPController@getFullCatalog');
 
         Route::match(['get', 'options'], 'getTipoCliente/{idPersona}', 'EventosController@getTipoCliente');
         Route::match(['post', 'options'], 'inscribirDemo', 'EventosController@inscribirDemo');
