@@ -1,11 +1,11 @@
 <?php
 
-namespace API_EPS\Console\Commands;
+namespace App\Console\Commands;
 
-use API_EPS\Mail\SendEncuestaEvaluacion;
-use API_EPS\Models\ConteoMails;
-use API_EPS\Models\EventoInscripcion;
-use API_EPS\Models\TokenEncuestas;
+use App\Mail\SendEncuestaEvaluacion;
+use App\Models\ConteoMails;
+use App\Models\EventoInscripcion;
+use App\Models\TokenEncuestas;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;

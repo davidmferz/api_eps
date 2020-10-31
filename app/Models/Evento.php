@@ -1,11 +1,11 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use API_EPS\Models\Empleado;
-use API_EPS\Models\EventoInscripcion;
-use API_EPS\Models\Permiso;
-use API_EPS\Models\Persona;
+use App\Models\Empleado;
+use App\Models\EventoInscripcion;
+use App\Models\Permiso;
+use App\Models\Persona;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;

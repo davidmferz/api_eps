@@ -1,6 +1,6 @@
 <?php
 
-namespace API_EPS\Http\Middleware;
+namespace App\Http\Middleware;
 
 use Closure;
 
@@ -18,7 +18,7 @@ class Cors
         header("Access-Control-Allow-Origin: *");
         $headers = [
             'Access-Control-Allow-Methods' => 'POST, GET, OPTIONS, PUT, DELETE',
-            'Access-Control-Allow-Headers' => 'Content-Type, X-Auth-Token, Origin, Authorization'
+            'Access-Control-Allow-Headers' => 'Content-Type, X-Auth-Token, Origin, Authorization',
         ];
         if ($request->getMethod() == "OPTIONS") {
             return \Response::make('OK', 201, $headers);

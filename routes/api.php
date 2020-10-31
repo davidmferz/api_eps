@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Artisan;
  */
 
 Route::group(['prefix' => 'v1/'], function () {
+    Route::get('getFullCatalog', 'EPController@getFullCatalog');
     Route::middleware(['cors'])->group(function () {
 
         Route::get('clear', function () {

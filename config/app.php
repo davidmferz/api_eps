@@ -169,11 +169,11 @@ return [
         /*
          * Application Service Providers...
          */
-        API_EPS\Providers\AppServiceProvider::class,
-        API_EPS\Providers\AuthServiceProvider::class,
-        // API_EPS\Providers\BroadcastServiceProvider::class,
-        API_EPS\Providers\EventServiceProvider::class,
-        API_EPS\Providers\RouteServiceProvider::class,
+        App\Providers\AppServiceProvider::class,
+        App\Providers\AuthServiceProvider::class,
+        // App\Providers\BroadcastServiceProvider::class,
+        App\Providers\EventServiceProvider::class,
+        App\Providers\RouteServiceProvider::class,
 
     ],
 

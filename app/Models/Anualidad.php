@@ -1,20 +1,17 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use Carbon\Carbon;
-use API_EPS\Models\CatRutinas;
-use API_EPS\Models\MenuActividad;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Anualidad extends Model
 {
     use SoftDeletes;
     protected $connection = 'crm';
-    protected $table = 'crm.anualidadescodigosviajes';
+    protected $table      = 'crm.anualidadescodigosviajes';
     protected $primaryKey = 'idAnualidadesCodigosViajes';
 
     const CREATED_AT = 'fechaRegistro';
@@ -37,38 +34,38 @@ class Anualidad extends Model
     {
         settype($idMovimiento, 'integer');
 
-        if ($idMovimiento>0) {
-            $ci =& get_instance();
+        if ($idMovimiento > 0) {
+            $ci = &get_instance();
             $ci->load->model('movimientos_model');
 
-            $t = '';
+            $t                = '';
             $idUnicoMembresia = $ci->movimientos_model->unicoMembresia($idMovimiento);
 
-            if ($opcion==1) {
+            if ($opcion == 1) {
                 $t = ' (No. Cliente Premier)';
             }
-            if ($opcion==2) {
+            if ($opcion == 2) {
                 $t = ' (Nombre(s))';
             }
-            if ($opcion==3) {
+            if ($opcion == 3) {
                 $t = ' (Apellido(s))';
             }
 
             $set = array(
                 'numSocioClubPremier' => $clubPremier,
                 'nombre'              => utf8_decode($nombre),
-                'apellido'            => utf8_decode($apellido)
+                'apellido'            => utf8_decode($apellido),
             );
             $where = array(
                 'idMovimiento' => $idMovimiento,
-                'enviado'      => 0
+                'enviado'      => 0,
             );
 
             $this->db->update('clubpremieranualidad', $set, $where);
 
             $total = $this->db->affected_rows();
             if ($total > 0) {
-                $this->permisos_model->log('Actualiza beneficiario para ClubPremier'.$t, LOG_MEMBRESIA, $idUnicoMembresia);
+                $this->permisos_model->log('Actualiza beneficiario para ClubPremier' . $t, LOG_MEMBRESIA, $idUnicoMembresia);
 
                 return true;
             }
@@ -76,7 +73,6 @@ class Anualidad extends Model
 
         return false;
     }
-
 
     /**
      * [aplicaDescuentoSantender description]
@@ -89,26 +85,26 @@ class Anualidad extends Model
     {
         settype($idMovimiento, 'integer');
 
-        if ($idMovimiento==9838817) {
+        if ($idMovimiento == 9838817) {
             return true;
         }
 
-        if ($idMovimiento>0) {
-            $sql =  "SELECT mpm.idMovimiento
+        if ($idMovimiento > 0) {
+            $sql = "SELECT mpm.idMovimiento
                 FROM membresiaPromoMTTOMSI mpm
                 WHERE mpm.idPromoMTTOMSI IN (4068, 4069, 4070, 4071)
-                    AND mpm.idMovimiento=".$idMovimiento;
+                    AND mpm.idMovimiento=" . $idMovimiento;
             $query2 = $this->db->query($sql);
-            if ($query2->num_rows>0) {
+            if ($query2->num_rows > 0) {
                 return false;
             }
 
-            $sql =  "SELECT mpm.idMovimiento
+            $sql = "SELECT mpm.idMovimiento
                 FROM membresiaPromoMTTOMSI mpm
                 WHERE mpm.idPromoMTTOMSI IN (4426, 4427, 4428, 4429)
-                    AND mpm.idMovimiento=".$idMovimiento;
+                    AND mpm.idMovimiento=" . $idMovimiento;
             $query2 = $this->db->query($sql);
-            if ($query2->num_rows>0) {
+            if ($query2->num_rows > 0) {
                 return false;
             }
 
@@ -129,9 +125,9 @@ class Anualidad extends Model
                 GROUP BY mov.idMovimiento";
             $query = $this->db->query($sql);
 
-            if ($query->num_rows>0) {
-                $fila = $query->row_array();
-                $meses = $fila['meses'];
+            if ($query->num_rows > 0) {
+                $fila             = $query->row_array();
+                $meses            = $fila['meses'];
                 $idUnicoMembresia = $fila['idUnicoMembresia'];
 
                 $sql = "SELECT idMovimientoCtaContable, importe
@@ -139,27 +135,27 @@ class Anualidad extends Model
                     WHERE idMovimiento=$idMovimiento AND numeroCuenta<>'4090'
                         AND eliminado=0";
                 $query2 = $this->db->query($sql);
-                if ($query2->num_rows==1) {
-                    $fila2 = $query2->row_array();
+                if ($query2->num_rows == 1) {
+                    $fila2                   = $query2->row_array();
                     $idMovimientoCtaContable = $fila2['idMovimientoCtaContable'];
-                    $importe = $fila2['importe'];
+                    $importe                 = $fila2['importe'];
 
                     $importeOriginal = $importe;
-                    $descuento = $importe/$meses;
-                    $importe = round($importe-$descuento);
+                    $descuento       = $importe / $meses;
+                    $importe         = round($importe - $descuento);
 
                     $this->permisos_model->log(
-                        utf8_decode("Aplica descuento Santader por Anualidad al movimiento (".$idMovimiento.") de $".number_format($importeOriginal, 2)." a $".number_format($importe, 2)),
+                        utf8_decode("Aplica descuento Santader por Anualidad al movimiento (" . $idMovimiento . ") de $" . number_format($importeOriginal, 2) . " a $" . number_format($importe, 2)),
                         LOG_MEMBRESIA,
                         $idUnicoMembresia
                     );
 
-                    $ci =& get_instance();
+                    $ci = &get_instance();
                     $ci->load->model('movimientos_model');
 
                     $ci->movimientos_model->actualizaImporteCtaContable($idMovimientoCtaContable, $importe, $idUnicoMembresia);
 
-                    $ci->movimientos_model->agregarOrigen($idMovimiento,'DescBinSantander');
+                    $ci->movimientos_model->agregarOrigen($idMovimiento, 'DescBinSantander');
 
                     return true;
                 }
@@ -181,7 +177,7 @@ class Anualidad extends Model
     {
         settype($idMovimiento, 'integer');
 
-        if ($idMovimiento>0) {
+        if ($idMovimiento > 0) {
             $sql = "SELECT mov.importe, mov.idUnicoMembresia,
                 (PERIOD_DIFF(DATE_FORMAT(spm.fechaFin, '%Y%m'), DATE_FORMAT(spm.fechaInicio, '%Y%m'))+1) as meses
                 FROM movimiento mov
@@ -200,9 +196,9 @@ class Anualidad extends Model
                 GROUP BY mov.idMovimiento";
             $query = $this->db->query($sql);
 
-            if ($query->num_rows>0) {
-                $fila = $query->row_array();
-                $meses = $fila['meses'];
+            if ($query->num_rows > 0) {
+                $fila             = $query->row_array();
+                $meses            = $fila['meses'];
                 $idUnicoMembresia = $fila['idUnicoMembresia'];
 
                 $sql = "SELECT idMovimientoCtaContable, importe
@@ -210,27 +206,27 @@ class Anualidad extends Model
                     WHERE idMovimiento=$idMovimiento AND numeroCuenta<>'4090'
                         AND eliminado=0";
                 $query2 = $this->db->query($sql);
-                if ($query2->num_rows==1) {
-                    $fila2 = $query2->row_array();
+                if ($query2->num_rows == 1) {
+                    $fila2                   = $query2->row_array();
                     $idMovimientoCtaContable = $fila2['idMovimientoCtaContable'];
-                    $importe = $fila2['importe'];
+                    $importe                 = $fila2['importe'];
 
                     $importeOriginal = $importe;
                     //$descuento = round(($importe*0.07),2);
-                    $importe = round($importe*0.93);
+                    $importe = round($importe * 0.93);
 
                     $this->permisos_model->log(
-                        utf8_decode("Aplica descuento HSBC por Anualidad al movimiento (".$idMovimiento.") de $".number_format($importeOriginal, 2)." a $".number_format($importe, 2)),
+                        utf8_decode("Aplica descuento HSBC por Anualidad al movimiento (" . $idMovimiento . ") de $" . number_format($importeOriginal, 2) . " a $" . number_format($importe, 2)),
                         LOG_MEMBRESIA,
                         $idUnicoMembresia
                     );
 
-                    $ci =& get_instance();
+                    $ci = &get_instance();
                     $ci->load->model('movimientos_model');
 
                     $ci->movimientos_model->actualizaImporteCtaContable($idMovimientoCtaContable, $importe, $idUnicoMembresia);
 
-                    $ci->movimientos_model->agregarOrigen($idMovimiento,'DescBinHSBC');
+                    $ci->movimientos_model->agregarOrigen($idMovimiento, 'DescBinHSBC');
 
                     return true;
                 }
@@ -239,8 +235,6 @@ class Anualidad extends Model
 
         return false;
     }
-
-
 
     /**
      * Verifica si pago anualidad para el año indicado
@@ -256,24 +250,23 @@ class Anualidad extends Model
     {
         settype($idUnicoMembresia, 'integer');
         settype($anio, 'integer');
-        
-        if ($idUnicoMembresia==0 || $anio == 0) {
+
+        if ($idUnicoMembresia == 0 || $anio == 0) {
             return false;
         }
-        
+
         $sql = "SELECT spm.idUnicoMembresia
             FROM sociopagomtto spm
             WHERE spm.idUnicoMembresia=$idUnicoMembresia AND spm.activo=1 AND spm.eliminado=0
                 AND spm.idMovimiento>0 AND DATE(CONCAT('$anio','-12-31')) BETWEEN spm.fechaInicio AND spm.fechaFin
                 AND DATEDIFF(spm.fechaFin, spm.fechaInicio)>320";
         $query = DB::connection('crm')->select($sql);
-        
+
         if (count($query) > 0) {
             return true;
         }
         return false;
     }
-
 
     /**
      * [infoClubPremier description]
@@ -309,7 +302,6 @@ class Anualidad extends Model
         return $res;
     }
 
-
     /*
      * Divide el cargo de anualidad contablemente para mandar ingresos a credecial cuando corresponda
      *
@@ -320,7 +312,7 @@ class Anualidad extends Model
     {
         settype($idUnicoMembresia, 'integer');
 
-        if ($idUnicoMembresia>0) {
+        if ($idUnicoMembresia > 0) {
             $sql = "SELECT spm.idMovimiento
                 FROM sociopagomtto spm
                 WHERE spm.idUnicoMembresia=$idUnicoMembresia AND spm.fechaFin='2017-12-31'
@@ -330,20 +322,20 @@ class Anualidad extends Model
                 LIMIT 1";
             $query = $this->db->query($sql);
 
-            if ($query->num_rows>0) {
-                $fila = $query->row_array();
+            if ($query->num_rows > 0) {
+                $fila         = $query->row_array();
                 $idMovimiento = $fila['idMovimiento'];
 
-                if ($idMovimiento>0) {
+                if ($idMovimiento > 0) {
                     $sql = "SELECT mcc.idMovimientoCtaContable, mcc.idUn
                         FROM movimientoctacontable mcc
                         WHERE mcc.idMovimiento=$idMovimiento AND mcc.eliminado=0";
                     $query2 = $this->db->query($sql);
 
-                    if ($query2->num_rows==1) {
-                        $fila2 = $query2->row_array();
+                    if ($query2->num_rows == 1) {
+                        $fila2                   = $query2->row_array();
                         $idMovimientoCtaContable = $fila2['idMovimientoCtaContable'];
-                        $idUn = $fila2['idUn'];
+                        $idUn                    = $fila2['idUn'];
 
                         $sql = "SELECT s.idPersona
                             FROM socio s
@@ -355,11 +347,11 @@ class Anualidad extends Model
                                 AND s.eliminado=0 AND m.idMovimiento IS NULL
                             GROUP BY s.idPersona";
                         $query3 = $this->db->query($sql);
-                        $total = $query3->num_rows;
+                        $total  = $query3->num_rows;
 
                         $noSW = array(7, 11, 26, 35);
-                        if ($total>0 && !in_array($idUn, $noSW)) {
-                            $importeCredenciales =  120 * $total;
+                        if ($total > 0 && !in_array($idUn, $noSW)) {
+                            $importeCredenciales = 120 * $total;
 
                             $sql = "INSERT INTO movimientoctacontable
                                 (idMovimiento, idTipoMovimiento, idUn, numeroCuenta,
@@ -384,7 +376,6 @@ class Anualidad extends Model
         }
     }
 
-
     /**
      * Valida si el codigo de club premier ya se encuentra registrado en alguna otra membresia
      *
@@ -400,7 +391,7 @@ class Anualidad extends Model
         settype($idUnicoMembresia, 'integer');
 
         $clubPremier = trim($clubPremier);
-        if ($clubPremier=='') {
+        if ($clubPremier == '') {
             return false;
         }
 
@@ -412,13 +403,12 @@ class Anualidad extends Model
                 AND m.idUnicoMembresia=$idUnicoMembresia";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             return true;
         }
 
         return false;
     }
-
 
     /**
      * [esCargoAnualidad2018 description]
@@ -433,7 +423,7 @@ class Anualidad extends Model
 
         $res = false;
 
-        if ($idMovimiento<=0) {
+        if ($idMovimiento <= 0) {
             return $res;
         }
 
@@ -447,13 +437,12 @@ class Anualidad extends Model
             WHERE t.idMovimiento=$idMovimiento";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             $res = true;
         }
 
         return $res;
     }
-
 
     /**
      * [evaluaInicio description]
@@ -470,10 +459,10 @@ class Anualidad extends Model
         $sql = "CALL spMTTOMSIEvaluaInicio('$fechaInicio', $meses, '$proximoInicio', $tipo, @resultado)";
         $this->db->query($sql);
 
-        $sql2 = "SELECT @resultado AS resp";
+        $sql2   = "SELECT @resultado AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
-        $a = explode('|', $row->resp);
+        $row    = $query2->row();
+        $a      = explode('|', $row->resp);
 
         $r['fechaInicio'] = $a[0];
         $r['fechaFin']    = $a[1];
@@ -482,16 +471,15 @@ class Anualidad extends Model
         return $r;
     }
 
-
     /**
      *
      * @author Gustavo Bonilla
      */
-    public function formatoAnualidad ($idMovimientoAnualidad = 0)
+    public function formatoAnualidad($idMovimientoAnualidad = 0)
     {
         settype($idMovimientoAnualidad, 'integer');
 
-        $ci =& get_instance();
+        $ci = &get_instance();
 
         $ci->load->model('un_model');
         $ci->load->model('membresia_model');
@@ -504,7 +492,7 @@ class Anualidad extends Model
         $ci->load->model('operadores_model');
         $ci->load->model('finanzas_model');
 
-        if ($idMovimientoAnualidad <=0) {
+        if ($idMovimientoAnualidad <= 0) {
             return false;
         }
 
@@ -515,47 +503,47 @@ class Anualidad extends Model
             INNER JOIN documento d ON d.idDocumento=dp.idDocumento AND d.fechaEliminacion='0000-00-00 00:00:00'
             WHERE dp.idUnicoMembresia=$idUnicoMembresia AND dp.idMovimiento=$idMovimientoAnualidad";
         $query2 = $this->db->query($sql);
-        if ($query2->num_rows>0) {
+        if ($query2->num_rows > 0) {
             return false;
         }
 
         $sql = "SELECT idFactura FROM facturamovimiento
             WHERE idMovimiento=$idMovimientoAnualidad";
         $query = $this->db->query($sql);
-        if ($query->num_rows!=1) {
+        if ($query->num_rows != 1) {
             return false;
         }
-        $row = $query->row_array();
+        $row       = $query->row_array();
         $idFactura = $row['idFactura'];
 
         $datosFactura = $ci->finanzas_model->obtenerDatosFactura($idFactura);
 
         if ($datosFactura != 0) {
-            $datos['fechaHoy'] = date('Y-m-d');
+            $datos['fechaHoy']  = date('Y-m-d');
             $datos['fecha_hoy'] = formatoFecha($datos['fechaHoy']);
-            $detalleFactura = $ci->finanzas_model->obtenerDetalleFactura($idFactura);
+            $detalleFactura     = $ci->finanzas_model->obtenerDetalleFactura($idFactura);
 
             if ($idMovimientoAnualidad) {
                 $idMovimiento = $idMovimientoAnualidad;
             } else {
                 $idMovimiento = $detalleFactura[0]->idMovimiento;
             }
-            $datosMovimiento         = $ci->movimientos_model->datosGral($idMovimiento);
-            $datos['Membresia']      = $ci->membresia_model->obtenerTipoMembresia($datosMovimiento['idUnicoMembresia']);
-            $datosMantenimiento      = $ci->mantenimientos_model->obtenerMantenimientoCliente($datosMovimiento['idUnicoMembresia'], $datosFactura['idUn'],ROL_CLIENTE_TITULAR);
-            $idMantenimiento         = $datosMantenimiento['idMantenimiento'];
-            $datos['tipoMembresia']  = $datos['Membresia']['nombre'];
+            $datosMovimiento        = $ci->movimientos_model->datosGral($idMovimiento);
+            $datos['Membresia']     = $ci->membresia_model->obtenerTipoMembresia($datosMovimiento['idUnicoMembresia']);
+            $datosMantenimiento     = $ci->mantenimientos_model->obtenerMantenimientoCliente($datosMovimiento['idUnicoMembresia'], $datosFactura['idUn'], ROL_CLIENTE_TITULAR);
+            $idMantenimiento        = $datosMantenimiento['idMantenimiento'];
+            $datos['tipoMembresia'] = $datos['Membresia']['nombre'];
 
-            $datos['mantenimiento']  = $datos['Membresia']['nombre'];
+            $datos['mantenimiento'] = $datos['Membresia']['nombre'];
 
-            $datosTitular = $ci->membresia_model->obtenerTitular($datosMovimiento['idUnicoMembresia']);
-            $datos['titular'] = $ci->persona_model->nombre($datosTitular['idPersona']);
-            $datosMembresia = $ci->membresia_model->obtenerDatosGeneralesMem($datosMovimiento['idUnicoMembresia']);
+            $datosTitular         = $ci->membresia_model->obtenerTitular($datosMovimiento['idUnicoMembresia']);
+            $datos['titular']     = $ci->persona_model->nombre($datosTitular['idPersona']);
+            $datosMembresia       = $ci->membresia_model->obtenerDatosGeneralesMem($datosMovimiento['idUnicoMembresia']);
             $datos['idMembresia'] = $datosMembresia[0]->idMembresia;
-            $datos['club'] = $ci->un_model->nombre($datosMembresia[0]->idUn);
+            $datos['club']        = $ci->un_model->nombre($datosMembresia[0]->idUn);
 
-            $datosUn = $ci->un_model->obtenDatosUn($datosMembresia[0]->idUn);
-            $datosOperador = $ci->operadores_model->obtenOperadorInfo($datosUn['idOperador']);
+            $datosUn                   = $ci->un_model->obtenDatosUn($datosMembresia[0]->idUn);
+            $datosOperador             = $ci->operadores_model->obtenOperadorInfo($datosUn['idOperador']);
             $datos['logo']             = $datosOperador[0]['logo'];
             $datos['razonSocial']      = $datosOperador[0]['razonSocial'];
             $datos['clubes']           = $datosOperador[0]['clubes'];
@@ -565,75 +553,75 @@ class Anualidad extends Model
             $datos['digital']       = $ci->digital_model->validaAutorizacionDigital($datosMembresia[0]->idUnicoMembresia) ? 1 : 0;
             $datos['fechaRegistro'] = date('Y-m-d');
 
-            $domicilio =$ci->persona_model->listaDomicilios($datosTitular['idPersona']);
-            $datos['domicilio'] = $domicilio[0]['calle'].' '.$domicilio[0]['numero'].' '.$domicilio[0]['colonia'];
-            $telefonos = $ci->persona_model->listaTelefonos($datosTitular['idPersona']);
-            if (count($telefonos)> 0 ) {
-                for ($i=0;$i<count($telefonos);$i++) {
-                    if ($i==0) {
+            $domicilio          = $ci->persona_model->listaDomicilios($datosTitular['idPersona']);
+            $datos['domicilio'] = $domicilio[0]['calle'] . ' ' . $domicilio[0]['numero'] . ' ' . $domicilio[0]['colonia'];
+            $telefonos          = $ci->persona_model->listaTelefonos($datosTitular['idPersona']);
+            if (count($telefonos) > 0) {
+                for ($i = 0; $i < count($telefonos); $i++) {
+                    if ($i == 0) {
                         $datos['telefonos'] = $telefonos[$i]['telefono'];
                     } else {
-                        $datos['telefonos'].= ' - '.$telefonos[$i]['telefono'];
+                        $datos['telefonos'] .= ' - ' . $telefonos[$i]['telefono'];
                     }
                 }
             }
             $correos = $ci->persona_model->listaMails($datosTitular['idPersona']);
-            if (count($correos)> 0 ) {
-                for ($i=0;$i<count($correos);$i++) {
-                    if ($i==0) {
-                        $datos['correos']=$correos[$i]['mail'];
+            if (count($correos) > 0) {
+                for ($i = 0; $i < count($correos); $i++) {
+                    if ($i == 0) {
+                        $datos['correos'] = $correos[$i]['mail'];
                     } else {
-                        $datos['correos'].= " / ".$correos[$i]['mail'];
+                        $datos['correos'] .= " / " . $correos[$i]['mail'];
                     }
                 }
             }
 
-            $datos['datos']  = $ci->socio_model->obtenSocios($datosMovimiento['idUnicoMembresia']);
-            $datos['integrantes']= '<table width="100%" bordercolor="#FFFFFF" style="border: solid ;" >'.
-                  '<tr><td width="40%">TIPO INTEGRANTE</td><td width="80%">NOMBRE COMPLETO</td><td width="40%">FECHA DE NACIMIENTO</td></tr>';
-            $informacionTarjeta = '';
-            $fechaInicio = '';
-            $fechaFin = '';
-            $idMantenimientoNuevo  = 0;
+            $datos['datos']       = $ci->socio_model->obtenSocios($datosMovimiento['idUnicoMembresia']);
+            $datos['integrantes'] = '<table width="100%" bordercolor="#FFFFFF" style="border: solid ;" >' .
+                '<tr><td width="40%">TIPO INTEGRANTE</td><td width="80%">NOMBRE COMPLETO</td><td width="40%">FECHA DE NACIMIENTO</td></tr>';
+            $informacionTarjeta   = '';
+            $fechaInicio          = '';
+            $fechaFin             = '';
+            $idMantenimientoNuevo = 0;
             foreach ($datos['datos'] as $fila) {
-                $datosMtto  = $ci->membresia_model->datosSocioPagoMtto($fila->idPersona,$datosMovimiento['idUnicoMembresia'],'',1,$idMovimiento);
+                $datosMtto = $ci->membresia_model->datosSocioPagoMtto($fila->idPersona, $datosMovimiento['idUnicoMembresia'], '', 1, $idMovimiento);
 
-                if($datosMtto != null){
-                    $data['rolCliente']  = $ci->membresia_model->obtnerRolCliente($fila->idPersona);
+                if ($datosMtto != null) {
+                    $data['rolCliente'] = $ci->membresia_model->obtnerRolCliente($fila->idPersona);
 
-                    $data['titulo']      = $data['rolCliente']['descripcion'];
+                    $data['titulo'] = $data['rolCliente']['descripcion'];
                     $datosGenerales = $ci->persona_model->datosGenerales($fila->idPersona);
                     $datos['integrantes'] .= '<tr>';
-                    $datos['integrantes'] .= '<td >'.$data['titulo'].'</td>';
-                    $datos['integrantes'] .= '<td >'.$ci->persona_model->nombre($fila->idPersona).'</td>';
-                    $datos['integrantes'] .= '<td >'.$datosGenerales['fecha'].'</td>';
+                    $datos['integrantes'] .= '<td >' . $data['titulo'] . '</td>';
+                    $datos['integrantes'] .= '<td >' . $ci->persona_model->nombre($fila->idPersona) . '</td>';
+                    $datos['integrantes'] .= '<td >' . $datosGenerales['fecha'] . '</td>';
                     $datos['integrantes'] .= '</tr>';
-                    if($data['rolCliente']['idTipoRolCliente'] == ROL_CLIENTE_TITULAR){
-                        $fechaInicio=$datosMtto[0]['fechaInicio'];
-                        $fechaFin=$datosMtto[0]['fechaFin'];
-                        $idMantenimientoNuevo  = $datosMtto[0]['idMantenimiento'];
+                    if ($data['rolCliente']['idTipoRolCliente'] == ROL_CLIENTE_TITULAR) {
+                        $fechaInicio          = $datosMtto[0]['fechaInicio'];
+                        $fechaFin             = $datosMtto[0]['fechaFin'];
+                        $idMantenimientoNuevo = $datosMtto[0]['idMantenimiento'];
                     }
                 }
             }
             $datos['integrantes'] .= '</table>';
 
-            $datosFormasPago = $ci->finanzas_model->listaFormasPago($idFactura);
-            $datos['formasPago']= '<table width="100%" bordercolor="#FFFFFF" style="border: solid ;" >';
+            $datosFormasPago     = $ci->finanzas_model->listaFormasPago($idFactura);
+            $datos['formasPago'] = '<table width="100%" bordercolor="#FFFFFF" style="border: solid ;" >';
 
             if (is_array($datosFormasPago)) {
                 foreach ($datosFormasPago as $fila) {
                     $datos['formasPago'] .= '<tr>';
-                    switch( $fila["idFormaPago"] ){
+                    switch ($fila["idFormaPago"]) {
                         case 1:
-                            $datos['formasPago'] .= '<td>'.strtoupper($fila['formaPago']).': $'.number_format($fila["importe"], 3).'</td>';
-                            $datos['formasPago'] .= '<td>NO. FACTURA: '.$fila['factura'].'</td>';
+                            $datos['formasPago'] .= '<td>' . strtoupper($fila['formaPago']) . ': $' . number_format($fila["importe"], 3) . '</td>';
+                            $datos['formasPago'] .= '<td>NO. FACTURA: ' . $fila['factura'] . '</td>';
                             break;
                         case 2:
-                            $datos['formasPago'] .= '<td>'.strtoupper($fila['formaPago']).': $'.number_format($fila["importe"], 3).'</td>';
-                            $datos['formasPago'] .= '<td>BANCO EMISOR: '.$fila["banco"].'</td>';
-                            $datos['formasPago'] .= '<td>NO: CHEQUE: '.$fila["autorizacion"].'</td>';
-                            $datos['formasPago'] .= '<td>NO: CUENTA: '.$fila["cuenta"].'</td>';
-                            $datos['formasPago'] .= '<td>NO. FACTURA: '.$fila['factura'].'</td>';
+                            $datos['formasPago'] .= '<td>' . strtoupper($fila['formaPago']) . ': $' . number_format($fila["importe"], 3) . '</td>';
+                            $datos['formasPago'] .= '<td>BANCO EMISOR: ' . $fila["banco"] . '</td>';
+                            $datos['formasPago'] .= '<td>NO: CHEQUE: ' . $fila["autorizacion"] . '</td>';
+                            $datos['formasPago'] .= '<td>NO: CUENTA: ' . $fila["cuenta"] . '</td>';
+                            $datos['formasPago'] .= '<td>NO. FACTURA: ' . $fila['factura'] . '</td>';
                             break;
                         case 3:
                         case 4:
@@ -641,96 +629,96 @@ class Anualidad extends Model
                         case 6:
                         case 7:
                         case 13:
-                            $datos['formasPago'] .= '<td>'.strtoupper($fila['formaPago']).': $'.number_format($fila["importe"], 3).'</td>';
-                            $datos['formasPago'] .= '<td>BANCO EMISOR: '.$fila["banco"].'</td>';
-                            $datos['formasPago'] .= '<td>AUTORIZACION: '.$fila["autorizacion"].'</td>';
-                            $datos['formasPago'] .= '<td>NO. FACTURA: '.$fila['factura'].'</td>';
+                            $datos['formasPago'] .= '<td>' . strtoupper($fila['formaPago']) . ': $' . number_format($fila["importe"], 3) . '</td>';
+                            $datos['formasPago'] .= '<td>BANCO EMISOR: ' . $fila["banco"] . '</td>';
+                            $datos['formasPago'] .= '<td>AUTORIZACION: ' . $fila["autorizacion"] . '</td>';
+                            $datos['formasPago'] .= '<td>NO. FACTURA: ' . $fila['factura'] . '</td>';
                             break;
                         default:
                             $datos['formasPago'] .= '<td></td>';
                             break;
                     }
 
-                    if ($fila['factura']!='') {
-                        if(strpos($datos['formasPago'], 'NO. FACTURA')===false) {
-                            $datos['formasPago'] .= '<td>NO. FACTURA: '.$fila['factura'].'</td>';
+                    if ($fila['factura'] != '') {
+                        if (strpos($datos['formasPago'], 'NO. FACTURA') === false) {
+                            $datos['formasPago'] .= '<td>NO. FACTURA: ' . $fila['factura'] . '</td>';
                         }
                     }
                     $datos['formasPago'] .= '</tr>';
                 }
             } else {
                 $xxx = $ci->finanzas_model->obtenerDatosFactura($idFactura);
-                $datos['formasPago'] .= '<td>'.strtoupper($datosMovimiento['importe']).': $'.number_format($datosMovimiento['importe'], 3).'</td>';
-                $datos['formasPago'] .= '<td>NO. FACTURA: '.$xxx['prefijoFactura'].$xxx['folioFactura'].'</td>';
+                $datos['formasPago'] .= '<td>' . strtoupper($datosMovimiento['importe']) . ': $' . number_format($datosMovimiento['importe'], 3) . '</td>';
+                $datos['formasPago'] .= '<td>NO. FACTURA: ' . $xxx['prefijoFactura'] . $xxx['folioFactura'] . '</td>';
             }
 
             $datos['formasPago'] .= '</table>';
             $datos['anualidad'] = $datosMovimiento['importe'];
-            $datos['periodo'] = 'Del '.formatoFecha($fechaInicio).' al '.formatoFecha($fechaFin);
-            $datos['empleado'] = $ci->un_model->obtenNombreGteAdmin($datosFactura['idUn']);
+            $datos['periodo']   = 'Del ' . formatoFecha($fechaInicio) . ' al ' . formatoFecha($fechaFin);
+            $datos['empleado']  = $ci->un_model->obtenNombreGteAdmin($datosFactura['idUn']);
             $ci->load->model('documentos_model');
             $tipoDocumento = TIPO_MTTOANUAL;
 
             $datos['meses'] = meses();
 
-            if (file_exists(verificaRuta(RUTA_LOCAL.'/system/application/views/finanzas/html/mttoAnual_'.
-                $datosUn['idOperador'].'.php'))) {
-                $html = $ci->load->view('finanzas/html/mttoAnual_'.$datosUn['idOperador'], $datos, true);
-                $idDocumento=$ci->documentos_model->insertaHTML2($html, $datosTitular['idPersona'], $tipoDocumento, $datosMovimiento['idUnicoMembresia'], $idMovimiento, $datos['digital']);
+            if (file_exists(verificaRuta(RUTA_LOCAL . '/system/application/views/finanzas/html/mttoAnual_' .
+                $datosUn['idOperador'] . '.php'))) {
+                $html        = $ci->load->view('finanzas/html/mttoAnual_' . $datosUn['idOperador'], $datos, true);
+                $idDocumento = $ci->documentos_model->insertaHTML2($html, $datosTitular['idPersona'], $tipoDocumento, $datosMovimiento['idUnicoMembresia'], $idMovimiento, $datos['digital']);
             }
 
             /////////DATOS HTML
             $idMantenimientoActual = $idMantenimiento;
 
             if ($idMantenimientoActual != 0 && $idMantenimientoNuevo != 0) {
-                $socios = $ci->socio_model->obtenSocios($datosMovimiento['idUnicoMembresia']);
+                $socios        = $ci->socio_model->obtenSocios($datosMovimiento['idUnicoMembresia']);
                 $cuentaMayores = 0;
                 $cuentaMenores = 0;
                 foreach ($socios as $id => $socio) {
-                    if ($ci->persona_model->edad($socio->idPersona)>=18) {
+                    if ($ci->persona_model->edad($socio->idPersona) >= 18) {
                         $cuentaMayores++;
                     } else {
                         $cuentaMenores++;
                     }
                 }
 
-                $meses = array ('Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo',
-                        'Junio', 'Julio', 'Agosto', 'Septiembre',
-                        'Octubre', 'Noviembre', 'Diciembre');
+                $meses = array('Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo',
+                    'Junio', 'Julio', 'Agosto', 'Septiembre',
+                    'Octubre', 'Noviembre', 'Diciembre');
 
-                $datos['fecha_hoy'] = date('d'). ' de '.$meses[date('n')-1].' de '.date('Y');
+                $datos['fecha_hoy']   = date('d') . ' de ' . $meses[date('n') - 1] . ' de ' . date('Y');
                 $datosTitular         = $ci->membresia_model->obtenerTitular($datosMovimiento['idUnicoMembresia']);
                 $datos['nombre']      = $ci->persona_model->nombre($datosTitular['idPersona']);
                 $datos['idMembresia'] = $datosMembresia[0]->idMembresia;
                 $datos['club']        = $ci->un_model->nombre($datosMembresia[0]->idUn);
 
-                $nombreMttoActual = $ci->mantenimientos_model->obtenMantenimientoNombre($idMantenimientoActual);
+                $nombreMttoActual              = $ci->mantenimientos_model->obtenMantenimientoNombre($idMantenimientoActual);
                 $datos['tipoMembresiaActual']  = $nombreMttoActual;
                 $datos['Membresia']['nombre2'] = $ci->mantenimientos_model->obtenMantenimientoNombre($idMantenimientoNuevo);
 
-                $datos['tipoMembresiaNueva']  = $datos['Membresia']['nombre2'];
+                $datos['tipoMembresiaNueva'] = $datos['Membresia']['nombre2'];
 
                 $datos['formaPago'] = $ci->socio_model->obtenerEsquemaFormaPago($datosTitular['idPersona']);
-                if($idMantenimientoNuevo == 63){
-                    $datos['horario']='PART TIME';
+                if ($idMantenimientoNuevo == 63) {
+                    $datos['horario'] = 'PART TIME';
                 } else {
-                    $datos['horario']='COMPLETO';
+                    $datos['horario'] = 'COMPLETO';
                 }
                 $datos['integrantesMantenimiento'] = $ci->membresia_model->obtenerMantenimientoUnHorario($idMantenimientoNuevo, $datosMembresia[0]->idProducto, $datosMembresia[0]->idUn);
 
-                $datos['integrantes'] = $cuentaMayores.' adultos , '.$cuentaMenores.' menores';
-                $datos['vendedor'] = $ci->un_model->obtenNombreGteAdmin($datosFactura['idUn']);
+                $datos['integrantes'] = $cuentaMayores . ' adultos , ' . $cuentaMenores . ' menores';
+                $datos['vendedor']    = $ci->un_model->obtenNombreGteAdmin($datosFactura['idUn']);
 
                 $ci->load->model('documentos_model');
                 $tipoDocumento = TIPO_CAMBIOCUOTAMTTO;
 
-                if (file_exists(verificaRuta(RUTA_LOCAL.'/system/application/views/membresia/HTML/CambioCuotaMtto_'.$datosUn['idOperador'].'.php'))) {
-                    $html = $ci->load->view('membresia/HTML/CambioCuotaMtto_'.$datosUn['idOperador'], $datos, true);
-                    $idDocumento2 = $ci->documentos_model->insertaHTML2($html, $datosTitular['idPersona'], $tipoDocumento, $datosMovimiento['idUnicoMembresia'],$idMovimiento, $datos['digital']);
+                if (file_exists(verificaRuta(RUTA_LOCAL . '/system/application/views/membresia/HTML/CambioCuotaMtto_' . $datosUn['idOperador'] . '.php'))) {
+                    $html         = $ci->load->view('membresia/HTML/CambioCuotaMtto_' . $datosUn['idOperador'], $datos, true);
+                    $idDocumento2 = $ci->documentos_model->insertaHTML2($html, $datosTitular['idPersona'], $tipoDocumento, $datosMovimiento['idUnicoMembresia'], $idMovimiento, $datos['digital']);
                     # Agregar LOG
-                    $this->permisos_model->log('Se genera formato por pago de Mantenimiento Anual'.
-                        " [".$ci->session->userdata('idUn')."-".$ci->session->userdata('idUsuario')."-".
-                        $ci->session->userdata('usuario')."-".$ci->session->userdata('NombreUsuario')."] .",
+                    $this->permisos_model->log('Se genera formato por pago de Mantenimiento Anual' .
+                        " [" . $ci->session->userdata('idUn') . "-" . $ci->session->userdata('idUsuario') . "-" .
+                        $ci->session->userdata('usuario') . "-" . $ci->session->userdata('NombreUsuario') . "] .",
                         LOG_FACTURACION, $datosMovimiento['idUnicoMembresia'], 0, false);
 
                     return true;
@@ -740,15 +728,14 @@ class Anualidad extends Model
         return false;
     }
 
-	public function logPromoSantander($idMovimiento)
-	{
-		settype($idMovimiento, 'integer');
+    public function logPromoSantander($idMovimiento)
+    {
+        settype($idMovimiento, 'integer');
 
-		$sql = "INSERT INTO logpromosantander (idMovimiento, fechaRegistro)
+        $sql = "INSERT INTO logpromosantander (idMovimiento, fechaRegistro)
 			VALUES ($idMovimiento, NOW())";
-		$this->db->query($sql);
-	}
-
+        $this->db->query($sql);
+    }
 
     /**
      * [permiteAnualidad2018 description]
@@ -768,19 +755,18 @@ class Anualidad extends Model
                 AND spm.fechaFin='2017-12-31' AND spm.fechaInicio<='2017-03-31'
             GROUP BY spm.idMovimiento";
         $query = $this->db->query($sql);
-        if ($query->num_rows<>1) {
+        if ($query->num_rows != 1) {
             return false;
         }
-        $row = $query->row_array();
+        $row             = $query->row_array();
         $idMantenimiento = $row['idMantenimiento'];
 
-        $ci =& get_instance();
+        $ci = &get_instance();
 
         $ci->load->model('membresia_model');
 
         return true;
     }
-
 
     /**
      * Valida si se permite descuento extra de 8% para anualidad
@@ -813,7 +799,7 @@ class Anualidad extends Model
                 AND spm.fechaRegistro<'2017-05-01 00:00:00'
             GROUP BY spm.idMovimiento";
         $query = $this->db->query($sql);
-        if ($query->num_rows>=1) {
+        if ($query->num_rows >= 1) {
             $anual2017 = true;
         }
 
@@ -832,26 +818,25 @@ class Anualidad extends Model
                 AND spm.fechaRegistro<'2018-04-01 00:00:00'
             GROUP BY spm.idMovimiento";
         $query = $this->db->query($sql);
-        if ($query->num_rows>=1) {
+        if ($query->num_rows >= 1) {
             $anual2018 = true;
         }
 
         /*
         $sql = "SELECT m.idUnicoMembresia
-            FROM membresiamayoabril m";
+        FROM membresiamayoabril m";
         $query2 = $this->db->query($sql);
         if ($query2->num_rows>=1) {
-            return true;
+        return true;
         }
-        */
-       
-        if ($anual2017==true && $anual2018==true) {
+         */
+
+        if ($anual2017 == true && $anual2018 == true) {
             $res = true;
         }
 
         return $res;
     }
-
 
     /**
      * Valida descuento por contigencia septiembre en Xola
@@ -877,13 +862,12 @@ class Anualidad extends Model
                 AND '2017-09-19' BETWEEN spm.fechaInicio AND spm.fechaFin
             GROUP BY spm.idMovimiento";
         $query = $this->db->query($sql);
-        if ($query->num_rows>=1) {
+        if ($query->num_rows >= 1) {
             return true;
         }
 
         return false;
     }
-
 
     /**permiteAnualidad2018
      * [spGuardaCargoPromocionAnualidad description]
@@ -896,43 +880,43 @@ class Anualidad extends Model
     {
         $cp = $this->duplicaClubPremier($datos['idUnicoMembresia'], $datos['clubPremier']);
 
-        if ($cp==true) {
+        if ($cp == true) {
             return 'La cuenta de club premier ya tiene asignada una anualidad';
         }
 
-        $sql1 = "CALL crm.spMTTOMSIGuardaCargo(".
-            $datos['idUnicoMembresia'].
-            ", '".$datos['fechaInicio']."'".
-            ", ".$datos['idMantenimiento'].
-            ", ".$datos['importe'].
-            ", ".$datos['mesesMTTO'].
-            ", ".$datos['mesesMSI'].
-            ", '".$datos['origenAAsignar']."'".
-            ", ".$datos['idPersonaResponsableVenta'].
-            ", ".$datos['idPromoMTTOMSI'].
-            ", '".$datos['lista_personas']."'".
-            ", '".$datos['clubPremier']."'".
-            ", '".$datos['nombrePremier']."'".
-            ", '".$datos['apellidoPremier']."'".
+        $sql1 = "CALL crm.spMTTOMSIGuardaCargo(" .
+            $datos['idUnicoMembresia'] .
+            ", '" . $datos['fechaInicio'] . "'" .
+            ", " . $datos['idMantenimiento'] .
+            ", " . $datos['importe'] .
+            ", " . $datos['mesesMTTO'] .
+            ", " . $datos['mesesMSI'] .
+            ", '" . $datos['origenAAsignar'] . "'" .
+            ", " . $datos['idPersonaResponsableVenta'] .
+            ", " . $datos['idPromoMTTOMSI'] .
+            ", '" . $datos['lista_personas'] . "'" .
+            ", '" . $datos['clubPremier'] . "'" .
+            ", '" . $datos['nombrePremier'] . "'" .
+            ", '" . $datos['apellidoPremier'] . "'" .
             ", @resultado)";
         $query1 = $this->db->query($sql1);
 
-        $sql2 = "SELECT @resultado AS resp";
+        $sql2   = "SELECT @resultado AS resp";
         $query2 = $this->db->query($sql2);
-        $row = $query2->row();
+        $row    = $query2->row();
         return $row->resp;
     }
-
 
     /**
      * [spObtenCargosPromocionAnualidadTiposAnualidades description]
      *
      * @return [type] [description]
      */
-    public function spObtenCargosPromocionAnualidadTiposAnualidades(){
+    public function spObtenCargosPromocionAnualidadTiposAnualidades()
+    {
         $datos = array();
 
-        $sql1 = "SELECT * FROM crm.tipoAnualidad;";
+        $sql1  = "SELECT * FROM crm.tipoAnualidad;";
         $query = $this->db->query($sql1);
 
         if ($query->num_rows) {
@@ -958,7 +942,7 @@ class Anualidad extends Model
      *
      * @return [type]                   [description]
      */
-    public function spObtenPorcentajesDescuentoAnualidad($idUn=0, $idProducto=0, $idMantenimiento=0, $fidelidad=0, $corporativa=0, $rango='', $fecha='0000-00-00')
+    public function spObtenPorcentajesDescuentoAnualidad($idUn = 0, $idProducto = 0, $idMantenimiento = 0, $fidelidad = 0, $corporativa = 0, $rango = '', $fecha = '0000-00-00')
     {
         settype($idUn, 'integer');
         settype($idProducto, 'integer');
@@ -970,67 +954,66 @@ class Anualidad extends Model
 
         $datos['respuesta'] = 0;
 
-        $datos['combinaciones']        = $corporativa==0?4:8;
-        $datos['combinacionesDigitos'] = $corporativa==0?3:4;
-        $datos['combinacionesTotal']   = ($datos['combinaciones']*2)-1;
-        for( $combinacionesCont=0, $combinacionesId=$datos['combinacionesTotal']; $combinacionesCont<=$datos['combinacionesTotal']; $combinacionesCont++, $combinacionesId-- ) {
-            $datos['combinacionesArr'][$combinacionesId] = str_split(str_repeat('0', $datos['combinacionesDigitos']-strlen(decbin($combinacionesCont))).decbin($combinacionesCont));
+        $datos['combinaciones']        = $corporativa == 0 ? 4 : 8;
+        $datos['combinacionesDigitos'] = $corporativa == 0 ? 3 : 4;
+        $datos['combinacionesTotal']   = ($datos['combinaciones'] * 2) - 1;
+        for ($combinacionesCont = 0, $combinacionesId = $datos['combinacionesTotal']; $combinacionesCont <= $datos['combinacionesTotal']; $combinacionesCont++, $combinacionesId--) {
+            $datos['combinacionesArr'][$combinacionesId] = str_split(str_repeat('0', $datos['combinacionesDigitos'] - strlen(decbin($combinacionesCont))) . decbin($combinacionesCont));
         }
         ksort($datos['combinacionesArr']);
 
         $datos['fidelidad'] = array($fidelidad, 0);
 
-        foreach ($datos['fidelidad'] as $idF=>$nivelFidelidad) {
-            if ($corporativa==0) {
-                foreach ($datos['combinacionesArr'] as $combinacionId=>$combinacion) {
-                    $datos['combinacionF'][0] = $combinacion[0]==1?$idUn:0;
-                    $datos['combinacionF'][1] = $combinacion[1]==1?$idProducto:0;
-                    $datos['combinacionF'][2] = $combinacion[2]==1?$idMantenimiento:0;
+        foreach ($datos['fidelidad'] as $idF => $nivelFidelidad) {
+            if ($corporativa == 0) {
+                foreach ($datos['combinacionesArr'] as $combinacionId => $combinacion) {
+                    $datos['combinacionF'][0] = $combinacion[0] == 1 ? $idUn : 0;
+                    $datos['combinacionF'][1] = $combinacion[1] == 1 ? $idProducto : 0;
+                    $datos['combinacionF'][2] = $combinacion[2] == 1 ? $idMantenimiento : 0;
 
-                    $sql = "CALL crm.spMTTOMSIObtenPorcentajesDescuento(".implode(",", $datos['combinacionF']).", '', 0, ".$nivelFidelidad.", '$fecha', @resultado)";
+                    $sql   = "CALL crm.spMTTOMSIObtenPorcentajesDescuento(" . implode(",", $datos['combinacionF']) . ", '', 0, " . $nivelFidelidad . ", '$fecha', @resultado)";
                     $query = $this->db->query($sql);
 
-                    $sqlr = 'SELECT @resultado AS resp';
+                    $sqlr   = 'SELECT @resultado AS resp';
                     $queryr = $this->db->query($sqlr);
-                    $row = $queryr->row();
+                    $row    = $queryr->row();
 
                     $datos['combinacionesDatos'][$combinacionId] = array($sql, $row->resp);
 
-                    if ($row->resp!='' && $row->resp!=null ) {
+                    if ($row->resp != '' && $row->resp != null) {
                         $datos['respuesta'] = $row->resp;
                         break;
                     }
                 }
             } else {
-                foreach ($datos['combinacionesArr'] as $combinacionId=>$combinacion) {
-                    $datos['combinacionF'][0] = $combinacion[1]==1?$idUn:0;
-                    $datos['combinacionF'][1] = $combinacion[2]==1?$idProducto:0;
-                    $datos['combinacionF'][2] = $combinacion[3]==1?$idMantenimiento:0;
-                    $datos['combinacionF'][3] = $combinacion[0]==1?"'".$rango."'":"''";
+                foreach ($datos['combinacionesArr'] as $combinacionId => $combinacion) {
+                    $datos['combinacionF'][0] = $combinacion[1] == 1 ? $idUn : 0;
+                    $datos['combinacionF'][1] = $combinacion[2] == 1 ? $idProducto : 0;
+                    $datos['combinacionF'][2] = $combinacion[3] == 1 ? $idMantenimiento : 0;
+                    $datos['combinacionF'][3] = $combinacion[0] == 1 ? "'" . $rango . "'" : "''";
 
-                    $sql = "CALL crm.spMTTOMSIObtenPorcentajesDescuento(".implode(',', $datos['combinacionF']).', 1, '.$nivelFidelidad.", '$fecha', @resultado)";
+                    $sql   = "CALL crm.spMTTOMSIObtenPorcentajesDescuento(" . implode(',', $datos['combinacionF']) . ', 1, ' . $nivelFidelidad . ", '$fecha', @resultado)";
                     $query = $this->db->query($sql);
 
-                    $sqlr = 'SELECT @resultado AS resp';
+                    $sqlr   = 'SELECT @resultado AS resp';
                     $queryr = $this->db->query($sqlr);
-                    $row = $queryr->row();
+                    $row    = $queryr->row();
 
                     $datos['combinacionesDatos'][$combinacionId] = array($sql, $row->resp);
 
-                    if ($row->resp!='' && $row->resp!=null) {
+                    if ($row->resp != '' && $row->resp != null) {
                         $datos['respuesta'] = $row->resp;
                         break;
                     }
                 }
             }
 
-            if ($datos['respuesta']!='' && $datos['respuesta']!=null) {
+            if ($datos['respuesta'] != '' && $datos['respuesta'] != null) {
                 break;
             }
         }
         return $datos['respuesta'];
     }
-
 
     /**
      * Reporte de anualidades pendientes de envio a club premier
@@ -1042,9 +1025,9 @@ class Anualidad extends Model
         $datos = array();
 
         $w = '';
-        if ($this->session->userdata('idUn')<>1) {
+        if ($this->session->userdata('idUn') != 1) {
             $idUn = $this->session->userdata('idUn');
-            $w = "AND (f.idUn=$idUn OR mem.idUn=$idUn)";
+            $w    = "AND (f.idUn=$idUn OR mem.idUn=$idUn)";
         }
 
         $sql = "SELECT mem.idMembresia, u.nombre AS club,
@@ -1073,13 +1056,12 @@ class Anualidad extends Model
                 $cp['apellido']     = utf8_encode($fila->apellido);
                 $cp['idMovimiento'] = $fila->idMovimiento;
                 $cp['mensaje']      = $fila->mensaje;
-                $datos[] = $cp;
+                $datos[]            = $cp;
             }
         }
 
         return $datos;
     }
-
 
     /**
      * [ultimoPago description]
@@ -1108,7 +1090,6 @@ class Anualidad extends Model
         return $row['fecha'];
     }
 
-
     /**
      * [pagoMensual2018 description]
      *
@@ -1122,41 +1103,39 @@ class Anualidad extends Model
         settype($idUnicoMembresia, 'integer');
         settype($idMantenimiento, 'integer');
 
-        $sql = "SELECT final AS importe 
-            FROM anualprebase2019 
+        $sql = "SELECT final AS importe
+            FROM anualprebase2019
             WHERE idUnicoMembresia=$idUnicoMembresia AND idMantenimiento=$idMantenimiento";
 
         /*$sql = "SELECT a.idMovimiento, a.meses, ROUND(a.importe, 8) as importe
-            FROM (
-                SELECT
-                    spm.idMovimiento,
-                    PERIOD_DIFF(DATE_FORMAT(spm.fechaFin, '%Y%m'), DATE_FORMAT(spm.fechaInicio, '%Y%m'))+1 AS meses,
-                    ((m.importe/((PERIOD_DIFF(DATE_FORMAT(spm.fechaFin, '%Y%m'), DATE_FORMAT(spm.fechaInicio, '%Y%m'))+1)-(IF(m.origen LIKE '%DescBinSantander%', 1.0, 0)))) /
-                    (if(m.msi=1, 0.88, if(m.msi=6, 0.92, if(m.msi=12, 0.94, 1))))) * 1.07 AS importe,
-                    COUNT(*) AS total
-                FROM sociopagomtto spm
-                INNER JOIN productomantenimiento pm ON pm.idMantenimiento=spm.idMantenimiento
-                INNER JOIN movimiento m ON m.idMovimiento=spm.idMovimiento
-                    AND DATE(m.fechaRegistro) BETWEEN '2016-09-01' AND '2016-10-31'
-                INNER JOIN membresia mem ON mem.idUnicoMembresia=spm.idUnicoMembresia
-                    AND mem.idUn NOT IN (7, 11, 26, 35, 70, 79, 85, 82, 83, 84, 88, 89, 86, 87)
-                WHERE spm.idUnicoMembresia=$idUnicoMembresia AND spm.eliminado=0 AND spm.activo=1
-                    AND spm.fechaFin='2017-12-31' AND spm.idMantenimiento=$idMantenimiento
-                GROUP BY spm.idMovimiento
-                HAVING meses >= 10
-            ) a";
-        */
+        FROM (
+        SELECT
+        spm.idMovimiento,
+        PERIOD_DIFF(DATE_FORMAT(spm.fechaFin, '%Y%m'), DATE_FORMAT(spm.fechaInicio, '%Y%m'))+1 AS meses,
+        ((m.importe/((PERIOD_DIFF(DATE_FORMAT(spm.fechaFin, '%Y%m'), DATE_FORMAT(spm.fechaInicio, '%Y%m'))+1)-(IF(m.origen LIKE '%DescBinSantander%', 1.0, 0)))) /
+        (if(m.msi=1, 0.88, if(m.msi=6, 0.92, if(m.msi=12, 0.94, 1))))) * 1.07 AS importe,
+        COUNT(*) AS total
+        FROM sociopagomtto spm
+        INNER JOIN productomantenimiento pm ON pm.idMantenimiento=spm.idMantenimiento
+        INNER JOIN movimiento m ON m.idMovimiento=spm.idMovimiento
+        AND DATE(m.fechaRegistro) BETWEEN '2016-09-01' AND '2016-10-31'
+        INNER JOIN membresia mem ON mem.idUnicoMembresia=spm.idUnicoMembresia
+        AND mem.idUn NOT IN (7, 11, 26, 35, 70, 79, 85, 82, 83, 84, 88, 89, 86, 87)
+        WHERE spm.idUnicoMembresia=$idUnicoMembresia AND spm.eliminado=0 AND spm.activo=1
+        AND spm.fechaFin='2017-12-31' AND spm.idMantenimiento=$idMantenimiento
+        GROUP BY spm.idMovimiento
+        HAVING meses >= 10
+        ) a";
+         */
         $query = $this->db->query($sql);
 
-        if ($query->num_rows<>1) {
+        if ($query->num_rows != 1) {
             return 0.00;
         }
 
         $row = $query->row_array();
         return $row['importe'];
     }
-
-
 
     /**
      * Valida si la membresia ya tiene reigstrado algun cargo en programa de Club Premier
@@ -1178,13 +1157,12 @@ class Anualidad extends Model
             WHERE m.idUnicoMembresia=$idUnicoMembresia AND c.numSocioClubPremier <> ''";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             return true;
         }
 
         return false;
     }
-
 
     /**
      * [validaEnvioClubPremier description]
@@ -1202,7 +1180,7 @@ class Anualidad extends Model
             WHERE c.idMovimiento=$idMovimiento AND c.enviado=1";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows>0) {
+        if ($query->num_rows > 0) {
             return true;
         }
 
@@ -1214,25 +1192,24 @@ class Anualidad extends Model
         settype($idUnicoMembresia, 'integer');
         $res = false;
 
-        if ($idUnicoMembresia>0) {
-            $sql = "SELECT m.idUnicoMembresia 
+        if ($idUnicoMembresia > 0) {
+            $sql = "SELECT m.idUnicoMembresia
                 FROM membresia m
                 WHERE m.idUnicoMembresia=$idUnicoMembresia AND m.eliminado=0
                     AND DATE(m.fechaRegistro) BETWEEN DATE(CONCAT(YEAR(NOW()),'-',MONTH(NOW()),'-01')) AND LAST_DAY(DATE(CONCAT(YEAR(NOW()),'-',MONTH(NOW()),'-01')))
                 UNION ALL
-                SELECT mr.idUnicoMembresia FROM membresiareactivacion mr 
+                SELECT mr.idUnicoMembresia FROM membresiareactivacion mr
                 WHERE mr.idUnicoMembresia=$idUnicoMembresia AND mr.fechaEliminacion='0000-00-00 00:00:00'
                     AND DATE(mr.fechaRegistro) BETWEEN DATE(CONCAT(YEAR(NOW()),'-',MONTH(NOW()),'-01')) AND LAST_DAY(DATE(CONCAT(YEAR(NOW()),'-',MONTH(NOW()),'-01')))";
             $query = $this->db->query($sql);
 
-            if ($query->num_rows==1) {
+            if ($query->num_rows == 1) {
                 return true;
             }
         }
 
         return $res;
     }
-
 
     /**
      * [validaPromo2018 description]
@@ -1265,13 +1242,12 @@ class Anualidad extends Model
             WHERE a.total=b.integrantes";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows==1) {
+        if ($query->num_rows == 1) {
             return true;
         }
 
         return false;
     }
-
 
     /**
      * [validaIntegrantes2018 description]
@@ -1293,7 +1269,7 @@ class Anualidad extends Model
             HAVING meses>=10";
         $query = $this->db->query($sql);
 
-        if ($query->num_rows>=1) {
+        if ($query->num_rows >= 1) {
             return true;
         }
 

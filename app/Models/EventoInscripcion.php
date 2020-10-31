@@ -1,8 +1,8 @@
 <?php
 
-namespace API_EPS\Models;
+namespace App\Models;
 
-use API_EPS\Models\Permiso;
+use App\Models\Permiso;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;

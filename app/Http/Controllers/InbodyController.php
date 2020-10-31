@@ -1,18 +1,18 @@
 <?php
 
-namespace API_EPS\Http\Controllers;
+namespace App\Http\Controllers;
 
-use API_EPS\Http\Controllers\ApiController;
-use API_EPS\Http\Requests\CreateInbodyRequest;
-use API_EPS\Http\Requests\InbodyCoordinadorRequest;
-use API_EPS\Mail\MailEntrenador;
-use API_EPS\Mail\MailPersona;
-use API_EPS\Models\AgendaInbody;
-use API_EPS\Models\Empleado;
-use API_EPS\Models\EP;
-use API_EPS\Models\InBody;
-use API_EPS\Models\Persona;
-use API_EPS\Models\Un;
+use App\Http\Controllers\ApiController;
+use App\Http\Requests\CreateInbodyRequest;
+use App\Http\Requests\InbodyCoordinadorRequest;
+use App\Mail\MailEntrenador;
+use App\Mail\MailPersona;
+use App\Models\AgendaInbody;
+use App\Models\Empleado;
+use App\Models\EP;
+use App\Models\InBody;
+use App\Models\Persona;
+use App\Models\Un;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
