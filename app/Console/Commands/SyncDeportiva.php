@@ -47,7 +47,7 @@ class SyncDeportiva extends Command
         if ($intervalo != null) {
             $intervalo->proceso = 1;
             $intervalo->save();
-            $personas = Persona::whereIn('idPersona', '>=', $intervalo->inicio)->where('idPersona', '<', $intervalo->fin)->get();
+            $personas = Persona::where('idPersona', '>=', $intervalo->inicio)->where('idPersona', '<', $intervalo->fin)->get();
             foreach ($personas as $key => $value) {
                 $personaDep = PersonaDeportiva::find($value->idPersona);
                 if ($personaDep == null) {
