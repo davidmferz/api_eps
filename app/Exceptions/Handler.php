@@ -47,7 +47,7 @@ class Handler extends ExceptionHandler
         if (!($exception instanceof NotFoundHttpException) && !($exception instanceof MethodNotAllowedHttpException)) {
 
             Log::critical($exception->getMessage());
-            Log::critical(print_r($exception, true));
+            //Log::critical(print_r($exception, true));
             $msj = "report ErrMsg: " . $exception->getMessage() . " File: " . $exception->getFile() . " Line: " . $exception->getLine();
             ApiController::notificacionError($msj);
         }
