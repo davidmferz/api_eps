@@ -42,7 +42,7 @@ class Persona extends Model
     {
         $sql = "SELECT  if(s.idPersona IS NULL,0,1) AS socio,
                     IF(e.idPersona IS NULL,0,1) AS empleado,
-                    IF(i.idPersona IS NULL,0,1) AS invitadoespecial,
+                    IF(i.idPersona IS NULL,0,1) AS invitadoEspecial,
                     IF(g.idPersona IS NULL,0,1) AS invitado
 			    FROM
                     persona AS p
