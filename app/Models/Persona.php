@@ -102,6 +102,7 @@ class Persona extends Model
                     UPPER(TRIM(p.nombre)) AS nombre,
                     UPPER(TRIM(p.paterno)) AS paterno,
                     UPPER(TRIM(p.materno)) AS materno,
+                    IFNULL(m.idUnicoMembresia, '') AS idUnicoMembresia,
                     m.idMembresia,
                     IFNULL(u.idUn,'') AS idUn,
                     IFNULL(u.clave,'') AS clave,
