@@ -1174,9 +1174,8 @@ class EP extends Model
             2 => $mes3,
             3 => $mes4,
         ];
-        $retval       = array();
-        $pustNat      = [86, 134, 194, 551, 806, 100085, 100101];
-        $pust         = [551, 100085];
+        $retval = array();
+
         $sqlIdPersona = implode(',', $idPersonas);
 
         $sql = "SELECT p.idPersona,pu.idPuesto
@@ -1193,21 +1192,34 @@ class EP extends Model
 
         $idPersonasEncontradas = [];
 
+        $pustNat = [86, 134, 194, 551, 806, 100085, 100101];
+        $pust    = [551, 100085];
+
+        $puestos10Mil = [465, 551, 100085];
+        $puestos12Mil = [533, 185, 541, 100049, 100050];
+        $puestos15Mil = [194, 806, 86, 134, 100101];
+        $puestos25Mil = [100095, 100029, 531];
+
         foreach ($query as $key => $value) {
             $idPersonasEncontradas[] = $value['idPersona'];
 
             $mesesMenos = 3;
 
-            $primera = array_search(intval($value['idPuesto']), $pustNat);
-            if ($primera !== false && $primera > 0) {
-                $segunda = array_search(intval($value['idPuesto']), $pust);
-                if ($segunda !== false && $segunda > 0) {
-                    $met = 10000;
-                } else {
-                    $met = 15000;
-                }
+            if (in_array(intval($value['idPuesto']), $puestos10Mil)) {
+                $met = 10000;
+
+            } else if (in_array(intval($value['idPuesto']), $puestos12Mil)) {
+                $met = 12000;
+
+            } else if (in_array(intval($value['idPuesto']), $puestos15Mil)) {
+                $met = 15000;
+
+            } else if (in_array(intval($value['idPuesto']), $puestos25Mil)) {
+                $met = 25000;
+
             } else {
-                $met = 35000;
+                $met = 10000;
+
             }
 
             while ($mesesMenos >= 0) {
@@ -1296,16 +1308,28 @@ class EP extends Model
     public static function buscaMeta($idPuesto)
     {
 
-        $meta15Mil = [551, 100085];
-        $meta20Mil = [84, 134, 194, 465, 541, 542, 806, 100034, 100053, 100101];
-        $meta40Mil = [531, 100029, 100095];
-        if (array_search(intval($idPuesto), $meta15Mil) !== false) {
-            return 15000;
-        } elseif (array_search(intval($idPuesto), $meta20Mil) !== false) {
-            return 20000;
+        $puestos10Mil = [465, 551, 100085, 542, 100034];
+        $puestos12Mil = [533, 185, 541, 100049, 100050];
+        $puestos15Mil = [84, 194, 806, 86, 134, 100053, 100101];
+        $puestos25Mil = [100095, 100029, 531];
+
+        if (in_array(intval($idPuesto), $puestos10Mil)) {
+            $met = 10000;
+
+        } else if (in_array(intval($idPuesto), $puestos12Mil)) {
+            $met = 12000;
+
+        } else if (in_array(intval($idPuesto), $puestos15Mil)) {
+            $met = 15000;
+
+        } else if (in_array(intval($idPuesto), $puestos25Mil)) {
+            $met = 25000;
+
         } else {
-            return 40000;
+            $met = 10000;
+
         }
+        return $met;
 
     }
     /**
@@ -1977,8 +2001,26 @@ class EP extends Model
         $calificaciones = CalificacionEntrenador::getCalificacionesAws($ids);
         $res            = [];
         if (count($query) > 0) {
+            $puestos10Mil = [465, 551, 100085];
+            $puestos12Mil = [533, 185, 541, 100049, 100050];
+            $puestos15Mil = [194, 806, 86, 134, 100101];
+            $puestos25Mil = [100095, 100029, 531];
+
             foreach ($query as $fila) {
                 $bandera = true;
+                if (in_array(intval($fila->idPuesto), $puestos10Mil)) {
+                    $met = 10000;
+                } else if (in_array(intval($fila->idPuesto), $puestos12Mil)) {
+                    $met = 12000;
+                } else if (in_array(intval($fila->idPuesto), $puestos15Mil)) {
+                    $met = 15000;
+                } else if (in_array(intval($fila->idPuesto), $puestos25Mil)) {
+                    $met = 25000;
+                } else {
+                    $met = 10000;
+                }
+                $r['meta'] = $met;
+
                 foreach ($calificaciones as $key => $calificacion) {
                     if ($fila->idEmpleado == $calificacion['idEmpleado']) {
 

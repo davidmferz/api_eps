@@ -144,6 +144,7 @@ class Persona extends Model
                     break;
 
                 default:
+                    $res = $this->buscaPersonaNombre($nombre);
                     # code...
                     break;
             }
@@ -154,35 +155,29 @@ class Persona extends Model
 
     private function buscaSocioNombre($nombreMatch)
     {
-        $sql = "SELECT
-                    tp.nombre,
-                    tp.paterno,
-                    tp.materno,
-                    tp.idPersona, IFNULL(m.idMembresia, '') AS idMembresia,
+        $sql = "  SELECT
+                    p.nombre,
+                    p.paterno,
+                    p.materno,
+                    p.idPersona,
+                        IFNULL(m.idMembresia, '') AS idMembresia,
                     IFNULL(m.idUnicoMembresia, '') AS idUnicoMembresia,
                     IFNULL(u.idUn, '') AS idUn,
                     IFNULL(u.clave, '') AS clave,
                     'SOCIO' as tipo
-                FROM
-                (
-                    SELECT l.nombreCompleto,p1.*
-                    FROM crm.personalevenshtein l
-                    INNER JOIN crm.persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    order by l.nombreCompleto
-                ) AS tp
-                JOIN crm.socio s ON tp.idPErsona=s.idPersona AND MATCH(tp.nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
-                JOIN crm.persona AS p ON p.idPersona =s.idPersona
-                JOIN
-                    crm.membresia m ON m.idUnicoMembresia = s.idUnicoMembresia AND m.idTipoEstatusMembresia = 27 AND m.eliminado = 0
-                JOIN crm.un u ON u.idUn = m.idUn
+                        FROM membresia AS m
+                    JOIN socio AS s ON s.idUnicoMembresia=m.idUnicoMembresia
+                        AND s.idTipoEstatusSocio  NOT IN (82,86)
+                        AND s.eliminado = 0
+                        JOIN crm.persona AS p ON p.idPersona =s.idPersona
+                        AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
+                    JOIN crm.un u ON u.idUn = m.idUn
 
-                WHERE 1
-                    AND s.idTipoEstatusSocio NOT IN (82,86)
-                    AND s.eliminado = 0
-                    AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
 
-                ORDER BY tp.idPersona DESC
-                limit 20";
+                    WHERE  m.eliminado=0
+                    AND m.idTipoEstatusMembresia=27
+                        ORDER BY p.idPersona DESC
+                    limit 20;";
         $respuesta = DB::connection('crm')->select($sql);
         return $respuesta;
     }
@@ -215,32 +210,26 @@ class Persona extends Model
     private function buscaInvitadoEspecialPorNombre($nombreMatch)
     {
         $sql = "SELECT
-                    tp.nombre,
-                    tp.paterno,
-                    tp.materno,
-                    tp.idPersona,
+                    p.nombre,
+                    p.paterno,
+                    p.materno,
+                    p.idPersona,
                     i.idinvitadoEspecial as idInvitado,
                     'INV' as tipo,
 
                     'INV ESP' as tipoinvitado
-                FROM (
-                    SELECT l.nombreCompleto,p1.*
-                    FROM personalevenshtein l
-                    INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    order by l.nombreCompleto
-                ) AS tp
-                JOIN invitadoespecial i ON tp.idPErsona=i.idPersona AND i.activo=1 AND MATCH(tp.nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
-                    JOIN persona AS p ON p.idPersona =i.idPersona
-                WHERE
-                 TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
-                ORDER BY tp.idPersona DESC
+                FROM persona AS p
+                JOIN invitadoespecial i ON p.idPersona=i.idPersona
+                    AND i.activo=1
+                    AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
+                ORDER BY p.idPersona DESC
                 limit 12";
         $query = DB::connection('crm')->select($sql);
 
-        $sql = "SELECT  tp.nombre,
-                        tp.paterno,
-                        tp.materno,
-                        tp.idPersona,
+        $sql = "SELECT  p.nombre,
+                        p.paterno,
+                        p.materno,
+                        p.idPersona,
                         g.idgympass as idInvitado,
                         CASE
                             WHEN idPersonaGympass = 1 THEN 'TOTALPASS'
@@ -248,22 +237,42 @@ class Persona extends Model
                             WHEN idPersonaGympass = 3 THEN 'INVITADO ESPECIAL'
                         ELSE 'GYMPASS'
                         END AS tipoinvitado
-                FROM (
-                    SELECT l.nombreCompleto,p1.*
-                    FROM personalevenshtein l
-                    INNER JOIN persona p1 ON p1.idPersona=l.idPersona AND p1.bloqueo=0
-                    order by l.nombreCompleto
-                ) AS tp
-                JOIN  crm.gympass AS g ON tp.idPErsona=g.idPersona AND g.eliminado=0 AND MATCH(tp.nombreCompleto) AGAINST ('%{$nombreMatch}' IN BOOLEAN MODE)
-                JOIN persona AS p ON p.idPersona =g.idPersona
-                WHERE
-                 TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
+                        FROM persona AS p
+                JOIN  crm.gympass AS g ON p.idPersona=g.idPersona
+	                AND g.eliminado=0
+                    AND TRIM(CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno))) LIKE '%{$nombreMatch}%'
                 limit 12
                 ";
+
         $query2    = DB::connection('crm')->select($sql);
         $respuesta = array_merge($query, $query2);
         return $respuesta;
     }
+
+    private function buscaPersonaNombre($nombreMatch)
+    {
+        $sql = "SELECT um.nombre,
+                    um.paterno,
+                    um.materno,
+                    um.idPersona,
+                    CASE
+                        WHEN um.tipoUsuario = 'socio' THEN 'SOCIO'
+                        WHEN um.tipoUsuario = 'empleado' THEN 'EMP'
+                        WHEN um.tipoUsuario = 'invitado' THEN 'INV'
+                    ELSE 'EXTERNO'
+                    END AS tipo,
+                    'ventaExterno' AS tipoVenta
+                FROM personalevenshtein l
+                INNER JOIN socios.usuarios_migracion AS um ON um.idPersona=l.idPersona
+                WHERE TRIM(CONCAT_WS(' ', TRIM(um.nombre), TRIM(um.paterno), TRIM(um.materno))) LIKE '%{$nombreMatch}%'
+                ORDER BY l.nombreCompleto
+                LIMIT 12";
+
+        $query = DB::connection('crm')->select($sql);
+
+        return $query;
+    }
+
     /**
      * Genera un array con el criterio de busqueda indicado regresando el identificador de la persona, nobmbre, apellido
      * paterno y apellido materno
