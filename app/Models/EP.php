@@ -1196,9 +1196,9 @@ class EP extends Model
         $pust    = [551, 100085];
 
         $puestos10Mil = [465, 551, 100085];
-        $puestos12Mil = [533, 185, 541, 100049, 100050];
+        $puestos12Mil = [533, 185,  100049, 100050];
         $puestos15Mil = [194, 806, 86, 134, 100101];
-        $puestos25Mil = [100095, 100029, 531];
+        $puestos30Mil = [100095, 100029, 531,541,542];
 
         foreach ($query as $key => $value) {
             $idPersonasEncontradas[] = $value['idPersona'];
@@ -1214,8 +1214,8 @@ class EP extends Model
             } else if (in_array(intval($value['idPuesto']), $puestos15Mil)) {
                 $met = 15000;
 
-            } else if (in_array(intval($value['idPuesto']), $puestos25Mil)) {
-                $met = 25000;
+            } else if (in_array(intval($value['idPuesto']), $puestos30Mil)) {
+                $met = 30000;
 
             } else {
                 $met = 10000;
@@ -1309,9 +1309,9 @@ class EP extends Model
     {
 
         $puestos10Mil = [465, 551, 100085, 542, 100034];
-        $puestos12Mil = [533, 185, 541, 100049, 100050];
+        $puestos12Mil = [533, 185,  100049, 100050];
         $puestos15Mil = [84, 194, 806, 86, 134, 100053, 100101];
-        $puestos25Mil = [100095, 100029, 531];
+        $puestos30Mil = [100095, 100029, 531,541,542];
 
         if (in_array(intval($idPuesto), $puestos10Mil)) {
             $met = 10000;
@@ -1322,8 +1322,8 @@ class EP extends Model
         } else if (in_array(intval($idPuesto), $puestos15Mil)) {
             $met = 15000;
 
-        } else if (in_array(intval($idPuesto), $puestos25Mil)) {
-            $met = 25000;
+        } else if (in_array(intval($idPuesto), $puestos30Mil)) {
+            $met = 30000;
 
         } else {
             $met = 10000;
@@ -2002,9 +2002,9 @@ class EP extends Model
         $res            = [];
         if (count($query) > 0) {
             $puestos10Mil = [465, 551, 100085];
-            $puestos12Mil = [533, 185, 541, 100049, 100050];
+            $puestos12Mil = [533, 185,  100049, 100050];
             $puestos15Mil = [194, 806, 86, 134, 100101];
-            $puestos25Mil = [100095, 100029, 531];
+            $puestos30Mil = [100095, 100029, 531,541,542];
 
             foreach ($query as $fila) {
                 $bandera = true;
@@ -2014,8 +2014,8 @@ class EP extends Model
                     $met = 12000;
                 } else if (in_array(intval($fila->idPuesto), $puestos15Mil)) {
                     $met = 15000;
-                } else if (in_array(intval($fila->idPuesto), $puestos25Mil)) {
-                    $met = 25000;
+                } else if (in_array(intval($fila->idPuesto), $puestos30Mil)) {
+                    $met = 30000;
                 } else {
                     $met = 10000;
                 }
