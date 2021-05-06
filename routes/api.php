@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\FitnessTestController;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -105,6 +107,14 @@ Route::group(['prefix' => 'v1/'], function () {
             Route::match(['get', 'options'], 'getReporteClub/{idUn}', 'ReportesController@getReporteClub');
 
         });
+
+        Route::prefix('encuesta')->middleware('hashHeader')->group(
+            function ()
+            {
+                Route::get('formulario', [FitnessTestController::class, 'getEncuesta']);
+            }
+        );
+
     });
 
 });
