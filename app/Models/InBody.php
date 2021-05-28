@@ -33,7 +33,7 @@ class InBody extends Model
 
     public function scopeLastInBody($query, $idPersona)
     {
-        try {
+        try { #'pushUp', 'abdominales', 'flexibilidad'
             $result = $query->select(
                 'tipoCuerpo', 'numComidas', 'peso', 'estatura', 'RCC', 'PGC', 'IMC', 'MME', 'MCG', 'ACT', 'minerales', 'proteina', 'fcresp', DB::raw('date(fechaRegistro) as fecha '), 'personainbody.fechaEliminacion')
                 ->from('piso.personainbody')

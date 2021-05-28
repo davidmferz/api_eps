@@ -68,14 +68,11 @@ class Persona extends Model
                 return ['tipo' => 'INV'];
             } elseif ($query[0]->invitado == 1) {
                 return ['tipo' => 'INV'];
-
             } else {
                 return ['tipo' => 'EXTERNO'];
-
             }
         } else {
             return ['error'];
-
         }
     }
 
@@ -91,7 +88,6 @@ class Persona extends Model
         } else {
             return false;
         }
-
     }
     public function scopeQueryPersonaMem($query, $nombre, $tipoUsuario)
     {
@@ -143,12 +139,11 @@ class Persona extends Model
                     break;
 
                 default:
-                    # code...
+                    $res = $this->buscaPersonaNombre($nombre);
                     break;
             }
         }
         return $res;
-
     }
 
     private function buscaSocioNombre($nombreMatch)
@@ -263,6 +258,34 @@ class Persona extends Model
         $respuesta = array_merge($query, $query2);
         return $respuesta;
     }
+
+
+    private function buscaPersonaNombre($nombreMatch)
+    {
+        $sql = "SELECT um.nombre,
+                    um.paterno,
+                    um.materno,
+                    um.idPersona,
+                    CASE
+                        WHEN um.tipoUsuario = 'socio' THEN 'SOCIO'
+                        WHEN um.tipoUsuario = 'empleado' THEN 'EMP'
+                        WHEN um.tipoUsuario = 'invitado' THEN 'INV'
+                    ELSE 'EXTERNO'
+                    END AS tipo,
+                    'ventaExterno' AS tipoVenta
+                FROM personalevenshtein l
+                INNER JOIN socios.usuarios_migracion AS um ON um.idPersona=l.idPersona
+                WHERE TRIM(CONCAT_WS(' ', TRIM(um.nombre), TRIM(um.paterno), TRIM(um.materno))) LIKE '%{$nombreMatch}%'
+                ORDER BY l.nombreCompleto
+                LIMIT 12";
+
+        $query = DB::connection('crm')->select($sql);
+
+        return $query;
+    }
+
+
+
     /**
      * Genera un array con el criterio de busqueda indicado regresando el identificador de la persona, nobmbre, apellido
      * paterno y apellido materno
@@ -356,14 +379,15 @@ class Persona extends Model
             WHERE CONCAT_WS(' ', p.nombre, p.paterno, p.materno) LIKE '%$nom%' $w_min $w_max
             ORDER BY 7, p.nombre, p.paterno, p.materno
             LIMIT $numeroRegistros";
-
         }
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
             $res = array();
             $r   = [];
-            $a   = array_map(function ($x) {return (array) $x;}, $query);
+            $a   = array_map(function ($x) {
+                return (array) $x;
+            }, $query);
             foreach ($a as $row) {
                 $r['idPersona']   = $row['idPersona'];
                 $r['nombre']      = $row['nombre'];
@@ -467,7 +491,9 @@ class Persona extends Model
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
-            $query = array_map(function ($x) {return (array) $x;}, $query);
+            $query = array_map(function ($x) {
+                return (array) $x;
+            }, $query);
             $fila = $query[0];
             return $fila;
         } else {
@@ -520,7 +546,9 @@ class Persona extends Model
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
-            $query = array_map(function ($x) {return (array) $x;}, $query);
+            $query = array_map(function ($x) {
+                return (array) $x;
+            }, $query);
             $fila = $query[0];
             return $fila['edad'];
         }
@@ -570,5 +598,4 @@ class Persona extends Model
         }
         return $datos;
     }
-
 }

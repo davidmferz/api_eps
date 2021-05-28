@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\FitnessTestController;
+use App\Http\Controllers\InbodyController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
@@ -112,6 +113,10 @@ Route::group(['prefix' => 'v1/'], function () {
             function ()
             {
                 Route::get('formulario', [FitnessTestController::class, 'getEncuesta']);
+                Route::post('crearEncuesta', [FitnessTestController::class, 'fitnessCrear']);
+                Route::get('getInfo/{idPersona}', [InbodyController::class, 'getInfoInbodies']);
+                Route::post('generar', [FitnessTestController::class, 'setNuevoResgistro']);
+                Route::post('calcularCooperRockport', [FitnessTestController::class, 'calcularCooperRockport']);
             }
         );
 
