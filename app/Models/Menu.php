@@ -435,7 +435,7 @@ class Menu extends Model
 
             $res = self::insertMenuActividad($idRutina, $menu->id, $actividades, $fechaInicio);
             $conn_01->commit();
-            return ['estatus' => true, 'id' => $menu->id, $res];
+            return $menu->id;
         } catch (\Illuminate\Database\QueryException $ex) {
             $conn_01->rollback();
 

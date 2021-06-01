@@ -8,6 +8,7 @@ use App\Models\AgendaInbody;
 use App\Models\CatRutinas;
 use App\Models\Menu;
 use App\Models\PersonaInbody;
+use App\Models\Vo2Max\PersonaOptativaPreferencia;
 use App\Models\Vo2Max\Abdominales;
 use App\Models\Vo2Max\Cooper;
 use App\Models\Vo2Max\Estatus;
@@ -144,22 +145,22 @@ class FitnessTestController extends ApiController
 
     public function setNuevoResgistro(NuevoFitnessTestRequest $request)
     {
+        // return $request->all();
         $idPersona = $request->idPersona;
         $idPersonaEmpleado = $request->idPersonaEmpleado;
-        $peso = $request->peso;
+        $peso = $request->peso ?? 60;
         $abdominales = $request->abdominales;
         $tiempo = $request->tiempo ?? 10;
         $distanciaMetros = $request->distanciaMetros;
         $frecuenciaCardiaca = $request->frecuenciaCardiaca ?? 80;
-        $edad = $request->edad ?? Carbon::now()->subYears(20)->format('Y') - Carbon::now()->format('Y');
+        $edadRequest =$request->fcNacimiento ? Carbon::now()->format('Y') - Carbon::parse($request->fcNacimiento)->format('Y') : Carbon::now()->subYears(20)->format('Y') - Carbon::now()->format('Y');
+        $edad = $edadRequest < 20 ? 20 : $edadRequest;
         $rockportEncuesta = $request->rockportEncuesta ?? false;
-        $sexo = $request->sexo;
+        $idNivel = $request->idNivel ?? 0;
         $flexiones = $request->flexiones ?? 20;
         $flexibilidad = $request->flexibilidad ?? 2;
-        $generoSexo = $sexo == 13 ? 1 : 0;
+        $generoSexo = $request->sexo == 13 ? 1 : 0;
         $Vo2MAX = 0;
-        $semana = Carbon::now()->addDays(7)->format('Y-m-d');
-        $hoy = Carbon::now()->format('Y-m-d');
         $tipoCuerpo = $request->tipoCuerpo ?? 'mesomorfo';
         $numComidas = $request->numComidas ?? 4;
         $idUn = $request->idUn;
@@ -176,88 +177,85 @@ class FitnessTestController extends ApiController
         $proteina = $request->proteina;
         $peso = $request->peso;
         $estatura = $request->estatura;
-        $fcresp = $request->fcresp;
+        $fcresp = $request->fcresp ?? 0;
         $observaciones = $request->observaciones ?? 'Sin observaciones';
+        $idReferenciaOrigen = $request->idReferenciaOrigen ?? 5;
+        $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->first();
 
-        $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNotNull('fechaCancelacion')->first();
+       $calcMe = ($peso) / pow(($estatura / 100), 2);
 
-        if ( $menuPersona) {
-           // return $this->errorResponse('Cuenta ya con un plan asignado, para crear uno nuevo el cliente debera de cancelar primero todo el menu asignado, una vez finalizado se podra realizar el cambio');
+        if ($menuPersona) {
+            // return $this->successResponse([], 'Cuenta ya con un plan asignado, para crear uno nuevo el cliente debera de cancelar primero todo el menu asignado, una vez finalizado se podra realizar el cambio');
         }
 
-        if (!$idRutina) {
-            return $this->errorResponse('Se requiere la rutina para continuar');
-        }
+        $rCFLu = $request->rCFLu ? true : false;
+        $rCFMa = $request->rCFMa ? true : false;
+        $rCFMi = $request->rCFMi ? true : false;
+        $rCFJu = $request->rCFJu ? true : false;
+        $rCFVi = $request->rCFVi ? true : false;
+        $rCFSa = $request->rCFSa ? true : false;
+        $rCFDo = $request->rCFDo ? true : false;
 
-
-        $rCFLu = $request->rCFLu ?? false;
-        $rCFMa = $request->rCFMa ?? false;
-        $rCFMi = $request->rCFMi ?? false;
-        $rCFJu = $request->rCFJu ?? false;
-        $rCFVi = $request->rCFVi ?? false;
-        $rCFSa = $request->rCFSa ?? false;
-        $rCFDo = $request->rCFDo ?? false;
-
-
+        /*
         $arrayRCF = array($rCFLu, $rCFMa, $rCFMi, $rCFJu, $rCFVi, $rCFSa, $rCFDo);
         $countsRCF = array_count_values($arrayRCF);
 
-        if ($countsRCF["false"] >= 5) {
-            return $this->successResponse([], 'Categoria "Fuerza" debe ser mayor a 2 días de la semana', 499);
+        if ($countsRCF[false] >= 5) {
+            return $this->successResponse([], 'Categoria "Fuerza" debe ser mayor a 2 días de la semana');
         }
+        */
+        $rCCLu = $request->rCCLu ? true : false;
+        $rCCMa = $request->rCCMa ? true : false;
+        $rCCMi = $request->rCCMi ? true : false;
+        $rCCJu = $request->rCCJu ? true : false;
+        $rCCVi = $request->rCCVi ? true : false;
+        $rCCSa = $request->rCCSa ? true : false;
+        $rCCDo = $request->rCCDo ? true : false;
 
-        $rCCLu = $request->rCCLu ?? false;
-        $rCCMa = $request->rCCMa ?? false;
-        $rCCMi = $request->rCCMi ?? false;
-        $rCCJu = $request->rCCJu ?? false;
-        $rCCVi = $request->rCCVi ?? false;
-        $rCCSa = $request->rCCSa ?? false;
-        $rCCDo = $request->rCCDo ?? false;
-
-
+        /*
         $arrayRCC = array($rCCLu, $rCCMa, $rCCMi, $rCCJu, $rCCVi, $rCCSa, $rCCDo);
         $countsRCC = array_count_values($arrayRCC);
 
 
         if ($countsRCC["false"] >= 5) {
-            return $this->successResponse([], 'Categoria "Cardio" debe ser mayor a 2 días de la semana', 499);
+            return $this->successResponse([], 'Categoria "Cardio" debe ser mayor a 2 días de la semana');
         }
+        */
 
 
-        $rCClLu = $request->rCClLu ?? false;
-        $rCClMa = $request->rCClMa ?? false;
-        $rCClMi = $request->rCClMi ?? false;
-        $rCClJu = $request->rCClJu ?? false;
-        $rCClVi = $request->rCClVi ?? false;
-        $rCClSa = $request->rCClSa ?? false;
-        $rCClDo = $request->rCClDo ?? false;
+        $rCClLu = $request->rCClLu ? true : false;
+        $rCClMa = $request->rCClMa ? true : false;
+        $rCClMi = $request->rCClMi ? true : false;
+        $rCClJu = $request->rCClJu ? true : false;
+        $rCClVi = $request->rCClVi ? true : false;
+        $rCClSa = $request->rCClSa ? true : false;
+        $rCClDo = $request->rCClDo ? true : false;
 
-
+        /*
         $arrayRCCl = array($rCClLu, $rCClMa, $rCClMi, $rCClJu, $rCClVi, $rCClSa, $rCClDo);
         $countsRCCl = array_count_values($arrayRCCl);
 
         if ($countsRCCl["false"] >= 6) {
-            return $this->successResponse([], 'Categoria "Cardio" debe ser mayor a 2 en la semana', 499);
+            return $this->successResponse([], 'Categoria "Clases" debe ser mayor a 2 en la semana',);
         }
+        */
 
 
-        $rCOpLu = $request->rCOpLu ?? false;
-        $rCOpMa = $request->rCOpMa ?? false;
-        $rCOpMi = $request->rCOpMi ?? false;
-        $rCOpJu = $request->rCOpJu ?? false;
-        $rCOpVi = $request->rCOpVi ?? false;
-        $rCOpSa = $request->rCOpSa ?? false;
-        $rCOpDo = $request->rCOpDo ?? false;
-
+        $rCOpLu = $request->rCOpLu ? true : false;
+        $rCOpMa = $request->rCOpMa ? true : false;
+        $rCOpMi = $request->rCOpMi ? true : false;
+        $rCOpJu = $request->rCOpJu ? true : false;
+        $rCOpVi = $request->rCOpVi ? true : false;
+        $rCOpSa = $request->rCOpSa ? true : false;
+        $rCOpDo = $request->rCOpDo ? true : false;
+        /*
         $arrayRCOP = array($rCOpLu, $rCOpMa, $rCOpMi, $rCOpJu, $rCOpVi, $rCOpSa, $rCOpDo);
         $countsRCOP = array_count_values($arrayRCOP);
 
         if ($countsRCOP["false"] >= 6) {
-            return $this->successResponse([], 'Categoria "Cardio" debe ser mayor a 2 en la semana', 499);
+            return $this->successResponse([], 'Categoria "Cardio" debe ser mayor a 2 en la semana');
         }
-
-
-
+        */
 
         $fechaInicio = Carbon::now();
         $diasFor     = clone $fechaInicio;
@@ -315,7 +313,6 @@ class FitnessTestController extends ApiController
             }
         }
 
-
         $actividades = [];
         for ($i = 0; $i < 28; $i++) {
 
@@ -327,12 +324,29 @@ class FitnessTestController extends ApiController
         }
 
 
-       // return $actividades;
-
+        if (PersonaOptativaPreferencia::where('idPersona', $idPersona)->first()) {
+            $idsaveOptativaPreferencia = PersonaOptativaPreferencia::where('idPersona', $idPersona)->update(
+                [
+                    'idCatEjercicioPreferencia' => $idReferenciaOrigen
+                ]
+            );
+        } else {
+            $psRef =  new PersonaOptativaPreferencia;
+            $psRef->idPersona = $idPersona;
+            $psRef->idCatEjercicioPreferencia = $idReferenciaOrigen;
+            $idsaveOptativaPreferencia = $psRef->save();
+        }
+        $idsaveOptativaPreferencia;
+        
+        
         $cooper = null;
         $rock = null;
+        $imcCal = null;
+        $idFcr = null;
         $adbominalesCom = $this->adbominales($generoSexo, $edad, $abdominales);
         $flexionesCom = $this->flexiones($generoSexo, $edad, $flexibilidad);
+        $imcCal = $this->imc($calcMe);
+        $idFcr = $this->fcr($fcresp, $edad, $generoSexo);
         // return
         $pushup = $this->pushUp($generoSexo, $edad, $flexiones);
         if ($rockportEncuesta) {
@@ -348,53 +362,31 @@ class FitnessTestController extends ApiController
                 ->first();
         }
 
-
         $fitness = new FitnessTest();
         $fitness->idPersona = $idPersona;
         $fitness->idPersonaEmpleado = $idPersonaEmpleado;
         $fitness->idCatPushUp = $pushup ? $pushup->id : 1;
-        $fitness->idCatAbdominales = $adbominalesCom ? $adbominalesCom->id : 1;
-        $fitness->idCatFlexibilidad = $flexionesCom ? $flexionesCom->id : 1;
+        $fitness->idCatAbdominales = $adbominalesCom ? $adbominalesCom->id : null;
+        $fitness->idCatFlexibilidad = $flexionesCom ? $flexionesCom->id : null;
+        $fitness->idCooper = $cooper ? $cooper->id : null;
+        $fitness->idRockport = $rock ? $rock->id : null;
+        $fitness->idImc = $imcCal ? $imcCal->id : null;
+        $fitness->idFcr = $idFcr ? $idFcr->id : null;
         $fitness->vo2Max = $Vo2MAX;
-        $fitness->nombrePruebaVo2Max = $rock ? 'Rockport': 'Cooper';
+        $fitness->nombrePruebaVo2Max = $rock ? 'Rockport' : 'Cooper';
         $fitnessSave = $fitness->save();
         $lastFitnessTest = FitnessTest::latest()->where('idPersona', $idPersona)->first();
 
 
-        $peopleIny = new PersonaInbody();
-        $peopleIny->idPersona = $idPersona;
-        $peopleIny->idPersonaEmpleado = $idPersonaEmpleado;
-        $peopleIny->tipoCuerpo = $tipoCuerpo;
-        $peopleIny->numComidas = $numComidas;
-        $peopleIny->RCC = $rcc;
-        $peopleIny->PGC = $pgc;
-        $peopleIny->IMC = $imc;
-        $peopleIny->MME = $mme;
-        $peopleIny->MCG = $mcg;
-        $peopleIny->ACT = $act;
-        $peopleIny->minerales = $minerales;
-        $peopleIny->proteina = $proteina;
-        $peopleIny->peso = $peso;
-        $peopleIny->estatura = $estatura;
-        $peopleIny->fcresp = $fcresp;
-        $peopleIny->pushUp = $pushup ? $pushup->id: 0;
-        $peopleIny->tiempo = $tiempo;
-        $peopleIny->cooper = $cooper ? $cooper->id : 0;
-        $peopleIny->rockport = $rock ? $rock->id : 0;
-        $peopleIny->distancia = $distanciaMetros;
-        $peopleIny->pushUp = $pushup ? $pushup->id : 1;
-        $peopleIny->adbominales = $adbominalesCom ? $adbominalesCom->id : 1;
-        $peopleIny->flexibilidad = $flexionesCom ? $flexionesCom->id : 1;
-        $peopleIny->vo2MAX = $Vo2MAX;
-        $peopleIny->flexibilidad = $Vo2MAX;
-        $peopleIny->idPersonaFitnessTest = $lastFitnessTest ? $lastFitnessTest->id: null;
-        $peopleInySave = $peopleIny->save();
+
+        //return ['idPersona' => $idPersona, 'idPersonaEmpleado' => $idPersonaEmpleado, 'tipoCuerpo' => $tipoCuerpo, 'numComidas' => $numComidas, 'rcc' => $rcc, 'pgc' => $pgc, 'imc' => $imc, 'mme' => $mme, 'mcg' => $mcg, 'act' => $act, 'minerales' => $minerales, 'proteina' => $proteina, 'peso' => $peso, 'estatura' => $estatura, 'fcresp' => $fcresp, 'pushup' => $pushup ? $pushup->id : 1, 'tiempo' => $tiempo, 'cooper' => $cooper ? $cooper->id : 0, 'rock' => $rock ? $rock->id : 1, 'distanciaMetros' => $distanciaMetros, 'adbominales' => $adbominalesCom ? $adbominalesCom->id : 1, 'flexibilidad' => $flexionesCom ? $flexionesCom->id : 1, 'Vo2MAX' => $Vo2MAX, 'flexibilidad' => $flexibilidad, 'idPersonaFitnessTest' => $lastFitnessTest ? $lastFitnessTest->id : null];
 
 
-
+        $menu = Menu::insertMenu($idUn, $idPersona, $idRutina, Carbon::now(), Carbon::now()->addDays(28), $observaciones, $actividades, $idPersonaEmpleado);
+        // 
         $agendaSave = null;
-        if (AgendaInbody::where('idAgenda', $idAgenda)->whereNull('fechaCancelacion')->count() > 0) {
-             $agendaSave = AgendaInbody::where(['idAgenda' => $idAgenda])->update(
+        if ($idAgenda) {
+            $agendaSave = AgendaInbody::where(['idAgenda' => $idAgenda])->update(
                 [
                     'idEmpleado' => $idPersonaEmpleado,
                     'fechaConfirmacion' => Carbon::now()->format('Y-m-d H:i:s')
@@ -403,28 +395,67 @@ class FitnessTestController extends ApiController
         } else {
             $agenda = new AgendaInbody();
             $agenda->idPersona = $idPersona;
-            $agenda->idPersonaEmpleado = $idPersonaEmpleado;
+            $agenda->idEmpleado = $idPersonaEmpleado;
             $agenda->idUn = $idUn;
             $agenda->fechaSolicitud = Carbon::now()->format('Y-m-d H:i:s');
             $agenda->fechaConfirmacion = Carbon::now()->format('Y-m-d H:i:s');
             $agenda->horario = Carbon::now()->format('H:i:s');
             $agendaSave = $agenda->save();
             $idAgendaSaved = AgendaInbody::where('idPersona', $idPersona)->latest()->first();
-            $idAgenda = $idAgendaSaved->id; 
+            $idAgenda = $idAgendaSaved->id;
         }
 
+        $peopleIny = new PersonaInbody();
+        $peopleIny->idPersona = $idPersona;
+        $peopleIny->idPersonaEmpleado = $idPersonaEmpleado;
+        $peopleIny->tipoCuerpo = $tipoCuerpo;
+        $peopleIny->numComidas = $numComidas;
+        $peopleIny->RCC = $rcc;
+        $peopleIny->PGC = $pgc;
+        $peopleIny->IMC = $calcMe;
+        $peopleIny->MME = $mme;
+        $peopleIny->MCG = $mcg;
+        $peopleIny->ACT = $act;
+        $peopleIny->minerales = $minerales;
+        $peopleIny->genero = $generoSexo;
+        $peopleIny->proteina = $proteina;
+        $peopleIny->peso = $peso;
+        $peopleIny->estatura = $estatura;
+        $peopleIny->fcresp = $fcresp;
+        $peopleIny->pushUp = $pushup ? $pushup->id : 1;
+        $peopleIny->tiempo = $tiempo;
+        $peopleIny->cooper = $cooper ? $cooper->id : null;
+        $peopleIny->rockport = $rock ? $rock->id : null;
+        $peopleIny->distancia = $distanciaMetros;
+        $peopleIny->adbominales = $adbominalesCom ? $adbominalesCom->id : 1;
+        $peopleIny->flexibilidad = $flexionesCom ? $flexionesCom->id : 1;
+        $peopleIny->vo2MAX = $Vo2MAX;
+        $peopleIny->flexibilidad = $flexibilidad;
+        $peopleIny->idPersonaFitnessTest = $lastFitnessTest ? $lastFitnessTest->id : null;
+        $peopleIny->idMenu = $menu ? $menu : null;
+        $peopleIny->edad = $edad ? $edad : 20;
+        $peopleInySave = $peopleIny->save();
 
-
-        $menu = Menu::insertMenu($idUn, $idPersona, $idRutina, Carbon::now(), Carbon::now()->addDays(28), $observaciones, $actividades, $idPersonaEmpleado);
 
         if ($fitnessSave) {
-            return $this->successResponse(['fitnessSave' => $fitnessSave, 'peopleInySave' => $peopleInySave, 'agendaSave' => $agendaSave, 'lastFitnessTest' => $lastFitnessTest, 'menu' => $menu, 'idAgenda' => $idAgenda], 'Se genero el registro correctamente');
+            return $this->successResponse(['fitnessSave' => $fitnessSave, 'peopleInySave' => $peopleInySave, 'agendaSave' => $agendaSave, 'lastFitnessTest' => $lastFitnessTest, 'menu' => $menu, 'idAgenda' => $idAgenda, 'dsaveOptativaPreferencia' => $idsaveOptativaPreferencia], 'Se genero el registro correctamente');
         } else {
             return $this->errorResponse('Sucedio un error al generar el registro, intenta más tarde');
         }
 
         return $request->all();
     }
+
+    public function imc($calc)
+    {
+        return CatImc::whereRaw("{$calc} between imcMinimo and imcMaximo ")->first();
+    }
+
+    public function fcr($fcresp, $edad, $genero)
+    {
+        return CatFcr::whereRaw("{$edad} between edadMinima and edadMaxima and genero = {$genero} and {$fcresp} between fcrMinimo and fcrMaximo")->first();
+    }
+
 
     public function pushUp($genero, $edad, $flexiones)
     {

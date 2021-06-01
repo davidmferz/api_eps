@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'v1/'], function () {
     Route::get('getFullCatalog', 'EPController@getFullCatalog');
+    Route::get('referenciasEjercicio', 'InbodyController@referenciasEjercicio');
     Route::middleware(['cors'])->group(function () {
 
         Route::get('clear', function () {

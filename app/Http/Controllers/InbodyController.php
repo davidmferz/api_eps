@@ -16,6 +16,7 @@ use App\Models\InBody;
 use App\Models\Menu;
 use App\Models\Persona;
 use App\Models\Un;
+use App\Models\Vo2Max\CatEjercicioPreferencia;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -424,11 +425,20 @@ class InbodyController extends ApiController
             $unNombre = $isUn->nombre ?? "No hay registro";
         }
 
-        $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNotNull('fechaCancelacion')->first();
-
+        $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->latest()->first();
+        $menuEstate = false;
+        $idMenu = 0;
         if ($menuPersona) {
-            $mensajeMenu = "Ya cuenta con una rutina asignada hasta el día {$menuPersona->fecha_fin}, para cancelar debera el cliente cancelar primero todo el menu, una vez finalizado ya podrá generar uno nuevo";
+            $mensajeMenu = "Ya cuenta con una rutina asignada hasta el día {$menuPersona->fecha_fin}, para iniciar una nueva rutina, debera el cliente cancelar primero todo el menu, una vez finalizado ya podrá generar uno nuevo";
+            $idMenu = $menuPersona->id;
+            $menuEstate = true;
         }
+        else {
+            $mensajeMenu = "No existe una agenda por el momento, sin embargo, al registrar se creara uno nuevo";
+        }
+
+
+
 
         return $this->successResponse(
             [
@@ -441,8 +451,17 @@ class InbodyController extends ApiController
                 'unNombre' => $unNombre,
                 'agendaInbody' => $agendaInbody,
                 'menuPersona' => $menuPersona,
-                'mensajeMenu' => $mensajeMenu
+                'mensajeMenu' => $mensajeMenu,
+                'idMenu' => $idMenu,
+                'menuEstate' => $menuEstate
             ]
         );
     }
+
+    public function referenciasEjercicio()
+    {
+        $catEjercicio = CatEjercicioPreferencia::select(['id', 'nombre'])->get();
+        return $this->successResponse(['catEjercicio' => $catEjercicio]);
+    }
+
 }
