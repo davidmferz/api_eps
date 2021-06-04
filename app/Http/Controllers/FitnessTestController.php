@@ -177,12 +177,12 @@ class FitnessTestController extends ApiController
         $proteina = $request->proteina;
         $peso = $request->peso;
         $estatura = $request->estatura;
-        $fcresp = $request->fcresp ?? 0;
+        $fcresp = $request->fcresp ?? 60;
         $observaciones = $request->observaciones ?? 'Sin observaciones';
         $idReferenciaOrigen = $request->idReferenciaOrigen ?? 5;
         $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->first();
 
-       $calcMe = ($peso) / pow(($estatura / 100), 2);
+       $calcMe = number_format(($peso) / pow(($estatura / 100), 2), 2);
 
         if ($menuPersona) {
             // return $this->successResponse([], 'Cuenta ya con un plan asignado, para crear uno nuevo el cliente debera de cancelar primero todo el menu asignado, una vez finalizado se podra realizar el cambio');
@@ -323,6 +323,7 @@ class FitnessTestController extends ApiController
             $diasFor->addDay();
         }
 
+        // return $actividades;
 
         if (PersonaOptativaPreferencia::where('idPersona', $idPersona)->first()) {
             $idsaveOptativaPreferencia = PersonaOptativaPreferencia::where('idPersona', $idPersona)->update(
@@ -404,33 +405,33 @@ class FitnessTestController extends ApiController
             $idAgendaSaved = AgendaInbody::where('idPersona', $idPersona)->latest()->first();
             $idAgenda = $idAgendaSaved->id;
         }
-
+        $agendaSave;
         $peopleIny = new PersonaInbody();
         $peopleIny->idPersona = $idPersona;
         $peopleIny->idPersonaEmpleado = $idPersonaEmpleado;
         $peopleIny->tipoCuerpo = $tipoCuerpo;
         $peopleIny->numComidas = $numComidas;
-        $peopleIny->RCC = $rcc;
-        $peopleIny->PGC = $pgc;
-        $peopleIny->IMC = $calcMe;
-        $peopleIny->MME = $mme;
-        $peopleIny->MCG = $mcg;
-        $peopleIny->ACT = $act;
-        $peopleIny->minerales = $minerales;
-        $peopleIny->genero = $generoSexo;
-        $peopleIny->proteina = $proteina;
-        $peopleIny->peso = $peso;
-        $peopleIny->estatura = $estatura;
-        $peopleIny->fcresp = $fcresp;
-        $peopleIny->pushUp = $pushup ? $pushup->id : 1;
-        $peopleIny->tiempo = $tiempo;
+        $peopleIny->RCC = $rcc ?? 0;
+        $peopleIny->PGC = $pgc ?? 0;
+        $peopleIny->IMC = $calcMe ?? 0;
+        $peopleIny->MME = $mme ?? 0;
+        $peopleIny->MCG = $mcg ?? 0;
+        $peopleIny->ACT = $act ?? 0;
+        $peopleIny->minerales = $minerales ?? 0;
+        $peopleIny->genero = $generoSexo ?? 13;
+        $peopleIny->proteina = $proteina ?? 0;
+        $peopleIny->peso = $peso ?? 60;
+        $peopleIny->estatura = $estatura ?? 160;
+        $peopleIny->fcresp = $fcresp ?? 60;
+        $peopleIny->pushUp = $pushup ? $pushup->id : null;
+        $peopleIny->tiempo = $tiempo ?? 15;
         $peopleIny->cooper = $cooper ? $cooper->id : null;
         $peopleIny->rockport = $rock ? $rock->id : null;
         $peopleIny->distancia = $distanciaMetros;
         $peopleIny->adbominales = $adbominalesCom ? $adbominalesCom->id : 1;
         $peopleIny->flexibilidad = $flexionesCom ? $flexionesCom->id : 1;
-        $peopleIny->vo2MAX = $Vo2MAX;
-        $peopleIny->flexibilidad = $flexibilidad;
+        $peopleIny->vo2MAX = $Vo2MAX ?? 0;
+        $peopleIny->flexibilidad = $flexibilidad ?? 0;
         $peopleIny->idPersonaFitnessTest = $lastFitnessTest ? $lastFitnessTest->id : null;
         $peopleIny->idMenu = $menu ? $menu : null;
         $peopleIny->edad = $edad ? $edad : 20;
