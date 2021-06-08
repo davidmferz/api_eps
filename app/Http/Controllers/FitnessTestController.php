@@ -382,6 +382,11 @@ class FitnessTestController extends ApiController
 
         //return ['idPersona' => $idPersona, 'idPersonaEmpleado' => $idPersonaEmpleado, 'tipoCuerpo' => $tipoCuerpo, 'numComidas' => $numComidas, 'rcc' => $rcc, 'pgc' => $pgc, 'imc' => $imc, 'mme' => $mme, 'mcg' => $mcg, 'act' => $act, 'minerales' => $minerales, 'proteina' => $proteina, 'peso' => $peso, 'estatura' => $estatura, 'fcresp' => $fcresp, 'pushup' => $pushup ? $pushup->id : 1, 'tiempo' => $tiempo, 'cooper' => $cooper ? $cooper->id : 0, 'rock' => $rock ? $rock->id : 1, 'distanciaMetros' => $distanciaMetros, 'adbominales' => $adbominalesCom ? $adbominalesCom->id : 1, 'flexibilidad' => $flexionesCom ? $flexionesCom->id : 1, 'Vo2MAX' => $Vo2MAX, 'flexibilidad' => $flexibilidad, 'idPersonaFitnessTest' => $lastFitnessTest ? $lastFitnessTest->id : null];
 
+        AgendaInbody::whereNull('fechaCancelacion')->where('idPersona', $idPersona)->update(
+            [
+                'fechaCancelacion' => Carbon::now()->format('Y-m-d H:i:s')
+            ]
+        );
 
         $menu = Menu::insertMenu($idUn, $idPersona, $idRutina, Carbon::now(), Carbon::now()->addDays(28), $observaciones, $actividades, $idPersonaEmpleado);
         // 
