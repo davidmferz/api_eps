@@ -184,10 +184,6 @@ class FitnessTestController extends ApiController
 
        $calcMe = number_format(($peso) / pow(($estatura / 100), 2), 2);
 
-        if ($menuPersona) {
-            // return $this->successResponse([], 'Cuenta ya con un plan asignado, para crear uno nuevo el cliente debera de cancelar primero todo el menu asignado, una vez finalizado se podra realizar el cambio');
-        }
-
         $rCFLu = $request->rCFLu ? true : false;
         $rCFMa = $request->rCFMa ? true : false;
         $rCFMi = $request->rCFMi ? true : false;
@@ -196,14 +192,6 @@ class FitnessTestController extends ApiController
         $rCFSa = $request->rCFSa ? true : false;
         $rCFDo = $request->rCFDo ? true : false;
 
-        /*
-        $arrayRCF = array($rCFLu, $rCFMa, $rCFMi, $rCFJu, $rCFVi, $rCFSa, $rCFDo);
-        $countsRCF = array_count_values($arrayRCF);
-
-        if ($countsRCF[false] >= 5) {
-            return $this->successResponse([], 'Categoria "Fuerza" debe ser mayor a 2 días de la semana');
-        }
-        */
         $rCCLu = $request->rCCLu ? true : false;
         $rCCMa = $request->rCCMa ? true : false;
         $rCCMi = $request->rCCMi ? true : false;
@@ -211,17 +199,6 @@ class FitnessTestController extends ApiController
         $rCCVi = $request->rCCVi ? true : false;
         $rCCSa = $request->rCCSa ? true : false;
         $rCCDo = $request->rCCDo ? true : false;
-
-        /*
-        $arrayRCC = array($rCCLu, $rCCMa, $rCCMi, $rCCJu, $rCCVi, $rCCSa, $rCCDo);
-        $countsRCC = array_count_values($arrayRCC);
-
-
-        if ($countsRCC["false"] >= 5) {
-            return $this->successResponse([], 'Categoria "Cardio" debe ser mayor a 2 días de la semana');
-        }
-        */
-
 
         $rCClLu = $request->rCClLu ? true : false;
         $rCClMa = $request->rCClMa ? true : false;
@@ -231,15 +208,6 @@ class FitnessTestController extends ApiController
         $rCClSa = $request->rCClSa ? true : false;
         $rCClDo = $request->rCClDo ? true : false;
 
-        /*
-        $arrayRCCl = array($rCClLu, $rCClMa, $rCClMi, $rCClJu, $rCClVi, $rCClSa, $rCClDo);
-        $countsRCCl = array_count_values($arrayRCCl);
-
-        if ($countsRCCl["false"] >= 6) {
-            return $this->successResponse([], 'Categoria "Clases" debe ser mayor a 2 en la semana',);
-        }
-        */
-
 
         $rCOpLu = $request->rCOpLu ? true : false;
         $rCOpMa = $request->rCOpMa ? true : false;
@@ -248,14 +216,6 @@ class FitnessTestController extends ApiController
         $rCOpVi = $request->rCOpVi ? true : false;
         $rCOpSa = $request->rCOpSa ? true : false;
         $rCOpDo = $request->rCOpDo ? true : false;
-        /*
-        $arrayRCOP = array($rCOpLu, $rCOpMa, $rCOpMi, $rCOpJu, $rCOpVi, $rCOpSa, $rCOpDo);
-        $countsRCOP = array_count_values($arrayRCOP);
-
-        if ($countsRCOP["false"] >= 6) {
-            return $this->successResponse([], 'Categoria "Cardio" debe ser mayor a 2 en la semana');
-        }
-        */
 
         $fechaInicio = Carbon::now();
         $diasFor     = clone $fechaInicio;
@@ -323,8 +283,6 @@ class FitnessTestController extends ApiController
             $diasFor->addDay();
         }
 
-        // return $actividades;
-
         if (PersonaOptativaPreferencia::where('idPersona', $idPersona)->first()) {
             $idsaveOptativaPreferencia = PersonaOptativaPreferencia::where('idPersona', $idPersona)->update(
                 [
@@ -348,7 +306,6 @@ class FitnessTestController extends ApiController
         $flexionesCom = $this->flexiones($generoSexo, $edad, $flexibilidad);
         $imcCal = $this->imc($calcMe);
         $idFcr = $this->fcr($fcresp, $edad, $generoSexo);
-        // return
         $pushup = $this->pushUp($generoSexo, $edad, $flexiones);
         if ($rockportEncuesta) {
             $Vo2MAX = 132.6 - (0.17 * $peso) - (0.39 * $edad) + (6.31 *  $generoSexo) - (3.27 * $tiempo) - (0.156 * $frecuenciaCardiaca);
@@ -377,10 +334,6 @@ class FitnessTestController extends ApiController
         $fitness->nombrePruebaVo2Max = $rock ? 'Rockport' : 'Cooper';
         $fitnessSave = $fitness->save();
         $lastFitnessTest = FitnessTest::latest()->where('idPersona', $idPersona)->first();
-
-
-
-        //return ['idPersona' => $idPersona, 'idPersonaEmpleado' => $idPersonaEmpleado, 'tipoCuerpo' => $tipoCuerpo, 'numComidas' => $numComidas, 'rcc' => $rcc, 'pgc' => $pgc, 'imc' => $imc, 'mme' => $mme, 'mcg' => $mcg, 'act' => $act, 'minerales' => $minerales, 'proteina' => $proteina, 'peso' => $peso, 'estatura' => $estatura, 'fcresp' => $fcresp, 'pushup' => $pushup ? $pushup->id : 1, 'tiempo' => $tiempo, 'cooper' => $cooper ? $cooper->id : 0, 'rock' => $rock ? $rock->id : 1, 'distanciaMetros' => $distanciaMetros, 'adbominales' => $adbominalesCom ? $adbominalesCom->id : 1, 'flexibilidad' => $flexionesCom ? $flexionesCom->id : 1, 'Vo2MAX' => $Vo2MAX, 'flexibilidad' => $flexibilidad, 'idPersonaFitnessTest' => $lastFitnessTest ? $lastFitnessTest->id : null];
 
         AgendaInbody::whereNull('fechaCancelacion')->where('idPersona', $idPersona)->update(
             [
@@ -432,9 +385,8 @@ class FitnessTestController extends ApiController
         $peopleIny->tiempo = $tiempo ?? 15;
         $peopleIny->cooper = $cooper ? $cooper->id : null;
         $peopleIny->rockport = $rock ? $rock->id : null;
-        $peopleIny->distancia = $distanciaMetros;
-        $peopleIny->adbominales = $adbominalesCom ? $adbominalesCom->id : 1;
-        $peopleIny->flexibilidad = $flexionesCom ? $flexionesCom->id : 1;
+        $peopleIny->distancia = $distanciaMetros ?? 1200;
+        $peopleIny->adbominales = $abdominales ?? 29;
         $peopleIny->vo2MAX = $Vo2MAX ?? 0;
         $peopleIny->flexibilidad = $flexibilidad ?? 0;
         $peopleIny->idPersonaFitnessTest = $lastFitnessTest ? $lastFitnessTest->id : null;
