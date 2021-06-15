@@ -427,13 +427,13 @@ class Menu extends Model
             $menu->idPersona     = $idPersona;
             $menu->idEmpleado    = $idEmpleado;
             $menu->idUn          = $idUn;
-            $menu->idRutina      = $idRutina;
+            // $menu->idRutina      = $idRutina;
             $menu->fecha_inicio  = $fechaInicio;
             $menu->fecha_fin     = $fechaFin;
             $menu->observaciones = $observaciones;
             $menu->save();
 
-            $res = self::insertMenuActividad($idRutina, $menu->id, $actividades, $fechaInicio);
+            // $res = self::insertMenuActividad($idRutina, $menu->id, $actividades, $fechaInicio);
             $conn_01->commit();
             return $menu->id;
         } catch (\Illuminate\Database\QueryException $ex) {
