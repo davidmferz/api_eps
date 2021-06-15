@@ -378,7 +378,7 @@ class FitnessTestController extends ApiController
         $peopleIny->minerales = $minerales ?? 0;
         $peopleIny->genero = $generoSexo ?? 13;
         $peopleIny->proteina = $proteina ?? 0;
-        $peopleIny->peso = $peso ?? 60;
+        $peopleIny->peso = number_format($peso ,2) ;
         $peopleIny->estatura = $estatura ?? 160;
         $peopleIny->fcresp = $fcresp ?? 60;
         $peopleIny->pushUp = $pushup ? $pushup->id : null;
