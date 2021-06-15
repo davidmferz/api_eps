@@ -145,7 +145,6 @@ class FitnessTestController extends ApiController
 
     public function setNuevoResgistro(NuevoFitnessTestRequest $request)
     {
-        // return $request->all();
         $idPersona = $request->idPersona;
         $idPersonaEmpleado = $request->idPersonaEmpleado;
         $peso = $request->peso ?? 60;
@@ -180,7 +179,7 @@ class FitnessTestController extends ApiController
         $fcresp = $request->fcresp ?? 60;
         $observaciones = $request->observaciones ?? 'Sin observaciones';
         $idReferenciaOrigen = $request->idReferenciaOrigen ?? 5;
-        $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->first();
+        // $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->first();
 
        $calcMe = number_format(($peso) / pow(($estatura / 100), 2), 2);
 
@@ -283,6 +282,7 @@ class FitnessTestController extends ApiController
             $diasFor->addDay();
         }
 
+        /*
         if (PersonaOptativaPreferencia::where('idPersona', $idPersona)->first()) {
             $idsaveOptativaPreferencia = PersonaOptativaPreferencia::where('idPersona', $idPersona)->update(
                 [
@@ -295,7 +295,8 @@ class FitnessTestController extends ApiController
             $psRef->idCatEjercicioPreferencia = $idReferenciaOrigen;
             $idsaveOptativaPreferencia = $psRef->save();
         }
-        $idsaveOptativaPreferencia;
+        */
+        $idsaveOptativaPreferencia = null;
         
         
         $cooper = null;
@@ -368,7 +369,7 @@ class FitnessTestController extends ApiController
         $peopleIny->idPersona = $idPersona;
         $peopleIny->idPersonaEmpleado = $idPersonaEmpleado;
         $peopleIny->tipoCuerpo = $tipoCuerpo;
-        $peopleIny->numComidas = $numComidas;
+        $peopleIny->numComidas = null;
         $peopleIny->RCC = $rcc ?? 0;
         $peopleIny->PGC = $pgc ?? 0;
         $peopleIny->IMC = $calcMe ?? 0;
