@@ -437,8 +437,10 @@ class InbodyController extends ApiController
             $mensajeMenu = "No existe una agenda por el momento, sin embargo, al registrar se creara uno nuevo";
         }
 
-
-
+        if (!$agendaInbody) {
+            $menuEstate = true;
+            $mensajeMenu = "No existe una cita agendada";
+        }
 
         return $this->successResponse(
             [
