@@ -1,6 +1,5 @@
 <?php
-
-namespace App\Http\Models\portal_socios;
+namespace App\Models\portal_socios;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
