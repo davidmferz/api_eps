@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\Http\Models\portal_socios\PersonaRewardBitacora;
 use App\Models\CatRutinas;
 use App\Models\PersonaInbody;
+use App\Models\portal_socios\PersonaRewardBitacora;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
