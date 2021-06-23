@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Models\portal_socios\PersonaRewardBitacora;
 use App\Models\CatRutinas;
 use App\Models\PersonaInbody;
 use Carbon\Carbon;
@@ -424,15 +425,26 @@ class Menu extends Model
             // self::where('idPersona', $idPersona)->update(['fechaEliminacion' => $hoy]);
             $menu = new self();
 
-            $menu->idPersona     = $idPersona;
-            $menu->idEmpleado    = $idEmpleado;
-            $menu->idUn          = $idUn;
+            $menu->idPersona  = $idPersona;
+            $menu->idEmpleado = $idEmpleado;
+            $menu->idUn       = $idUn;
             // $menu->idRutina      = $idRutina;
             $menu->fecha_inicio  = $fechaInicio;
             $menu->fecha_fin     = $fechaFin;
             $menu->observaciones = $observaciones;
             $menu->save();
 
+            $bitacora = PersonaRewardBitacora::validaEstatusReward($idPersona);
+            if ($bitacora != null) {
+                if ($bitacora->idMenu1 == null) {
+                    $bitacora->idMenu1 = $menu->id;
+                } elseif ($bitacora->idMenu2 == null) {
+                    $bitacora->idMenu2 = $menu->id;
+                } else {
+                    $bitacora->idMenu3 = $menu->id;
+                }
+                $bitacora->save();
+            }
             // $res = self::insertMenuActividad($idRutina, $menu->id, $actividades, $fechaInicio);
             $conn_01->commit();
             return $menu->id;
@@ -446,6 +458,7 @@ class Menu extends Model
         }
 
     }
+
     private static function insertMenuActividad($idRutina, $menu_id, $actividades, $fechaInicio)
     {
 
