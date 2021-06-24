@@ -18,6 +18,7 @@ use App\Models\Vo2Max\Pushup;
 use App\Models\Vo2Max\Rockport;
 use App\Models\Vo2Max\CatFcr;
 use App\Models\Vo2Max\CatImc;
+use App\Models\Vo2Max\SaturacionOxigeno;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -179,6 +180,7 @@ class FitnessTestController extends ApiController
         $fcresp = $request->fcresp ?? 60;
         $observaciones = $request->observaciones ?? 'Sin observaciones';
         $idReferenciaOrigen = $request->idReferenciaOrigen ?? 5;
+        $sp02Res = $request->ps02 ?? 90;
         // $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->first();
 
        $calcMe = number_format(($peso) / pow(($estatura / 100), 2), 2);
@@ -321,6 +323,10 @@ class FitnessTestController extends ApiController
                 ->first();
         }
 
+        $sp02 = SaturacionOxigeno::whereRaw("{$sp02Res} between so_minimo and so_maximo")->first();
+
+        // return $this->successResponse(['sp02' => $sp02]);
+
         $fitness = new FitnessTest();
         $fitness->idPersona = $idPersona;
         $fitness->idPersonaEmpleado = $idPersonaEmpleado;
@@ -333,6 +339,7 @@ class FitnessTestController extends ApiController
         $fitness->idFcr = $idFcr ? $idFcr->id : null;
         $fitness->vo2Max = $Vo2MAX;
         $fitness->nombrePruebaVo2Max = $rock ? 'Rockport' : 'Cooper';
+        $fitness->idSp02 = $sp02 ? $sp02->id : null;
         $fitnessSave = $fitness->save();
         $lastFitnessTest = FitnessTest::latest()->where('idPersona', $idPersona)->first();
 
@@ -393,6 +400,7 @@ class FitnessTestController extends ApiController
         $peopleIny->idPersonaFitnessTest = $lastFitnessTest ? $lastFitnessTest->id : null;
         $peopleIny->idMenu = $menu ? $menu : null;
         $peopleIny->edad = $edad ? $edad : 20;
+        $peopleIny->sp02 = $sp02Res;
         $peopleInySave = $peopleIny->save();
 
 

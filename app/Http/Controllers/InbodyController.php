@@ -433,9 +433,6 @@ class InbodyController extends ApiController
             $idMenu = $menuPersona->id;
             $menuEstate = true;
         }
-        else {
-            $mensajeMenu = "No existe una agenda por el momento, sin embargo, al registrar se creara uno nuevo";
-        }
 
         if (!$agendaInbody) {
             $menuEstate = true;
