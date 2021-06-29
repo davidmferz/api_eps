@@ -33,9 +33,9 @@ class InBody extends Model
 
     public function scopeLastInBody($query, $idPersona)
     {
-        try {
+        try { #'pushUp', 'abdominales', 'flexibilidad'
             $result = $query->select(
-                'tipoCuerpo', 'numComidas', 'peso', 'estatura', 'RCC', 'PGC', 'IMC', 'MME', 'MCG', 'ACT', 'minerales', 'proteina', 'fcresp', DB::raw('date(fechaRegistro) as fecha '), 'personainbody.fechaEliminacion')
+                'tipoCuerpo', 'numComidas', 'peso', 'estatura', 'RCC', 'PGC', 'IMC', 'MME', 'MCG', 'ACT', 'minerales', 'proteina', 'fcresp', 'sp02', DB::raw('date(fechaRegistro) as fecha '), 'personainbody.fechaEliminacion')
                 ->from('piso.personainbody')
                 ->whereNull('personainbody.fechaEliminacion')
                 ->where('personainbody.idPersona', '=', $idPersona)
@@ -60,7 +60,7 @@ class InBody extends Model
                     'fcresp'           => $result[0]->fcresp,
                     'fecha'            => $result[0]->fecha,
                     'fechaEliminacion' => $result[0]->fechaEliminacion,
-
+                    'sp02'             => $result[0]->sp02
                 ];
                 $retval = [
                     'status'  => 'ok',
@@ -86,6 +86,7 @@ class InBody extends Model
                             "fcresp"           => "0",
                             "fecha"            => "0000-00-00",
                             "fechaEliminacion" => "0000-00-00 00:00:00",
+                            "sp02"             => "0"
                         ],
                     ],
                 ];

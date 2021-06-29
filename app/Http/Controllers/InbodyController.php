@@ -5,14 +5,18 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\ApiController;
 use App\Http\Requests\CreateInbodyRequest;
 use App\Http\Requests\InbodyCoordinadorRequest;
+use App\Http\Requests\NuevoFitnessTestRequest;
 use App\Mail\MailEntrenador;
 use App\Mail\MailPersona;
 use App\Models\AgendaInbody;
+use App\Models\CatRutinas;
 use App\Models\Empleado;
 use App\Models\EP;
 use App\Models\InBody;
+use App\Models\Menu;
 use App\Models\Persona;
 use App\Models\Un;
+use App\Models\Vo2Max\CatEjercicioPreferencia;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -78,7 +82,7 @@ class InbodyController extends ApiController
 
                 $correoPersona = Persona::getMail($idPersonaSocio);
 
-//$correo                        = 'luis01cosio@gmail.com';
+                //$correo                        = 'luis01cosio@gmail.com';
                 $datosMailPersona                     = new \stdClass();
                 $datosMailPersona->nombreEntrenador   = $nombreEmpleado;
                 $datosMailPersona->fechaSolicitud_str = fechaStringES($fechaSolicitud);
@@ -91,7 +95,6 @@ class InbodyController extends ApiController
                 return $this->successResponse($inbody, 'Agenda ');
             } else {
                 return $this->errorResponse('Error al guardar  ', 500);
-
             }
         }
     }
@@ -117,7 +120,6 @@ class InbodyController extends ApiController
             return $this->successResponse($arrayMerge, 'Agenda ');
         } else {
             return $this->errorResponse('No se encontraron datos', 400);
-
         }
     }
 
@@ -202,7 +204,6 @@ class InbodyController extends ApiController
                     if ($k != 'idPersona' && ($value > 999.99 || $value < 0)) {
                         throw new \RuntimeException('Valor ' . $k . ' fuera de rango');
                     }
-
                 }
                 if (!isset($request['idPersona'])) {
                     throw new \RuntimeException('El idPersona no definido');
@@ -291,7 +292,7 @@ class InbodyController extends ApiController
             $data['club']               = $club[0];
 
             $data['subject_socio'] = '¡Tu Wellness Test está agendado!';
-            \Mail::send('emails.wellness_confirm', ['data' => $data], function ($message) use ($data) {
+            Mail::send('emails.wellness_confirm', ['data' => $data], function ($message) use ($data) {
                 $message->to($data['persona']->mail, $data['persona']->nombre_socio)->subject($data['subject_socio']);
             });
 
@@ -395,7 +396,71 @@ class InbodyController extends ApiController
     {
         $res = AgendaInbody::getAgendaCoordinador($idUn);
         return $this->successResponse($res, 'Agenda ');
+    }
 
+    public function getInfoInbodies($idPersona)
+    {
+        $nombre = null;
+        $idTipoSexo = 13;
+        $lastInBody = InBody::LastInBody($idPersona);
+        $persona = Persona::find($idPersona);
+        $idTipoSexo = $persona->idTipoSexo ??  13;
+        $fechaNacimiento = $persona->fechaNacimiento ??  Carbon::now()->subYears(20)->format('Y-m-d');
+        $actividad  = Menu::ReadMenuActividad($idPersona);
+        $rutinas = CatRutinas::getFullCatalogv2();
+        $mensajeMenu = "";
+        if ($actividad['estatus']) {
+            $nombre = $persona->nombre . ' ' . $persona->paterno . ' ' . $persona->materno;
+        }
+
+        $agendaInbody = AgendaInbody::where('idPersona', $idPersona)
+            ->whereNull('fechaConfirmacion')
+            ->whereNull('fechaCancelacion')
+            ->first();
+
+        $unNombre = "";
+
+        if ($agendaInbody) {
+            $isUn = Un::where('idUn', $agendaInbody->idUn)->first();
+            $unNombre = $isUn->nombre ?? "No hay registro";
+        }
+
+        $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->latest()->first();
+        $menuEstate = false;
+        $idMenu = 0;
+        if ($menuPersona) {
+            $mensajeMenu = "Ya cuenta con una rutina asignada hasta el día {$menuPersona->fecha_fin}, para iniciar una nueva rutina, debera el cliente cancelar primero todo el menu, una vez finalizado ya podrá generar uno nuevo";
+            $idMenu = $menuPersona->id;
+            $menuEstate = true;
+        }
+
+        if (!$agendaInbody) {
+            $menuEstate = true;
+            $mensajeMenu = "No existe una cita agendada";
+        }
+
+        return $this->successResponse(
+            [
+                'nombre' => $nombre,
+                'lastInBody' => $lastInBody,
+                'actividad' => $actividad,
+                'idTipoSexo' => $idTipoSexo,
+                'fechaNacimiento' => $fechaNacimiento,
+                'rutinas' => $rutinas,
+                'unNombre' => $unNombre,
+                'agendaInbody' => $agendaInbody,
+                'menuPersona' => $menuPersona,
+                'mensajeMenu' => $mensajeMenu,
+                'idMenu' => $idMenu,
+                'menuEstate' => $menuEstate
+            ]
+        );
+    }
+
+    public function referenciasEjercicio()
+    {
+        $catEjercicio = CatEjercicioPreferencia::select(['id', 'nombre'])->get();
+        return $this->successResponse(['catEjercicio' => $catEjercicio]);
     }
 
 }

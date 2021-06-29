@@ -68,14 +68,11 @@ class Persona extends Model
                 return ['tipo' => 'INV'];
             } elseif ($query[0]->invitado == 1) {
                 return ['tipo' => 'INV'];
-
             } else {
                 return ['tipo' => 'EXTERNO'];
-
             }
         } else {
             return ['error'];
-
         }
     }
 
@@ -91,7 +88,6 @@ class Persona extends Model
         } else {
             return false;
         }
-
     }
     public function scopeQueryPersonaMem($query, $nombre, $tipoUsuario)
     {
@@ -150,7 +146,6 @@ class Persona extends Model
             }
         }
         return $res;
-
     }
 
     private function buscaSocioNombre($nombreMatch)
@@ -366,14 +361,15 @@ class Persona extends Model
             WHERE CONCAT_WS(' ', p.nombre, p.paterno, p.materno) LIKE '%$nom%' $w_min $w_max
             ORDER BY 7, p.nombre, p.paterno, p.materno
             LIMIT $numeroRegistros";
-
         }
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
             $res = array();
             $r   = [];
-            $a   = array_map(function ($x) {return (array) $x;}, $query);
+            $a   = array_map(function ($x) {
+                return (array) $x;
+            }, $query);
             foreach ($a as $row) {
                 $r['idPersona']   = $row['idPersona'];
                 $r['nombre']      = $row['nombre'];
@@ -477,7 +473,9 @@ class Persona extends Model
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
-            $query = array_map(function ($x) {return (array) $x;}, $query);
+            $query = array_map(function ($x) {
+                return (array) $x;
+            }, $query);
             $fila = $query[0];
             return $fila;
         } else {
@@ -530,7 +528,9 @@ class Persona extends Model
         $query = DB::connection('crm')->select($sql);
 
         if (count($query) > 0) {
-            $query = array_map(function ($x) {return (array) $x;}, $query);
+            $query = array_map(function ($x) {
+                return (array) $x;
+            }, $query);
             $fila = $query[0];
             return $fila['edad'];
         }
@@ -580,5 +580,4 @@ class Persona extends Model
         }
         return $datos;
     }
-
 }

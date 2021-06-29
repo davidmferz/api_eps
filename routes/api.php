@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\FitnessTestController;
+use App\Http\Controllers\InbodyController;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +19,7 @@ Route::get('notificacionError/{mensaje}', 'ApiController@notificacionError');
 
 Route::group(['prefix' => 'v1/'], function () {
     Route::get('getFullCatalog', 'EPController@getFullCatalog');
+    Route::get('referenciasEjercicio', 'InbodyController@referenciasEjercicio');
     Route::middleware(['cors'])->group(function () {
 
         Route::get('clear', function () {
@@ -106,6 +110,18 @@ Route::group(['prefix' => 'v1/'], function () {
             Route::match(['get', 'options'], 'getReporteClub/{idUn}', 'ReportesController@getReporteClub');
 
         });
+
+        Route::prefix('encuesta')->middleware('hashHeader')->group(
+            function ()
+            {
+                Route::get('formulario', [FitnessTestController::class, 'getEncuesta']);
+                Route::post('crearEncuesta', [FitnessTestController::class, 'fitnessCrear']);
+                Route::get('getInfo/{idPersona}', [InbodyController::class, 'getInfoInbodies']);
+                Route::post('generar', [FitnessTestController::class, 'setNuevoResgistro']);
+                Route::post('calcularCooperRockport', [FitnessTestController::class, 'calcularCooperRockport']);
+            }
+        );
+
     });
 
 });

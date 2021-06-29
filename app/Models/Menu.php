@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\CatRutinas;
 use App\Models\PersonaInbody;
+use App\Models\portal_socios\PersonaRewardBitacora;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -421,21 +422,32 @@ class Menu extends Model
             $conn_01 = DB::connection('aws');
             $conn_01->beginTransaction();
             $hoy = Carbon::now();
-            self::where('idPersona', $idPersona)->update(['fechaEliminacion' => $hoy]);
+            // self::where('idPersona', $idPersona)->update(['fechaEliminacion' => $hoy]);
             $menu = new self();
 
-            $menu->idPersona     = $idPersona;
-            $menu->idEmpleado    = $idEmpleado;
-            $menu->idUn          = $idUn;
-            $menu->idRutina      = $idRutina;
+            $menu->idPersona  = $idPersona;
+            $menu->idEmpleado = $idEmpleado;
+            $menu->idUn       = $idUn;
+            // $menu->idRutina      = $idRutina;
             $menu->fecha_inicio  = $fechaInicio;
             $menu->fecha_fin     = $fechaFin;
             $menu->observaciones = $observaciones;
             $menu->save();
 
-            $res = self::insertMenuActividad($idRutina, $menu->id, $actividades, $fechaInicio);
+            $bitacora = PersonaRewardBitacora::validaEstatusReward($idPersona);
+            if ($bitacora != null) {
+                if ($bitacora->idMenu1 == null) {
+                    $bitacora->idMenu1 = $menu->id;
+                } elseif ($bitacora->idMenu2 == null) {
+                    $bitacora->idMenu2 = $menu->id;
+                } else {
+                    $bitacora->idMenu3 = $menu->id;
+                }
+                $bitacora->save();
+            }
+            // $res = self::insertMenuActividad($idRutina, $menu->id, $actividades, $fechaInicio);
             $conn_01->commit();
-            return ['estatus' => true, 'id' => $menu->id, $res];
+            return $menu->id;
         } catch (\Illuminate\Database\QueryException $ex) {
             $conn_01->rollback();
 
@@ -446,6 +458,7 @@ class Menu extends Model
         }
 
     }
+
     private static function insertMenuActividad($idRutina, $menu_id, $actividades, $fechaInicio)
     {
 
@@ -456,7 +469,7 @@ class Menu extends Model
         $auxCount     = 0;
         $insert       = '';
         foreach ($actividades as $dia => $act) {
-            if ($act['fuerza'] == true) {
+            if ($act['fuerza'] === true || $act['fuerza'] === "true") {
                 $auxCount = $idx_circuito % count($arr_circuito);
                 $circuito = $arr_circuito[$auxCount];
                 if (count($circuito) == 0) {
@@ -468,7 +481,7 @@ class Menu extends Model
                 $circuito = ['id' => 0];
             }
 
-            if ($act['cardio'] == true) {
+            if ($act['cardio'] === true || $act['cardio'] === "true") {
                 $diaAux = Carbon::parse($dia);
                 // Se calcula número de semana según fecha proporcionada
                 $diffdays   = $fechaInicio->diffInDays($diaAux);
@@ -489,12 +502,12 @@ class Menu extends Model
             } else {
                 $cardio = ['id' => 0];
             }
-            if ($act['clases'] == true) {
+            if ($act['clases'] === true || $act['clases'] === "true") {
                 $clase_id = 10000; // Lo define porteriormente el socio
             } else {
                 $clase_id = 0;
             }
-            if ($act['opcionales'] == true) {
+            if ($act['opcionales'] === true || $act['opcionales'] === "true") {
                 $optativa_id = 10000; // Lo define porteriormente el socio
             } else {
                 $optativa_id = 0;
