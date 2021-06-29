@@ -38,7 +38,7 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            'throttle:100,1',
+            'throttle:1000,1',
             'bindings',
         ],
     ];
@@ -61,7 +61,7 @@ class Kernel extends HttpKernel
         'throttle'      => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified'      => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'cors'          => \App\Http\Middleware\Cors::class,
-        'hashHeader' => \App\Http\Middleware\HashHeader::class,
+        'hashHeader'    => \App\Http\Middleware\HashHeader::class,
     ];
 
     /**
