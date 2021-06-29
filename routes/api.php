@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
  */
+Route::get('notificacionError/{mensaje}', 'ApiController@notificacionError');
 
 Route::group(['prefix' => 'v1/'], function () {
     Route::get('getFullCatalog', 'EPController@getFullCatalog');

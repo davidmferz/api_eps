@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         Commands\ClasesFin::class,
+        Commands\SyncDeportiva::class,
     ];
 
     /**
@@ -25,6 +26,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('clases:fin')
+            ->hourly();
+        $schedule->command('syncDep')
             ->hourly();
     }
 

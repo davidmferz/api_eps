@@ -541,9 +541,9 @@ class EPController extends ApiController
     public function plantrabajo($idPersona = 0)
     {
 
-        $idPersona = $idPersona === 0 ? $_SESSION['idPersona'] : $idPersona;
-        session_write_close();
         try {
+            $idPersona = $idPersona === 0 ? $_SESSION['idPersona'] : $idPersona;
+            session_write_close();
             if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // por POST recibimos datos para guardar
 

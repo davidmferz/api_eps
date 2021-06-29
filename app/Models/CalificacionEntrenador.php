@@ -16,6 +16,9 @@ class CalificacionEntrenador extends Model
 
     public static function getCalificacionesAws($entrenadores)
     {
+        if (count($entrenadores) <= 0) {
+            return [];
+        }
         $strIds = implode(",", $entrenadores);
         $sql    = "SELECT
             idEmpleado,

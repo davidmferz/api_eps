@@ -116,7 +116,7 @@ class InBody extends Model
     {
         try {
             if (!empty($datos)) {
-                $idPersonaInBody = DB::connection('aws')->table('piso.personainbody', 'idPersonaInBody')->insertGetId($datos);
+                $idPersonaInBody = DB::connection('aws')->table('piso.personainbody')->insertGetId($datos);
             } else {
                 return false;
             }

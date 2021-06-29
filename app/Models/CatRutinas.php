@@ -223,13 +223,7 @@ class CatRutinas extends Model
 
         }
 
-        $retval = [
-            'code'    => 200,
-            'message' => 'ok',
-            'data'    => $send,
-        ];
-
-        return $retval;
+        return $send;
 
     }
 
