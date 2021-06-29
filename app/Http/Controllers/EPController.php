@@ -542,6 +542,15 @@ class EPController extends ApiController
     {
 
         try {
+            if (!isset($_SESSION['idPersona'])) {
+                $retval = array(
+                    'status'  => 'error',
+                    'data'    => array(),
+                    'code'    => 400,
+                    'message' => 'session terminada',
+                );
+                return response()->json($retval, $retval['code']);
+            }
             $idPersona = $idPersona === 0 ? $_SESSION['idPersona'] : $idPersona;
             session_write_close();
             if ($_SERVER['REQUEST_METHOD'] == 'POST') {
