@@ -306,7 +306,7 @@ class FitnessTestController extends ApiController
         $imcCal = null;
         $idFcr = null;
         $adbominalesCom = $this->adbominales($generoSexo, $edad, $abdominales);
-        $flexionesCom = $this->flexiones($generoSexo, $edad, $flexibilidad);
+        $flexionesCom = $this->flexiones($generoSexo, $edad, $flexiones);
         $imcCal = $this->imc($calcMe);
         $idFcr = $this->fcr($fcresp, $edad, $generoSexo);
         $pushup = $this->pushUp($generoSexo, $edad, $flexiones);
@@ -324,6 +324,8 @@ class FitnessTestController extends ApiController
         }
 
         $sp02 = SaturacionOxigeno::whereRaw("{$sp02Res} between so_minimo and so_maximo")->first();
+
+        // return ['adbominalesCom' => $adbominalesCom, 'flexionesCom' => $flexionesCom, 'imcCal' => $imcCal, 'idFcr' => $idFcr, 'pushup' => $pushup, 'Vo2MAX' => $Vo2MAX, 'cooper' => $cooper, 'rock' => $rock, 'requetst' => $request->all(), 'abdominales' => $abdominales, 'genero' => $generoSexo, 'flexiones' => $flexiones ];
 
         // return $this->successResponse(['sp02' => $sp02]);
 
