@@ -290,22 +290,7 @@ class FitnessTestController extends ApiController
             $diasFor->addDay();
         }
 
-        /*
-        if (PersonaOptativaPreferencia::where('idPersona', $idPersona)->first()) {
-            $idsaveOptativaPreferencia = PersonaOptativaPreferencia::where('idPersona', $idPersona)->update(
-                [
-                    'idCatEjercicioPreferencia' => $idReferenciaOrigen
-                ]
-            );
-        } else {
-            $psRef =  new PersonaOptativaPreferencia;
-            $psRef->idPersona = $idPersona;
-            $psRef->idCatEjercicioPreferencia = $idReferenciaOrigen;
-            $idsaveOptativaPreferencia = $psRef->save();
-        }
-        */
         $idsaveOptativaPreferencia = null;
-        
         
         $cooper = null;
         $rock = null;
