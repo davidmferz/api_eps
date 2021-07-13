@@ -153,8 +153,14 @@ class FitnessTestController extends ApiController
         $tiempo = $request->tiempo ?? 10;
         $distanciaMetros = $request->distanciaMetros;
         $frecuenciaCardiaca = $request->frecuenciaCardiaca ?? 80;
-        $edadRequest =$request->fcNacimiento ? Carbon::now()->format('Y') - Carbon::parse($request->fcNacimiento)->format('Y') : Carbon::now()->subYears(20)->format('Y') - Carbon::now()->format('Y');
-        $edad = $edadRequest < 20 ? 20 : $edadRequest;
+        $edadRequest =$request->fcNacimiento != '0000-00-00' ? Carbon::now()->format('Y') - Carbon::parse($request->fcNacimiento)->format('Y') : Carbon::now()->subYears(20)->format('Y') - Carbon::now()->format('Y');
+        if ($edadRequest >= 20 && $edadRequest <= 90) {
+            $edad = $edadRequest;
+        }
+        else {
+            $edad = 20;
+        }
+        // $edad = $edadRequest < 20 ? 20 : $edadRequest;
         $rockportEncuesta = $request->rockportEncuesta ?? false;
         $idNivel = $request->idNivel ?? 0;
         $flexiones = $request->flexiones ?? 20;
@@ -316,16 +322,16 @@ class FitnessTestController extends ApiController
                 ->whereRaw("{$tiempo} between tiempoMinimo and tiempoMaximo")
                 ->first();
         } else {
-            $Vo2MAX = (($distanciaMetros - 540) / 45) * $peso;
+            $Vo2MAX = (($distanciaMetros - 540) / 45);
             $cooper = Cooper::whereRaw("{$edad} between edadMinima and edadMaxima")
                 ->where("genero", $generoSexo)
                 ->whereRaw("{$distanciaMetros} between distanciaMinima and distanciaMaxima")
                 ->first();
         }
 
-        $sp02 = SaturacionOxigeno::whereRaw("{$sp02Res} between so_minimo and so_maximo")->first();
+     $sp02 = SaturacionOxigeno::whereRaw("{$sp02Res} between so_minimo and so_maximo")->first();
 
-        // return ['adbominalesCom' => $adbominalesCom, 'flexionesCom' => $flexionesCom, 'imcCal' => $imcCal, 'idFcr' => $idFcr, 'pushup' => $pushup, 'Vo2MAX' => $Vo2MAX, 'cooper' => $cooper, 'rock' => $rock, 'requetst' => $request->all(), 'abdominales' => $abdominales, 'genero' => $generoSexo, 'flexiones' => $flexiones ];
+     // return ['adbominalesCom' => $adbominalesCom ? $adbominalesCom->id : null, 'flexionesCom' => $flexionesCom ? $flexionesCom->id : null, 'imcCal' => $imcCal ? $imcCal->id : null, 'idFcr' => $idFcr ? $idFcr->id : null, 'pushup' => $pushup ? $pushup->id : null, 'Vo2MAX' => number_format($Vo2MAX, 2), 'cooper' => $cooper ? $cooper->id : null, 'rock' => $rock, 'requetst' => $request->all(), 'abdominales' => $abdominales, 'genero' => $generoSexo, 'flexiones' => $flexiones, 'bvd' => "132.6 - (0.17 * $peso) - (0.39 * $edad) + (6.31 *  $generoSexo) - (3.27 * $tiempo) - (0.156 * $frecuenciaCardiaca)", 'dd' => "(($distanciaMetros - 540) / 45) * $peso", 'rockportEncuesta' => $rockportEncuesta, 'sp2' => $sp02 ? $sp02->id : null];
 
         // return $this->successResponse(['sp02' => $sp02]);
 
@@ -339,7 +345,7 @@ class FitnessTestController extends ApiController
         $fitness->idRockport = $rock ? $rock->id : null;
         $fitness->idImc = $imcCal ? $imcCal->id : null;
         $fitness->idFcr = $idFcr ? $idFcr->id : null;
-        $fitness->vo2Max = $Vo2MAX;
+        $fitness->vo2Max = number_format($Vo2MAX, 2);
         $fitness->nombrePruebaVo2Max = $rock ? 'Rockport' : 'Cooper';
         $fitness->idSp02 = $sp02 ? $sp02->id : null;
         $fitnessSave = $fitness->save();
@@ -397,7 +403,7 @@ class FitnessTestController extends ApiController
         $peopleIny->rockport = $rock ? $rock->id : null;
         $peopleIny->distancia = $distanciaMetros ?? 1200;
         $peopleIny->adbominales = $abdominales ?? 29;
-        $peopleIny->vo2MAX = $Vo2MAX ?? 0;
+        $peopleIny->vo2MAX = number_format($Vo2MAX, 2) ?? 0;
         $peopleIny->flexibilidad = $flexibilidad ?? 0;
         $peopleIny->idPersonaFitnessTest = $lastFitnessTest ? $lastFitnessTest->id : null;
         $peopleIny->idMenu = $menu ? $menu : null;
