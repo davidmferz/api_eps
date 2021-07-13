@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\ApiController;
 use App\Http\Requests\CreateInbodyRequest;
 use App\Http\Requests\InbodyCoordinadorRequest;
-use App\Http\Requests\NuevoFitnessTestRequest;
 use App\Mail\MailEntrenador;
 use App\Mail\MailPersona;
 use App\Models\AgendaInbody;
@@ -400,17 +399,27 @@ class InbodyController extends ApiController
 
     public function getInfoInbodies($idPersona)
     {
-        $nombre = null;
-        $idTipoSexo = 13;
-        $lastInBody = InBody::LastInBody($idPersona);
-        $persona = Persona::find($idPersona);
-        $idTipoSexo = $persona->idTipoSexo ??  13;
-        $fechaNacimiento = $persona->fechaNacimiento ??  Carbon::now()->subYears(20)->format('Y-m-d');
-        $actividad  = Menu::ReadMenuActividad($idPersona);
-        $rutinas = CatRutinas::getFullCatalogv2();
-        $mensajeMenu = "";
+        $nombre          = null;
+        $idTipoSexo      = 13;
+        $lastInBody      = InBody::LastInBody($idPersona);
+        $persona         = Persona::find($idPersona);
+        $idTipoSexo      = $persona->idTipoSexo ?? 13;
+        $fechaNacimiento = $persona->fechaNacimiento ?? Carbon::now()->subYears(20)->format('Y-m-d');
+        $actividad       = Menu::ReadMenuActividad($idPersona);
+        $rutinas         = CatRutinas::getFullCatalogv2();
+        $mensajeMenu     = "";
         if ($actividad['estatus']) {
             $nombre = $persona->nombre . ' ' . $persona->paterno . ' ' . $persona->materno;
+        }
+
+        $agendasInbodyPasadas = AgendaInbody::where('idPersona', $idPersona)
+            ->whereNull('fechaConfirmacion')
+            ->whereNull('fechaCancelacion')
+            ->whereRaw('CURRENT_DATE() > fechaSolicitud')
+            ->get();
+
+        foreach ($agendasInbodyPasadas as $key => $value) {
+            $value->delete();
         }
 
         $agendaInbody = AgendaInbody::where('idPersona', $idPersona)
@@ -421,38 +430,38 @@ class InbodyController extends ApiController
         $unNombre = "";
 
         if ($agendaInbody) {
-            $isUn = Un::where('idUn', $agendaInbody->idUn)->first();
+            $isUn     = Un::where('idUn', $agendaInbody->idUn)->first();
             $unNombre = $isUn->nombre ?? "No hay registro";
         }
 
         $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->latest()->first();
-        $menuEstate = false;
-        $idMenu = 0;
+        $menuEstate  = false;
+        $idMenu      = 0;
         if ($menuPersona) {
             $mensajeMenu = "Ya cuenta con una rutina asignada hasta el día {$menuPersona->fecha_fin}, para iniciar una nueva rutina, debera el cliente cancelar primero todo el menu, una vez finalizado ya podrá generar uno nuevo";
-            $idMenu = $menuPersona->id;
-            $menuEstate = true;
+            $idMenu      = $menuPersona->id;
+            $menuEstate  = true;
         }
 
         if (!$agendaInbody) {
-            $menuEstate = true;
+            $menuEstate  = true;
             $mensajeMenu = "No existe una cita agendada";
         }
 
         return $this->successResponse(
             [
-                'nombre' => $nombre,
-                'lastInBody' => $lastInBody,
-                'actividad' => $actividad,
-                'idTipoSexo' => $idTipoSexo,
+                'nombre'          => $nombre,
+                'lastInBody'      => $lastInBody,
+                'actividad'       => $actividad,
+                'idTipoSexo'      => $idTipoSexo,
                 'fechaNacimiento' => $fechaNacimiento,
-                'rutinas' => $rutinas,
-                'unNombre' => $unNombre,
-                'agendaInbody' => $agendaInbody,
-                'menuPersona' => $menuPersona,
-                'mensajeMenu' => $mensajeMenu,
-                'idMenu' => $idMenu,
-                'menuEstate' => $menuEstate
+                'rutinas'         => $rutinas,
+                'unNombre'        => $unNombre,
+                'agendaInbody'    => $agendaInbody,
+                'menuPersona'     => $menuPersona,
+                'mensajeMenu'     => $mensajeMenu,
+                'idMenu'          => $idMenu,
+                'menuEstate'      => $menuEstate,
             ]
         );
     }
