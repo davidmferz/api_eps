@@ -68,12 +68,9 @@ class Menu extends Model
             ->join('deportiva.empleado as e', 'e.idPersona', '=', 'menu.idEmpleado')
             ->whereIn('menu.idEmpleado', $ids)
             ->whereRaw("menu.fechaRegistro  between  '{$ini}' AND  '{$fin}'")
-            ->where('menu.fechaEliminacion', '0000-00-00 00:00:00')
+            ->whereNull('menu.fechaEliminacion')
             ->get();
-        $addSlashes = str_replace('?', "'?'", $query->toSql());
-        $sq         = vsprintf(str_replace('?', '%s', $addSlashes), $query->getBindings());
-        dd($sq);
-
+        
     }
 
     public function scopeRutinasClubConteo($query, $fechaIni, $fechaFin)

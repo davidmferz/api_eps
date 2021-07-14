@@ -119,7 +119,7 @@ class Persona extends Model
                 LIMIT 20";
             $res = DB::connection('crm')->select($sql);
         } else {
-            $nombre = trim(utf8_encode($nombre));
+            $nombre = trim($nombre);
             $find   = array('á', 'é', 'í', 'ó', 'ú', 'â', 'ê', 'î', 'ô', 'û', 'ã', 'õ', 'ç', 'ñ', 'Ñ', 'Á');
             $repl   = array('a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u', 'a', 'o', 'c', 'n', 'N', 'A');
             $nombre = str_replace($find, $repl, $nombre);
