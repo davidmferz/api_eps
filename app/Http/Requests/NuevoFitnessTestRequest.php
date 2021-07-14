@@ -31,7 +31,7 @@ class NuevoFitnessTestRequest extends FormRequest
             'tiempo'             => '',
             'distanciaMetros'    => '',
             'frecuenciaCardiaca' => '',
-            'edad'               => 'required|integer|min:16|max:110',
+            'edad'               => '',
             'rockportEncuesta'   => '',
             'sexo'               => 'required',
             'flexiones'          => 'required',
