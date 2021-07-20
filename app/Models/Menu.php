@@ -70,7 +70,7 @@ class Menu extends Model
             ->whereRaw("menu.fechaRegistro  between  '{$ini}' AND  '{$fin}'")
             ->whereNull('menu.fechaEliminacion')
             ->get();
-        
+
     }
 
     public function scopeRutinasClubConteo($query, $fechaIni, $fechaFin)
@@ -433,15 +433,23 @@ class Menu extends Model
 
             $bitacora = PersonaRewardBitacora::validaEstatusReward($idPersona);
             if ($bitacora != null) {
-                if ($bitacora->idMenu1 == null) {
-                    $bitacora->idMenu1 = $menu->id;
-                } elseif ($bitacora->idMenu2 == null) {
+                if ($bitacora->idMenu2 == null) {
                     $bitacora->idMenu2 = $menu->id;
-                } else {
+                    //TODO: evaluar rutina menu1
+                } elseif ($bitacora->idMenu3 == null) {
                     $bitacora->idMenu3 = $menu->id;
+                    //TODO: evaluar rutina menu2
+                } else {
+                    //TODO: evaluar rutina menu3 generar nueva bitacora en caso de exito
                 }
                 $bitacora->save();
+            } else {
+                $bitacora            = new PersonaRewardBitacora();
+                $bitacora->idPersona = $idPersona;
+                $bitacora->idMenu1   = $menu->id;
+                $bitacora->save();
             }
+
             // $res = self::insertMenuActividad($idRutina, $menu->id, $actividades, $fechaInicio);
             $conn_01->commit();
             return $menu->id;

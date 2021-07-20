@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\ApiController;
-use App\Http\Requests\CreaRutinaRequest;
 use App\Models\EP;
 use App\Models\Menu;
 use App\Models\Persona;
@@ -70,28 +69,4 @@ class RutinasController extends ApiController
 
     }
 
-    public function creaRutina(CreaRutinaRequest $request)
-    {
-        $idUn          = $request->input('idUn');
-        $idPersona     = $request->input('idPersona');
-        $idEmpleado    = $request->input('idEmpleado');
-        $idRutina      = $request->input('idRutina');
-        $fechaInicio   = $request->input('fechaInicio');
-        $fechaFin      = $request->input('fechaFin');
-        $observaciones = $request->input('observaciones');
-        $actividades   = $request->input('actividades');
-        $interval      = date_diff(date_create($fechaFin), date_create($fechaInicio))->format('%a');
-        if ($interval < 27 || count($actividades) < 28) {
-            return $this->errorResponse('fechas o actividades son menor de  28 días ', 422);
-        }
-
-        $result = Menu::InsertMenu($idUn, $idPersona, $idRutina, $fechaInicio, $fechaFin, $observaciones, $actividades, $idEmpleado);
-
-        if ($result['estatus'] == true) {
-            return $this->successResponse($result, 'Se creó rutina');
-
-        } else {
-            return $this->errorResponse($result['mensaje'], 422);
-        }
-    }
 }

@@ -49,7 +49,6 @@ class ReportesController extends ApiController
     {
         $rutinas  = Menu::getConteoRutinasEntrenadores($idUn);
         $response = [
-            //  'inbodysAgendamientos' => $inbodysAgendamientos,
             'rutinas' => $rutinas,
         ];
         return $this->successResponse($response, 'catalogo rutinas por club.');
