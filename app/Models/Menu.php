@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\BD_App\UsuarioPlan;
 use App\Models\CatRutinas;
 use App\Models\PersonaInbody;
 use App\Models\portal_socios\PersonaRewardBitacora;
+use App\Models\Socios\UsuarioAvanceRutina;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -413,36 +415,41 @@ class Menu extends Model
         }
 
     }
-    public static function insertMenu($idUn, $idPersona, $idRutina, $fechaInicio, $fechaFin, $observaciones, $actividades, $idEmpleado)
+    public static function insertMenu($idUn, $idPersona, $fechaInicio, $fechaFin, $observaciones, $idEmpleado)
     {
         try {
             $conn_01 = DB::connection('aws');
             $conn_01->beginTransaction();
-            $hoy = Carbon::now();
-            // self::where('idPersona', $idPersona)->update(['fechaEliminacion' => $hoy]);
             $menu = new self();
 
-            $menu->idPersona  = $idPersona;
-            $menu->idEmpleado = $idEmpleado;
-            $menu->idUn       = $idUn;
-            // $menu->idRutina      = $idRutina;
+            $menu->idPersona     = $idPersona;
+            $menu->idEmpleado    = $idEmpleado;
+            $menu->idUn          = $idUn;
             $menu->fecha_inicio  = $fechaInicio;
             $menu->fecha_fin     = $fechaFin;
             $menu->observaciones = $observaciones;
             $menu->save();
 
-            $bitacora = PersonaRewardBitacora::validaEstatusReward($idPersona);
+            $bitacora  = PersonaRewardBitacora::validaEstatusReward($idPersona);
+            $numRutina = 1;
             if ($bitacora != null) {
                 if ($bitacora->idMenu2 == null) {
                     $bitacora->idMenu2 = $menu->id;
-                    //TODO: evaluar rutina menu1
+                    $numRutina         = 1;
                 } elseif ($bitacora->idMenu3 == null) {
                     $bitacora->idMenu3 = $menu->id;
-                    //TODO: evaluar rutina menu2
+                    $numRutina         = 2;
                 } else {
-                    //TODO: evaluar rutina menu3 generar nueva bitacora en caso de exito
+                    $numRutina = 3;
                 }
-                $bitacora->save();
+                self::evaluaMesRutina($menu, $bitacora, $numRutina);
+                if ($numRutina == 3) {
+                    $bitacora            = new PersonaRewardBitacora();
+                    $bitacora->idPersona = $idPersona;
+                    $bitacora->idMenu1   = $menu->id;
+                    $bitacora->save();
+                }
+
             } else {
                 $bitacora            = new PersonaRewardBitacora();
                 $bitacora->idPersona = $idPersona;
@@ -450,7 +457,6 @@ class Menu extends Model
                 $bitacora->save();
             }
 
-            // $res = self::insertMenuActividad($idRutina, $menu->id, $actividades, $fechaInicio);
             $conn_01->commit();
             return $menu->id;
         } catch (\Illuminate\Database\QueryException $ex) {
@@ -460,6 +466,90 @@ class Menu extends Model
         } catch (\Exception $ex) {
             $conn_01->rollback();
             return ['estatus' => false, 'mensaje' => $ex->getMessage()];
+        }
+
+    }
+
+    public static function evaluaMesRutina($bitacora, $numMenuEvaluar)
+    {
+        $estatusActividades = false;
+        $estatusActivo      = false;
+        $estatusAsistencia  = false;
+        $estatus80Porciento = false;
+        switch ($numMenuEvaluar) {
+            case 1:
+                $menu = Menu::find($bitacora->idMenu1);
+
+                break;
+            case 2:
+                $menu = Menu::find($bitacora->idMenu2);
+
+                break;
+            case 3:
+                $menu = Menu::find($bitacora->idMenu3);
+                break;
+            default:
+                return false;
+                break;
+        }
+        $actividadesPlan = UsuarioPlan::withCount('actividades')->where('ID_PLAN', $menu->idPlan)->get();
+        if ($actividadesPlan >= 35) {
+            $estatusActividades = true;
+        }
+
+        $usuario = UsuariosMigracion::find($menu->idPersona);
+        if (in_array($usuario->tipoUsuario, ['socio', 'invitado', 'empleado'])) {
+            if ($usuario->estatus == 'Activa') {
+                $estatusActivo = true;
+            }
+        }
+        $numReservas = UsuariosIncritosClub::where('idPersona', $menu->idPersona)
+            ->whereBetween('fecha', [$menu->fechaInicio, $menu->fechaFin])
+            ->groupBy('fecha')
+            ->count();
+        if ($numReservas >= 10) {
+            $estatusAsistencia = true;
+        }
+
+        $avanceRutina = UsuarioAvanceRutina::find($menu->idPlan);
+        if ($avanceRutina->avance >= 75) {
+            $estatus80Porciento = true;
+        }
+        $completado = false;
+        if ($estatusActividades && $estatusActivo && $estatusAsistencia && $estatus80Porciento) {
+            $completado = true;
+        }
+
+        switch ($numMenuEvaluar) {
+            case 1:
+                $bitacora->objetivoRutina1 = $completado;
+                break;
+            case 2:
+                $bitacora->objetivoRutina2 = $completado;
+                break;
+            case 3:
+                $bitacora->objetivoRutina3 = $completado;
+                break;
+            default:
+                return false;
+                break;
+        }
+        $bitacora->objetivoSocioActivo = $estatusActivo;
+        $bitacora->save();
+        if ($completado) {
+            //TODO:mail exito # rutina
+            if ($numMenuEvaluar == 3) {
+                $bitacora->completado = $completado;
+                $bitacora->save();
+            }
+            return true;
+        } else {
+            //TODO: Reiniciar rutina
+            if ($numMenuEvaluar == 3) {
+                $bitacora->delete();
+            }
+            return false;
+
         }
 
     }
@@ -734,432 +824,6 @@ class Menu extends Model
 
             return ['estatus' => false, 'mensaje' => "Día de recuperación"];
         }
-
-    }
-    public static function scopeReadMenu($query, $idPersona, $dia)
-    {
-        $sql = "SELECT crut.id, mnu.fecha_inicio, mnu.id menu_id
-                FROM piso.menu mnu
-                INNER JOIN piso.cat_rutinas crut ON crut.id = mnu.idRutina
-                WHERE mnu.idPersona = {$idPersona}
-                AND mnu.fechaEliminacion IS NULL
-                AND mnu.fecha_inicio <= '{$dia}'
-                AND mnu.fecha_fin >= '{$dia}'
-                ORDER BY mnu.fechaRegistro desc
-                LIMIT 1 ";
-
-        $res = DB::connection('aws')->select($sql);
-
-        if (count($res) > 0) {
-            $rutina_id        = $res[0]->id;
-            $fecha_inicio_sql = $res[0]->fecha_inicio;
-            $menu_id          = $res[0]->menu_id;
-        } else {
-            return ['estatus' => false, 'mensaje' => "Día de recuperación"];
-        }
-
-        // Se calcula los días de antigüedad de la rutina
-        $fecha_hoy    = new Carbon;
-        $fecha_inicio = new Carbon;
-        $fecha_inicio->timestamp(strtotime($fecha_inicio_sql . ' 00:00:00'));
-        $diff = $fecha_hoy->diffinDays($fecha_inicio);
-
-        // Si han pasado más de MAX_DIAS_ANTIGUEDAD_RUTINA entonces caduca la rutina de esa idPersona
-        if ($diff > self::MAX_DIAS_ANTIGUEDAD_RUTINA) {
-            return ['estatus' => false, 'mensaje' => "Última rutina ha caducado"];
-        }
-
-        $dia_act        = $dia;
-        $dia            = new Carbon();
-        $dia->timestamp = strtotime($dia_act);
-
-        $idRutina = $res[0]->id;
-        // $arr_cardio = CatRutinas::read_rutina_cardios($idRutina);
-
-        // Obtención de la Frecuencia Cardiaca en Reposo
-        $res = PersonaInbody::select('fcresp')
-            ->where('idPersona', '=', $idPersona)
-            ->orderBy('fechaRegistro', 'desc')
-            ->get();
-        if (count($res) > 0) {
-            $fcresp = $res->first()->fcresp;
-        } else {
-            $fcresp = 0;
-        }
-
-        // Obtención de edad del socio
-        $sql = "
-                SELECT per.fechaNacimiento
-                FROM persona per
-                WHERE per.fechaNacimiento <> '0000-00-00'
-                AND per.fechaEliminacion = '0000-00-00 00:00:00'
-                AND per.idPersona = {$idPersona}
-                LIMIT 1
-            ";
-        $res = DB::connection('crm')->select($sql);
-
-        if (count($res) > 0) {
-            $fechaNacimiento = $res[0]->fechaNacimiento;
-        } else {
-            $fechaNacimiento = null;
-            throw new \Exception("No se pudo recuperar la edad del socio, rectifique sus datos en el club más cercano.");
-        }
-        $fechaNacimiento_tmp            = Carbon::now();
-        $fechaNacimiento_tmp->timestamp = strtotime($fechaNacimiento);
-        $edad                           = $fechaNacimiento_tmp->diffInYears(Carbon::now());
-
-        // Se calcula número de semana según fecha proporcionada
-        $diffdays   = $fecha_inicio->diffInDays($dia);
-        $num_semana = intval($diffdays / 7) + 1;
-        if ($num_semana > 4) {
-            throw new \Exception("La fecha {$dia_act} está fuera de las cuatro semanas de la rutina", 400);
-        }
-
-        // Se obtiene menu_id por idPersona
-        $res = self::select('id', 'porcentaje')
-            ->where('idPersona', '=', $idPersona)
-            ->where('fechaEliminacion', '=', '0000-00-00 00:00:00')
-            ->orderBy('fechaRegistro', 'DESC')
-            ->get();
-
-        $menu_id = 0;
-        if (count($res) == 0) {
-            throw new \Exception("No existen rutinas definidas", 400);
-        } else {
-            $menu_id    = $res[0]->id;
-            $porcentaje = $res[0]->porcentaje;
-        }
-
-        // Tiene Cardio como Actividad ?
-        $res = DB::connection('aws')->table('piso.menu_actividad')
-            ->where('menu_id', '=', $menu_id)
-            ->where('dia', '=', $dia)
-            ->select('cardio_id')
-            ->get();
-
-        $cardios = [];
-        if (count($res) > 0 && $res[0]->cardio_id > 0) {
-            // Se obtienen cardios por menu_id
-            $res = DB::connection('aws')->table('piso.rutina_cardios as rc')
-                ->select(DB::raw("CONCAT({$menu_id},'-',rc.id) as clave"),
-                    'eq.nombre as equipo', 'eq.imagen', 'rc.tiempo', 'rc.intensidad',
-                    DB::raw('IF(IFNULL(mcc.completado,0)=0,false,true) completado'))
-                ->join('piso.cat_equipos as eq', 'rc.equipo_id', '=', 'eq.id')
-                ->leftJoin('piso.menu_cardio_completado as mcc', function ($join) use ($menu_id, $dia) {
-                    $join->on('rc.id', '=', 'mcc.cardio_id')
-                        ->where('mcc.menu_id', '=', $menu_id)
-                        ->where('mcc.fechaCompletado', '=', $dia);
-                })
-                ->where('rc.rutina_id', '=', $idRutina)
-                ->where('rc.num_semana', '=', $num_semana)
-                ->get();
-
-            $res_arr = [];
-            if (count($res) > 0) {
-                $res_arr = $res->toArray();
-                $res_arr = array_map(function ($x) {return (array) $x;}, $res_arr);
-
-                $intensidad     = $res_arr[0]['intensidad'];
-                $intensidad     = str_replace('%', '', $intensidad);
-                $arr_intensidad = explode('-', $intensidad);
-
-                // Obtención de la Recuencia Cardiaca Máxima
-                // $fcmax = intval(220 – $edad); // Fórmula Clásica
-                $fcmax = intval(208 - (0.7 * $edad)); // Fórmula Tanaka
-
-                // Fórmula Karvonen para (Target Heart Rate THR)
-                $fc_objetivo = intval((($fcmax - $fcresp) * $arr_intensidad[0] / 100) + $fcresp);
-
-                $res_arr[0]['intensidad'] = $fc_objetivo;
-            }
-
-            // Se obtiene la bandera completado de cardio
-            if (count($res) > 0) {
-                $res_arr = $res->toArray();
-                $res_arr = array_map(function ($x) {return (array) $x;}, $res_arr);
-                $res_arr[0]['intensidad'] = $fc_objetivo;
-
-                foreach ($res_arr as $arr1) {
-                    $aa1 = [];
-                    foreach ($arr1 as $k2 => $v2) {
-                        if ($k2 == 'completado') {
-                            if ($v2 == 0) {
-                                $v2 = false;
-                            } else {
-                                $v2 = true;
-                            }
-                        }
-                        $aa1[$k2] = $v2;
-                    }
-                    $cardios[] = $aa1;
-                }
-            }
-        }
-
-        // Tiene Clase como Actividad ?
-        $res = DB::connection('aws')->table('piso.menu_actividad')
-            ->where('menu_id', '=', $menu_id)
-            ->where('dia', '=', $dia)
-            ->select('clase_id')
-            ->get();
-
-        $clases = [];
-        if (count($res) > 0 && $res[0]->clase_id > 0) {
-            // Se obtienen clases por menu_id
-            $res = DB::connection('aws')->table('piso.rutinas_has_clases as rhc')
-                ->select(DB::raw("CONCAT({$menu_id},'-',cc.id) as clave"),
-                    'cc.nombre', 'cc.imagen')
-                ->join('piso.cat_clases as cc', 'rhc.clase_id', '=', 'cc.id')
-                ->where('rhc.rutina_id', '=', $idRutina)
-                ->get();
-
-            // Se obtiene la bandera completado de clases
-            if (count($res) > 0) {
-                $res_arr = $res->toArray();
-                $res_arr = array_map(function ($x) {return (array) $x;}, $res_arr);
-
-                foreach ($res_arr as $arr1) {
-                    $aa1 = [];
-                    foreach ($arr1 as $k2 => $v2) {
-                        if ($k2 == 'completado') {
-                            if ($v2 == 0) {
-                                $v2 = false;
-                            } else {
-                                $v2 = true;
-                            }
-                        }
-                        $aa1[$k2] = $v2;
-                    }
-                    $clases[] = $aa1;
-                }
-            }
-
-            // Se obtiene el id de la clase OTRO
-            $res_clases = DB::connection('aws')->table('piso.cat_clases as cc')
-                ->where('cc.nombre', '=', 'OTRO')
-                ->get();
-            $id_otro = $res_clases[0]->id;
-
-            $res_otro = DB::connection('aws')->table('piso.cat_clases as cat')
-                ->where('cat.nombre', '=', 'OTRO')
-                ->select(DB::raw("IFNULL(cat.imagen,'') imagen"))
-                ->get();
-            $imagen_otro = $res_otro[0]->imagen;
-
-            // Se obtienen clases por menu_id OTRO
-            $res_otro = DB::connection('aws')->table('piso.menu_clase_completado as mcc')
-                ->select(DB::raw("CONCAT({$menu_id},'-',mcc.clase_id) as clave"),
-                    DB::raw('IF(IFNULL(mcc.completado,0)=0,false,true) completado'))
-                ->leftJoin('piso.cat_clases as cc', function ($join) use ($id_otro) {
-                    $join->on('mcc.clase_id', '=', 'cc.id')
-                        ->where('cc.id', '=', $id_otro);
-                })
-                ->where('mcc.fechaCompletado', '=', $dia)
-                ->where('mcc.menu_id', '=', $menu_id)
-                ->get();
-
-            // Se obtiene la bandera completado de clases OTRO
-            if (count($res_otro) > 0) {
-                $res_arr = $res_otro->toArray();
-                $res_arr = array_map(function ($x) {return (array) $x;}, $res_arr);
-
-                $completado = true;
-            } else {
-                $completado = false;
-            }
-            $clases[] = ["clave" => $menu_id . "-" . $id_otro, "nombre" => "OTRO", "imagen" => $imagen_otro, "completado" => $completado];
-        }
-
-        // Tiene Optativa como Actividad ?
-        $res = DB::connection('aws')->table('piso.menu_actividad')
-            ->where('menu_id', '=', $menu_id)
-            ->where('dia', '=', $dia)
-            ->select('optativa_id')
-            ->get();
-
-        $optativas = [];
-        if (count($res) > 0 && $res[0]->optativa_id > 0) {
-            // Se obtienen optativa por menu_id
-            $res = DB::connection('aws')->table('piso.rutinas_has_optativas as rho')
-                ->select(DB::raw("CONCAT({$menu_id},'-',co.id) as clave"),
-                    'co.nombre', 'co.imagen',
-                    DB::raw('IF(IFNULL(moc.completado,0)=0,false,true) completado'))
-                ->join('piso.cat_optativas as co', 'rho.optativa_id', '=', 'co.id')
-                ->leftJoin('piso.menu_optativa_completado as moc', function ($join) use ($menu_id, $dia) {
-                    $join->on('co.id', '=', 'moc.optativa_id')
-                        ->where('moc.menu_id', '=', $menu_id)
-                        ->where('moc.fechaCompletado', '=', $dia);
-                })
-                ->where('rho.rutina_id', '=', $idRutina)
-                ->get();
-
-            // Se obtiene la bandera completado de optativas
-            if (count($res) > 0) {
-                $res_arr = $res->toArray();
-                $res_arr = array_map(function ($x) {return (array) $x;}, $res_arr);
-
-                foreach ($res_arr as $arr1) {
-                    $aa1 = [];
-                    foreach ($arr1 as $k2 => $v2) {
-                        if ($k2 == 'completado') {
-                            if ($v2 == 0) {
-                                $v2 = false;
-                            } else {
-                                $v2 = true;
-                            }
-                        }
-                        $aa1[$k2] = $v2;
-                    }
-                    $optativas[] = $aa1;
-                }
-            }
-
-            // Se obtiene el id de la optativa OTRO
-            $res_optativa = DB::connection('aws')->table('piso.cat_optativas as co')
-                ->where('co.nombre', '=', 'OTRO')
-                ->get();
-            $id_otro = $res_optativa[0]->id;
-
-            $res_otro = DB::connection('aws')->table('piso.cat_optativas as cat')
-                ->where('cat.nombre', '=', 'OTRO')
-                ->select(DB::raw("IFNULL(cat.imagen,'') imagen"))
-                ->get();
-            $imagen_otro = $res_otro[0]->imagen;
-
-            // Se obtienen optativas por menu_id OTRO
-            $res_otro = DB::connection('aws')->table('piso.menu_optativa_completado as moc')
-                ->select(DB::raw("CONCAT({$menu_id},'-',moc.optativa_id) as clave"),
-                    DB::raw('IF(IFNULL(moc.completado,0)=0,false,true) completado'))
-                ->leftJoin('piso.cat_optativas as co', function ($join) use ($id_otro) {
-                    $join->on('moc.optativa_id', '=', 'co.id')
-                        ->where('co.id', '=', $id_otro);
-                })
-                ->where('moc.fechaCompletado', '=', $dia)
-                ->where('moc.menu_id', '=', $menu_id)
-                ->get();
-
-            // Se obtiene la bandera completado de optativas OTRO
-            if (count($res_otro) > 0) {
-                $res_arr = $res_otro->toArray();
-                $res_arr = array_map(function ($x) {return (array) $x;}, $res_arr);
-
-                $completado = true;
-            } else {
-                $completado = false;
-            }
-            $optativas[] = ["clave" => $menu_id . "-" . $id_otro, "nombre" => "OTRO", "imagen" => $imagen_otro, "completado" => $completado];
-        }
-
-        $sql = "SELECT concat(m.id,'-',ce.circuito_id,'-',ce.ejercicio_id) clave,
-                ce.orden, eje.nombre, eje.video, eje.imagen, prg.series, prg.repeticiones,
-                -- IF(rc.tipo='circuito',prg.descanso,0) descanso,
-                rc.tipo,
-                prg.descanso,
-                IF(IFNULL(mec.completado,0)=0,false,true) completado
-                FROM piso.menu m
-                INNER JOIN piso.menu_actividad ma ON ma.menu_id = m.id AND m.fechaEliminacion IS NULL
-                INNER JOIN piso.rutina_circuitos rc ON rc.id = circuito_id
-                INNER JOIN piso.circuitos_has_ejercicios ce ON ce.circuito_id = ma.circuito_id
-                INNER JOIN piso.cat_ejercicios eje ON eje.id = ce.ejercicio_id
-                INNER JOIN piso.rutina_progresiones prg ON prg.rutina_id = m.idRutina
-                LEFT JOIN piso.menu_ejercicio_completado mec ON mec.menu_id = ma.menu_id
-                    AND mec.circuito_id = ce.circuito_id
-                    AND mec.ejercicio_id = ce.ejercicio_id
-                    AND mec.fechaCompletado = ma.dia
-                WHERE m.idPersona = {$idPersona}
-                AND ma.dia = '{$dia}'
-                AND m.id = {$menu_id}
-                AND prg.num_semana = {$num_semana}
-                AND ma.circuito_id <> 0
-                ORDER BY ce.orden ";
-        $res = DB::connection('aws')->select($sql);
-
-        // Se convierte resultado en arreglo
-        if (count($res) > 0) {
-            $res = array_map(function ($x) {
-
-                $video = explode("'", $x->video);
-
-                return (array) [
-                    'clave'        => $x->clave,
-                    'orden'        => $x->orden,
-                    'nombre'       => $x->nombre,
-                    'video'        => $video[1],
-                    'imagen'       => $x->imagen,
-                    'series'       => $x->series,
-                    'repeticiones' => $x->repeticiones,
-                    'tipo'         => $x->tipo,
-                    'descanso'     => $x->descanso,
-                ];
-            }, $res);
-        }
-
-        $fuerzas = [];
-        foreach ($res as $arr1) {
-            $aa1 = [];
-            foreach ($arr1 as $k2 => $v2) {
-                if ($k2 == 'completado') {
-                    if ($v2 == 0) {
-                        $v2 = false;
-                    } else {
-                        $v2 = true;
-                    }
-                }
-                $aa1[$k2] = $v2;
-            }
-            $fuerzas[] = $aa1;
-        }
-
-        // Corrección de descansos
-        $switch_descanso = true;
-        foreach ($fuerzas as &$fuerza) {
-            switch ($fuerza['tipo']) {
-                case 'circuito':$fuerza['descanso'] = 0;
-                    break;
-                case 'biserie':
-                    if ($switch_descanso) {
-                        $fuerza['descanso'] = 0;
-                        $switch_descanso    = false;
-                    } else {
-                        $switch_descanso = true;
-                    }
-                    break;
-                case 'estacion':break; // Se conservan los descansos
-            }
-        }
-
-        $salida_obj              = [];
-        $salida_obj['Fuerza']    = $fuerzas;
-        $salida_obj['Cardio']    = $cardios;
-        $salida_obj['Clases']    = $clases;
-        $salida_obj['Optativas'] = $optativas;
-        if (count($fuerzas) == 0
-            && count($cardios) == 0
-            && count($clases) == 0
-            && count($optativas) == 0
-        ) {
-            $descanso_completado = false;
-
-            $sql = "SELECT COUNT(*) conteo
-                    FROM piso.menu_descanso_completado
-                    WHERE 1 = 1
-                    AND menu_id = {$menu_id}
-                    AND completado = 1
-                    AND fechaCompletado = '{$dia}' ";
-            $res                 = DB::connection('aws')->select($sql);
-            $descanso_completado = $res[0]->conteo > 0 ? true : false;
-
-            $salida_obj['Descanso'][] = [
-                "clave"      => "{$menu_id}",
-                "nombre"     => "DIA DE DESCANSO",
-                "completado" => $descanso_completado,
-                "imagen"     => self::IMAGEN_ACTIVIDAD_POR_DEFECTO,
-            ];
-        } else {
-            $salida_obj['Descanso'] = [];
-        }
-
-        return ['estatus' => true, 'data' => $salida_obj];
 
     }
 

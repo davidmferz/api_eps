@@ -154,134 +154,30 @@ class FitnessTestController extends ApiController
         } else {
             $edad = 20;
         }
-        // $edad = $edadRequest < 20 ? 20 : $edadRequest;
         $rockportEncuesta = $request->rockportEncuesta ?? false;
-        $idNivel          = $request->idNivel ?? 0;
         $flexiones        = $request->flexiones ?? 20;
         $flexibilidad     = $request->flexibilidad ?? 2;
         $generoSexo       = $request->sexo == 13 ? 1 : 0;
         $Vo2MAX           = 0;
         $tipoCuerpo       = $request->tipoCuerpo ?? 'mesomorfo';
-        $numComidas       = $request->numComidas ?? 4;
         $idUn             = $request->idUn;
         $idAgenda         = $request->idAgenda ?? null;
-        $idRutina         = $request->idRutina;
 
-        $rcc                = $request->rcc;
-        $pgc                = $request->pgc;
-        $imc                = $request->imc;
-        $mme                = $request->mme;
-        $mcg                = $request->mcg;
-        $act                = $request->act;
-        $minerales          = $request->minerales;
-        $proteina           = $request->proteina;
-        $peso               = $request->peso;
-        $estatura           = $request->estatura;
-        $fcresp             = $request->fcresp ?? 60;
-        $observaciones      = $request->observaciones ?? 'Sin observaciones';
-        $idReferenciaOrigen = $request->idReferenciaOrigen ?? 5;
-        $sp02Res            = $request->ps02 ?? 90;
-        // $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->first();
+        $rcc           = $request->rcc;
+        $pgc           = $request->pgc;
+        $imc           = $request->imc;
+        $mme           = $request->mme;
+        $mcg           = $request->mcg;
+        $act           = $request->act;
+        $minerales     = $request->minerales;
+        $proteina      = $request->proteina;
+        $peso          = $request->peso;
+        $estatura      = $request->estatura;
+        $fcresp        = $request->fcresp ?? 60;
+        $observaciones = $request->observaciones ?? 'Sin observaciones';
+        $sp02Res       = $request->ps02 ?? 90;
 
         $calcMe = number_format(($peso) / pow(($estatura / 100), 2), 2);
-
-        $rCFLu = $request->rCFLu ? true : false;
-        $rCFMa = $request->rCFMa ? true : false;
-        $rCFMi = $request->rCFMi ? true : false;
-        $rCFJu = $request->rCFJu ? true : false;
-        $rCFVi = $request->rCFVi ? true : false;
-        $rCFSa = $request->rCFSa ? true : false;
-        $rCFDo = $request->rCFDo ? true : false;
-
-        $rCCLu = $request->rCCLu ? true : false;
-        $rCCMa = $request->rCCMa ? true : false;
-        $rCCMi = $request->rCCMi ? true : false;
-        $rCCJu = $request->rCCJu ? true : false;
-        $rCCVi = $request->rCCVi ? true : false;
-        $rCCSa = $request->rCCSa ? true : false;
-        $rCCDo = $request->rCCDo ? true : false;
-
-        $rCClLu = $request->rCClLu ? true : false;
-        $rCClMa = $request->rCClMa ? true : false;
-        $rCClMi = $request->rCClMi ? true : false;
-        $rCClJu = $request->rCClJu ? true : false;
-        $rCClVi = $request->rCClVi ? true : false;
-        $rCClSa = $request->rCClSa ? true : false;
-        $rCClDo = $request->rCClDo ? true : false;
-
-        $rCOpLu = $request->rCOpLu ? true : false;
-        $rCOpMa = $request->rCOpMa ? true : false;
-        $rCOpMi = $request->rCOpMi ? true : false;
-        $rCOpJu = $request->rCOpJu ? true : false;
-        $rCOpVi = $request->rCOpVi ? true : false;
-        $rCOpSa = $request->rCOpSa ? true : false;
-        $rCOpDo = $request->rCOpDo ? true : false;
-
-        $fechaInicio = Carbon::now();
-        $diasFor     = clone $fechaInicio;
-        $fechaFin    = clone $fechaInicio;
-        $fechaFin->addDays(27);
-
-        $diasSemana = [
-            "lunes"     => [
-                "cardio"     => $rCCLu,
-                "clases"     => $rCClLu,
-                "fuerza"     => $rCFLu,
-                "opcionales" => $rCOpLu,
-            ],
-            "martes"    => [
-                "cardio"     => $rCCMa,
-                "clases"     => $rCClMa,
-                "fuerza"     => $rCFMa,
-                "opcionales" => $rCOpMa,
-            ],
-            "miercoles" => [
-                "cardio"     => $rCCMi,
-                "clases"     => $rCClMi,
-                "fuerza"     => $rCFMi,
-                "opcionales" => $rCOpMi,
-            ],
-            "jueves"    => [
-                "cardio"     => $rCCJu,
-                "clases"     => $rCClJu,
-                "fuerza"     => $rCFJu,
-                "opcionales" => $rCOpJu,
-            ],
-            "viernes"   => [
-                "cardio"     => $rCCVi,
-                "clases"     => $rCClVi,
-                "fuerza"     => $rCFVi,
-                "opcionales" => $rCOpVi,
-            ],
-            "sabado"    => [
-                "cardio"     => $rCCSa,
-                "clases"     => $rCClSa,
-                "fuerza"     => $rCFSa,
-                "opcionales" => $rCOpSa,
-            ],
-            "domingo"   => [
-                "cardio"     => $rCCDo,
-                "clases"     => $rCClDo,
-                "fuerza"     => $rCFDo,
-                "opcionales" => $rCOpDo,
-            ],
-        ];
-
-        foreach ($diasSemana as $key => $value) {
-            if (!in_array($key, self::SEMANA)) {
-                return $this->errorResponse(' valor inválido:' . $key, 422);
-            }
-        }
-
-        $actividades = [];
-        for ($i = 0; $i < 28; $i++) {
-
-            $dia   = $diasFor->formatLocalized('%A');
-            $index = array_search($dia, self::SEMANA_ENG);
-
-            $actividades[$diasFor->format('Y-m-d')] = $diasSemana[self::SEMANA[$index]];
-            $diasFor->addDay();
-        }
 
         $idsaveOptativaPreferencia = null;
 
@@ -309,10 +205,6 @@ class FitnessTestController extends ApiController
 
         $sp02 = SaturacionOxigeno::whereRaw("{$sp02Res} between so_minimo and so_maximo")->first();
 
-        // return ['adbominalesCom' => $adbominalesCom ? $adbominalesCom->id : null, 'flexionesCom' => $flexionesCom ? $flexionesCom->id : null, 'imcCal' => $imcCal ? $imcCal->id : null, 'idFcr' => $idFcr ? $idFcr->id : null, 'pushup' => $pushup ? $pushup->id : null, 'Vo2MAX' => number_format($Vo2MAX, 2), 'cooper' => $cooper ? $cooper->id : null, 'rock' => $rock, 'requetst' => $request->all(), 'abdominales' => $abdominales, 'genero' => $generoSexo, 'flexiones' => $flexiones, 'bvd' => "132.6 - (0.17 * $peso) - (0.39 * $edad) + (6.31 *  $generoSexo) - (3.27 * $tiempo) - (0.156 * $frecuenciaCardiaca)", 'dd' => "(($distanciaMetros - 540) / 45) * $peso", 'rockportEncuesta' => $rockportEncuesta, 'sp2' => $sp02 ? $sp02->id : null];
-
-        // return $this->successResponse(['sp02' => $sp02]);
-
         $fitness                     = new FitnessTest();
         $fitness->idPersona          = $idPersona;
         $fitness->idPersonaEmpleado  = $idPersonaEmpleado;
@@ -335,7 +227,7 @@ class FitnessTestController extends ApiController
             ]
         );
 
-        $menu = Menu::insertMenu($idUn, $idPersona, $idRutina, Carbon::now(), Carbon::now()->addDays(28), $observaciones, $actividades, $idPersonaEmpleado);
+        $menu = Menu::insertMenu($idUn, $idPersona, Carbon::now(), Carbon::now()->addDays(28), $observaciones, $idPersonaEmpleado);
         //
         $agendaSave = null;
         if ($idAgenda) {
