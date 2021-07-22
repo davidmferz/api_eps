@@ -211,7 +211,7 @@ class Menu extends Model
         $arr_avance = self::calculaAvance($rutina_id, $menu_id);
 
         // Se obtiene la fecha de inicio de la rutina y el idRutina
-        $sql = "SELECT mnua.circuito_id, mnua.cardio_id, mnua.clase_id, mnua.optativa_id, mnua.dia, crut.nivel, mnu.porcentaje, crut.rutina, mnu.observaciones
+        $sql = "SELECT mnua.circuito_id, mnua.cardio_id, mnua.clase_id, mnua.optativa_id, mnua.dia, crut.nivel,  crut.rutina, mnu.observaciones
                     FROM piso.menu mnu
                     INNER JOIN piso.menu_actividad mnua ON mnua.menu_id = mnu.id
                     INNER JOIN piso.cat_rutinas crut ON crut.id = mnu.idRutina
@@ -235,7 +235,6 @@ class Menu extends Model
         $arr                  = [];
         $arr['idPersona']     = $idPersona;
         $arr['nivel']         = $res[0]['nivel'];
-        $arr['avance']        = $res[0]['porcentaje']; // $arr_avance['porcentaje_avance'];
         $arr['rutina']        = $res[0]['rutina'];
         $arr['observaciones'] = $res[0]['observaciones'];
 
@@ -244,7 +243,6 @@ class Menu extends Model
             unset($v1['nivel']);
             unset($v1['rutina']);
             unset($v1['observaciones']);
-            unset($v1['porcentaje']);
             $arr2 = [];
             foreach ($v1 as $k2 => $v2) {
                 if ($k2 != 'dia') {
