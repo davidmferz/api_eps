@@ -8,7 +8,6 @@ use App\Http\Requests\InbodyCoordinadorRequest;
 use App\Mail\MailEntrenador;
 use App\Mail\MailPersona;
 use App\Models\AgendaInbody;
-use App\Models\CatRutinas;
 use App\Models\Empleado;
 use App\Models\EP;
 use App\Models\InBody;
@@ -405,12 +404,7 @@ class InbodyController extends ApiController
         $persona         = Persona::find($idPersona);
         $idTipoSexo      = $persona->idTipoSexo ?? 13;
         $fechaNacimiento = $persona->fechaNacimiento ?? Carbon::now()->subYears(20)->format('Y-m-d');
-        $actividad       = Menu::ReadMenuActividad($idPersona);
-        $rutinas         = CatRutinas::getFullCatalogv2();
         $mensajeMenu     = "";
-        if ($actividad['estatus']) {
-            $nombre = $persona->nombre . ' ' . $persona->paterno . ' ' . $persona->materno;
-        }
 
         $agendasInbodyPasadas = AgendaInbody::where('idPersona', $idPersona)
             ->whereNull('fechaConfirmacion')
@@ -434,7 +428,7 @@ class InbodyController extends ApiController
             $unNombre = $isUn->nombre ?? "No hay registro";
         }
 
-        $menuPersona = Menu::whereRaw("now() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->latest()->first();
+        $menuPersona = Menu::whereRaw("CURRENT_DATE() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->latest()->first();
         $menuEstate  = false;
         $idMenu      = 0;
         if ($menuPersona) {
@@ -452,10 +446,8 @@ class InbodyController extends ApiController
             [
                 'nombre'          => $nombre,
                 'lastInBody'      => $lastInBody,
-                'actividad'       => $actividad,
                 'idTipoSexo'      => $idTipoSexo,
                 'fechaNacimiento' => $fechaNacimiento,
-                'rutinas'         => $rutinas,
                 'unNombre'        => $unNombre,
                 'agendaInbody'    => $agendaInbody,
                 'menuPersona'     => $menuPersona,

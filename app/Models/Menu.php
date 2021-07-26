@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Models\BD_App\UsuarioPlan;
 use App\Models\CatRutinas;
 use App\Models\PersonaInbody;
-use App\Models\portal_socios\PersonaRewardBitacora;
 use App\Models\Socios\UsuarioAvanceRutina;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -208,7 +207,6 @@ class Menu extends Model
             $rutina_id = 0;
             $menu_id   = 0;
         }
-        $arr_avance = self::calculaAvance($rutina_id, $menu_id);
 
         // Se obtiene la fecha de inicio de la rutina y el idRutina
         $sql = "SELECT mnua.circuito_id, mnua.cardio_id, mnua.clase_id, mnua.optativa_id, mnua.dia, crut.nivel,  crut.rutina, mnu.observaciones
@@ -283,99 +281,7 @@ class Menu extends Model
         ];
     }
 
-    private static function calculaAvance($rutina_id, $menu_id)
-    {
-        // Obtiene cuantos ejercicios existen para una rutina
-        $sql = "SELECT * FROM
-                (SELECT
-                COUNT(*) as ejercicios
-                FROM piso.cat_rutinas crut
-                INNER JOIN piso.rutina_circuitos rc ON rc.rutina_id = crut.id
-                INNER JOIN piso.circuitos_has_ejercicios che ON che.circuito_id = rc.id
-                WHERE rc.rutina_id = {$rutina_id}) ejercicios
-                INNER JOIN
-                (SELECT
-                COUNT(*) as cardios
-                FROM piso.cat_rutinas crut
-                INNER JOIN piso.rutina_cardios rc ON rc.rutina_id = crut.id
-                WHERE rc.rutina_id = {$rutina_id}) cardios ON 1 = 1
-                INNER JOIN
-                (SELECT
-                COUNT(*) as clases
-                FROM piso.cat_rutinas crut
-                INNER JOIN piso.rutinas_has_clases rh ON rh.rutina_id = crut.id
-                WHERE rh.rutina_id = {$rutina_id}) clases ON 1 = 1
-                INNER JOIN
-                (SELECT
-                COUNT(*) as optativas
-                FROM piso.cat_rutinas crut
-                INNER JOIN piso.rutinas_has_optativas rh ON rh.rutina_id = crut.id
-                WHERE rh.rutina_id = {$rutina_id}) optativas ON 1 = 1 ";
-        $res = DB::connection('aws')->select($sql);
-
-        $arr_out           = [];
-        $porcentaje_avance = 0; // 0-100%
-        $arr_ponderacion   = [];
-        if (count($res) > 0) {
-            $conteo_actividades = array_map(function ($x) {return (array) $x;}, $res);
-            $conteo_actividades = $conteo_actividades[0];
-
-            // Obtiene cuantos ejercicios ha completado para idPersona - rutina_id
-            $arr_respuesta = [];
-
-            $sql = "SELECT * FROM
-                    (SELECT COUNT(*) as ejercicios
-                    FROM piso.menu_ejercicio_completado mec
-                    WHERE menu_id = {$menu_id}
-                    AND mec.completado = 1) ejercicios
-                    INNER JOIN
-                    (SELECT COUNT(*) as cardios
-                    FROM piso.menu_cardio_completado mec
-                    WHERE menu_id = {$menu_id}
-                    AND mec.completado = 1) cardios ON 1 = 1
-                    INNER JOIN
-                    (SELECT COUNT(*) as clases
-                    FROM piso.menu_clase_completado mec
-                    WHERE menu_id = {$menu_id}
-                    AND mec.completado = 1) clases ON 1 = 1
-                    INNER JOIN
-                    (SELECT COUNT(*) as optativas
-                    FROM piso.menu_optativa_completado mec
-                    WHERE menu_id = {$menu_id}
-                    AND mec.completado = 1) optativas ON 1 = 1 ";
-            $res = DB::connection('aws')->select($sql);
-            if (count($res) > 0) {
-                $conteo_completadas = array_map(function ($x) {return (array) $x;}, $res);
-                $conteo_completadas = $conteo_completadas[0];
-                $total_actividades  = array_sum($conteo_actividades);
-
-                foreach ($conteo_actividades as $nom_act_a => $conteo_actividad) {
-                    foreach ($conteo_completadas as $nom_act_c => $conteo_completada) {
-                        if ($nom_act_a == $nom_act_c) {
-                            if (intval($conteo_actividad) == 0) {
-                                Log:info("División por cero, la actividad {$nom_act_a}");
-                                //throw new \Exception('Falló interno del sistema', 500);
-                                continue;
-                            }
-                            $porcentaje_avance += round(33.33 * intval($conteo_completada) / intval($conteo_actividad), 2);
-                            $arr_ponderacion[$nom_act_a]      = round(33.33 / intval($conteo_actividad), 2);
-                            $arr_conteo_actividad[$nom_act_a] = intval($conteo_actividad);
-                            // $porcentaje_avance += round(100*intval($conteo_completada) / intval($total_actividades),2);
-                            // $arr_ponderacion[$nom_act_a] = round(100 / intval($total_actividades),2);
-                        }
-                    }
-                }
-                $arr_ponderacion['optativas'] = 0;
-            }
-            $arr_out = [
-                'porcentaje_avance' => $porcentaje_avance,
-                'ponderacion'       => $arr_ponderacion,
-                // 'conteo_actividad' => $arr_conteo_actividad,
-            ];
-        }
-        return $arr_out;
-    }
-
+   
     public static function rakingEntrenadores()
     {
         $inicio       = Carbon::now();
@@ -427,33 +333,6 @@ class Menu extends Model
             $menu->fecha_fin     = $fechaFin;
             $menu->observaciones = $observaciones;
             $menu->save();
-
-            $bitacora  = PersonaRewardBitacora::validaEstatusReward($idPersona);
-            $numRutina = 1;
-            if ($bitacora != null) {
-                if ($bitacora->idMenu2 == null) {
-                    $bitacora->idMenu2 = $menu->id;
-                    $numRutina         = 1;
-                } elseif ($bitacora->idMenu3 == null) {
-                    $bitacora->idMenu3 = $menu->id;
-                    $numRutina         = 2;
-                } else {
-                    $numRutina = 3;
-                }
-                self::evaluaMesRutina($menu, $bitacora, $numRutina);
-                if ($numRutina == 3) {
-                    $bitacora            = new PersonaRewardBitacora();
-                    $bitacora->idPersona = $idPersona;
-                    $bitacora->idMenu1   = $menu->id;
-                    $bitacora->save();
-                }
-
-            } else {
-                $bitacora            = new PersonaRewardBitacora();
-                $bitacora->idPersona = $idPersona;
-                $bitacora->idMenu1   = $menu->id;
-                $bitacora->save();
-            }
 
             $conn_01->commit();
             return $menu->id;

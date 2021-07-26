@@ -165,7 +165,6 @@ class FitnessTestController extends ApiController
 
         $rcc           = $request->rcc;
         $pgc           = $request->pgc;
-        $imc           = $request->imc;
         $mme           = $request->mme;
         $mcg           = $request->mcg;
         $act           = $request->act;
@@ -177,8 +176,7 @@ class FitnessTestController extends ApiController
         $observaciones = $request->observaciones ?? 'Sin observaciones';
         $sp02Res       = $request->ps02 ?? 90;
 
-        $calcMe = number_format(($peso) / pow(($estatura / 100), 2), 2);
-
+        $calcMe                    = number_format(($peso) / pow(($estatura / 100), 2), 2);
         $idsaveOptativaPreferencia = null;
 
         $cooper         = null;
@@ -188,8 +186,9 @@ class FitnessTestController extends ApiController
         $adbominalesCom = $this->adbominales($generoSexo, $edad, $abdominales);
         $flexionesCom   = $this->flexiones($generoSexo, $edad, $flexiones);
         $imcCal         = $this->imc($calcMe);
-        $idFcr          = $this->fcr($fcresp, $edad, $generoSexo);
-        $pushup         = $this->pushUp($generoSexo, $edad, $flexiones);
+
+        $idFcr  = $this->fcr($fcresp, $edad, $generoSexo);
+        $pushup = $this->pushUp($generoSexo, $edad, $flexiones);
         if ($rockportEncuesta) {
             $Vo2MAX = 132.6 - (0.17 * $peso) - (0.39 * $edad) + (6.31 * $generoSexo) - (3.27 * $tiempo) - (0.156 * $frecuenciaCardiaca);
             $rock   = Rockport::whereRaw("{$edad} between edadMinima and edadMaxima")->where("genero", $generoSexo)
