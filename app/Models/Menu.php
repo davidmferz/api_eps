@@ -5,12 +5,12 @@ namespace App\Models;
 use App\Models\BD_App\UsuarioPlan;
 use App\Models\CatRutinas;
 use App\Models\PersonaInbody;
+use App\Models\portal_socios\PersonaRewardBitacora;
 use App\Models\Socios\UsuarioAvanceRutina;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class Menu extends Model
 {
@@ -281,7 +281,6 @@ class Menu extends Model
         ];
     }
 
-   
     public static function rakingEntrenadores()
     {
         $inicio       = Carbon::now();
@@ -333,7 +332,17 @@ class Menu extends Model
             $menu->fecha_fin     = $fechaFin;
             $menu->observaciones = $observaciones;
             $menu->save();
-
+            $bitacora = PersonaRewardBitacora::validaEstatusReward($idPersona);
+            if ($bitacora != null) {
+                if ($bitacora->idMenu1 == null) {
+                    $bitacora->idMenu1 = $menu->id;
+                } elseif ($bitacora->idMenu2 == null) {
+                    $bitacora->idMenu2 = $menu->id;
+                } else {
+                    $bitacora->idMenu3 = $menu->id;
+                }
+                $bitacora->save();
+            }
             $conn_01->commit();
             return $menu->id;
         } catch (\Illuminate\Database\QueryException $ex) {
