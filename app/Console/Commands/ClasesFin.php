@@ -7,7 +7,6 @@ use App\Models\ConteoMails;
 use App\Models\EventoInscripcion;
 use App\Models\TokenEncuestas;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class ClasesFin extends Command
@@ -44,15 +43,12 @@ class ClasesFin extends Command
     public function handle()
     {
         $idEventoInscripciones = EventoInscripcion::FindClasesTerminadas();
-        Log::debug('id incripciones terminadas ');
-        Log::debug($idEventoInscripciones);
         if (count($idEventoInscripciones) > 0) {
             $conteo             = new ConteoMails();
             $conteo->numCorreos = count($idEventoInscripciones);
             $conteo->save();
 
             $informacionCorreos = EventoInscripcion::getNombresEmail($idEventoInscripciones);
-            Log::debug($informacionCorreos);
             foreach ($informacionCorreos as $key => $value) {
                 if ($value->mail != null) {
 

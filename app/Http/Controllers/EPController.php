@@ -102,7 +102,6 @@ class EPController extends ApiController
         $idEmpleado = $empleado->idEmpleado;
 
         $inscripcion = Evento::inscripcionV2($idUn, $idCategoria, $idPersona, $idVendedor, $idEntrenador, $idTipoCliente, $demo, $idProducto, $cantidad, $importe, $idEsquemaPago);
-        Log::debug($inscripcion);
         /* $inscripcion = [
         "estatus"             => true,
         "idEventoInscripcion" => 556163349,
@@ -218,12 +217,10 @@ class EPController extends ApiController
                 if ($movDevengado !== null) {
                     if (0 != $movDevengado->activo && 0 != $movDevengado->autorizado) {
                         $registroContable = Evento::devengarMovimientoContable($idMovimiento);
-                        Log::debug($registroContable);
                     }
                 }
 
                 $comisionar = Evento::generarComisionVenta($inscripcion['idEvento'], $idUn);
-                Log::debug($comisionar);
                 if ($comisionar == true) {
                     $descripcionTipoEvento = 'VENTA';
                     $montoComision         = 0;
@@ -262,7 +259,6 @@ class EPController extends ApiController
                     $comision->montoComision         = $montoComision;
                     $comision->porcentaje            = $porcentaje;
                     $comision->manual                = 0;
-                    Log::debug(print_r($comision, true));
                     $comision->save();
                     $comisionMovimiento = new ComisionMovimiento();
 

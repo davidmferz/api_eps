@@ -84,7 +84,6 @@ class Evento extends Model
             ";
 
         $query = DB::connection('crm')->select($sql);
-        Log::debug($query);
         if (count($query) > 0) {
             if ($demo) {
                 $monto         = 0;
@@ -138,7 +137,6 @@ class Evento extends Model
                 'idPersona'           => $idPersona,
                 'tipo'                => 1,
             ];
-            Log::debug($datos);
             $eventoInscripcion = EventoInvolucrado::create($datos);
 
             $datos = [

@@ -150,7 +150,6 @@ class EventoInscripcion extends Model
                 'idPersona'           => $idPersona,
                 'tipo'                => 1,
             ];
-            Log::debug($datos);
             $eventoInscripcion = EventoInvolucrado::create($datos);
 
             $datos = [
