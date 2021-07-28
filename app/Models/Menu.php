@@ -340,7 +340,13 @@ class Menu extends Model
                     $bitacora->idMenu3 = $menu->id;
                 }
                 $bitacora->save();
+            } else {
+                $bitacora            = new PersonaRewardBitacora();
+                $bitacora->idPersona = $idPersona;
+                $bitacora->idMenu1   = $menu->id;
+                $bitacora->save();
             }
+
             $conn_01->commit();
             return $menu->id;
         } catch (\Illuminate\Database\QueryException $ex) {
