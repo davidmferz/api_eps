@@ -2,11 +2,9 @@
 
 namespace App\Models;
 
-use App\Models\BD_App\UsuarioPlan;
 use App\Models\CatRutinas;
 use App\Models\PersonaInbody;
 use App\Models\portal_socios\PersonaRewardBitacora;
-use App\Models\Socios\UsuarioAvanceRutina;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -352,90 +350,6 @@ class Menu extends Model
         } catch (\Exception $ex) {
             $conn_01->rollback();
             return ['estatus' => false, 'mensaje' => $ex->getMessage()];
-        }
-
-    }
-
-    public static function evaluaMesRutina($bitacora, $numMenuEvaluar)
-    {
-        $estatusActividades = false;
-        $estatusActivo      = false;
-        $estatusAsistencia  = false;
-        $estatus80Porciento = false;
-        switch ($numMenuEvaluar) {
-            case 1:
-                $menu = Menu::find($bitacora->idMenu1);
-
-                break;
-            case 2:
-                $menu = Menu::find($bitacora->idMenu2);
-
-                break;
-            case 3:
-                $menu = Menu::find($bitacora->idMenu3);
-                break;
-            default:
-                return false;
-                break;
-        }
-        $actividadesPlan = UsuarioPlan::withCount('actividades')->where('ID_PLAN', $menu->idPlan)->get();
-        if ($actividadesPlan >= 35) {
-            $estatusActividades = true;
-        }
-
-        $usuario = UsuariosMigracion::find($menu->idPersona);
-        if (in_array($usuario->tipoUsuario, ['socio', 'invitado', 'empleado'])) {
-            if ($usuario->estatus == 'Activa') {
-                $estatusActivo = true;
-            }
-        }
-        $numReservas = UsuariosIncritosClub::where('idPersona', $menu->idPersona)
-            ->whereBetween('fecha', [$menu->fechaInicio, $menu->fechaFin])
-            ->groupBy('fecha')
-            ->count();
-        if ($numReservas >= 10) {
-            $estatusAsistencia = true;
-        }
-
-        $avanceRutina = UsuarioAvanceRutina::find($menu->idPlan);
-        if ($avanceRutina->avance >= 75) {
-            $estatus80Porciento = true;
-        }
-        $completado = false;
-        if ($estatusActividades && $estatusActivo && $estatusAsistencia && $estatus80Porciento) {
-            $completado = true;
-        }
-
-        switch ($numMenuEvaluar) {
-            case 1:
-                $bitacora->objetivoRutina1 = $completado;
-                break;
-            case 2:
-                $bitacora->objetivoRutina2 = $completado;
-                break;
-            case 3:
-                $bitacora->objetivoRutina3 = $completado;
-                break;
-            default:
-                return false;
-                break;
-        }
-        $bitacora->objetivoSocioActivo = $estatusActivo;
-        $bitacora->save();
-        if ($completado) {
-            //TODO:mail exito # rutina
-            if ($numMenuEvaluar == 3) {
-                $bitacora->completado = $completado;
-                $bitacora->save();
-            }
-            return true;
-        } else {
-            //TODO: Reiniciar rutina
-            if ($numMenuEvaluar == 3) {
-                $bitacora->delete();
-            }
-            return false;
-
         }
 
     }
