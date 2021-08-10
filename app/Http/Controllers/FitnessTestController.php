@@ -144,10 +144,10 @@ class FitnessTestController extends ApiController
         $idPersona          = $request->idPersona;
         $idPersonaEmpleado  = $request->idPersonaEmpleado;
         $peso               = $request->peso ?? 60;
-        $abdominales        = $request->abdominales;
-        $tiempo             = $request->tiempo ?? 10;
-        $distanciaMetros    = $request->distanciaMetros;
-        $frecuenciaCardiaca = $request->frecuenciaCardiaca ?? 80;
+        $abdominales        = intval($request->abdominales);
+        $tiempo             = intval($request->tiempo ?? 10);
+        $distanciaMetros    = intval($request->distanciaMetros);
+        $frecuenciaCardiaca = intval($request->frecuenciaCardiaca ?? 80);
         $edadRequest        = $request->fcNacimiento != '0000-00-00' ? Carbon::now()->format('Y') - Carbon::parse($request->fcNacimiento)->format('Y') : Carbon::now()->subYears(20)->format('Y') - Carbon::now()->format('Y');
         if ($edadRequest >= 20 && $edadRequest <= 90) {
             $edad = $edadRequest;
@@ -155,8 +155,8 @@ class FitnessTestController extends ApiController
             $edad = 20;
         }
         $rockportEncuesta = $request->rockportEncuesta ?? false;
-        $flexiones        = $request->flexiones ?? 20;
-        $flexibilidad     = $request->flexibilidad ?? 2;
+        $flexiones        = intval($request->flexiones ?? 20);
+        $flexibilidad     = intval($request->flexibilidad ?? 2);
         $generoSexo       = $request->sexo == 13 ? 1 : 0;
         $Vo2MAX           = 0;
         $tipoCuerpo       = $request->tipoCuerpo ?? 'mesomorfo';
