@@ -75,6 +75,20 @@ return [
             'strict'      => false,
             'engine'      => null,
         ],
+        'app'     => [
+            'driver'      => 'mysql',
+            'host'        => env('DB_HOST_APP'),
+            'port'        => env('DB_PORT_APP'),
+            'database'    => env('DB_DATABASE_APP'),
+            'username'    => env('DB_USERNAME_APP'),
+            'password'    => env('DB_PASSWORD_APP'),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset'     => 'utf8mb4',
+            'collation'   => 'utf8mb4_unicode_ci',
+            'prefix'      => '',
+            'strict'      => false,
+            'engine'      => null,
+        ],
     ],
 
     /*

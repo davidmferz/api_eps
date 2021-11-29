@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\EncuestaV02MaxRequest;
 use App\Http\Requests\NuevoFitnessTestRequest;
 use App\Models\AgendaInbody;
+use App\Models\BD_App\Cuestionario;
+use App\Models\BD_App\UsuarioPlan;
 use App\Models\Menu;
 use App\Models\PersonaInbody;
 use App\Models\Vo2Max\Abdominales;
@@ -154,6 +156,18 @@ class FitnessTestController extends ApiController
         } else {
             $edad = 20;
         }
+        $usuarioPlan = UsuarioPlan::where('ID_USUARIO', $idPersona)
+            ->whereRaw('CURRENT_DATE() BETWEEN FECHA_INICIO AND FECHA_FIN')
+            ->where('ESTATUS', 'EN_PROCESO')
+            ->first();
+
+        $cuestionario = Cuestionario::find($usuarioPlan->ID_CUESTIONARIO);
+
+        if ($usuarioPlan == null) {
+            return $this->errorResponse('Error al identificar el plan del usuario');
+
+        }
+
         $rockportEncuesta = $request->rockportEncuesta ?? false;
         $flexiones        = $request->flexiones ?? 20;
         $flexibilidad     = $request->flexibilidad ?? 2;
@@ -163,21 +177,20 @@ class FitnessTestController extends ApiController
         $idUn             = $request->idUn;
         $idAgenda         = $request->idAgenda ?? null;
 
-        $rcc           = $request->rcc;
-        $pgc           = $request->pgc;
-        $mme           = $request->mme;
-        $mcg           = $request->mcg;
-        $act           = $request->act;
-        $minerales     = $request->minerales;
-        $proteina      = $request->proteina;
-        $peso          = $request->peso;
-        $estatura      = $request->estatura;
-        $fcresp        = $request->fcresp ?? 60;
-        $observaciones = $request->observaciones ?? 'Sin observaciones';
-        $sp02Res       = $request->ps02 ?? 90;
+        $rcc       = $request->rcc;
+        $pgc       = $request->pgc;
+        $mme       = $request->mme;
+        $mcg       = $request->mcg;
+        $act       = $request->act;
+        $minerales = $request->minerales;
+        $proteina  = $request->proteina;
+        $peso      = $request->peso;
+        $estatura  = $request->estatura;
+        $fcresp    = $request->fcresp ?? 60;
 
-        $calcMe                    = number_format(($peso) / pow(($estatura / 100), 2), 2);
-        $idsaveOptativaPreferencia = null;
+        $sp02Res = $request->ps02 ?? 90;
+
+        $calcMe = number_format(($peso) / pow(($estatura / 100), 2), 2);
 
         $cooper         = null;
         $rock           = null;
@@ -226,16 +239,31 @@ class FitnessTestController extends ApiController
             ]
         );
 
-        $menu = Menu::insertMenu($idUn, $idPersona, Carbon::now(), Carbon::now()->addDays(28), $observaciones, $idPersonaEmpleado);
-        //
+        $menu = Menu::whereRaw('CURRENT_DATE() BETWEEN fecha_inicio AND fecha_fin')
+            ->whereNull('fechaCancelacion')
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        $menu->observaciones = 'REWARD';
+        $menu->idPlan        = $usuarioPlan->ID_USUARIO_PLAN;
+        $menu->save();
+
+        $cuestionario->ID_MENU  = $menu->id;
+        $cuestionario->PESO     = $peso;
+        $cuestionario->ESTATURA = $estatura;
+        $cuestionario->EDAD     = $edad;
+        $cuestionario->IMC      = $calcMe;
+        $cuestionario->save();
+
         $agendaSave = null;
         if ($idAgenda) {
-            $agendaSave = AgendaInbody::where(['idAgenda' => $idAgenda])->update(
-                [
-                    'idEmpleado'        => $idPersonaEmpleado,
-                    'fechaConfirmacion' => Carbon::now()->format('Y-m-d H:i:s'),
-                ]
-            );
+            $agendaSave = AgendaInbody::where(['idAgenda' => $idAgenda])
+                ->update(
+                    [
+                        'idEmpleado'        => $idPersonaEmpleado,
+                        'fechaConfirmacion' => Carbon::now()->format('Y-m-d H:i:s'),
+                    ]
+                );
         } else {
             $agenda                    = new AgendaInbody();
             $agenda->idPersona         = $idPersona;
@@ -275,13 +303,20 @@ class FitnessTestController extends ApiController
         $peopleIny->vo2MAX               = number_format($Vo2MAX, 2) ?? 0;
         $peopleIny->flexibilidad         = $flexibilidad ?? 0;
         $peopleIny->idPersonaFitnessTest = $lastFitnessTest ? $lastFitnessTest->id : null;
-        $peopleIny->idMenu               = $menu ? $menu : null;
+        $peopleIny->idMenu               = $menu->id ? $menu->id : null;
         $peopleIny->edad                 = $edad ? $edad : 20;
         $peopleIny->sp02                 = $sp02Res;
         $peopleInySave                   = $peopleIny->save();
 
         if ($fitnessSave) {
-            return $this->successResponse(['fitnessSave' => $fitnessSave, 'peopleInySave' => $peopleInySave, 'agendaSave' => $agendaSave, 'lastFitnessTest' => $lastFitnessTest, 'menu' => $menu, 'idAgenda' => $idAgenda, 'dsaveOptativaPreferencia' => $idsaveOptativaPreferencia], 'Se genero el registro correctamente');
+            return $this->successResponse([
+                'fitnessSave'     => $fitnessSave,
+                'peopleInySave'   => $peopleInySave,
+                'agendaSave'      => $agendaSave,
+                'lastFitnessTest' => $lastFitnessTest,
+                'menu'            => $menu,
+                'idAgenda'        => $idAgenda,
+            ], 'Se genero el registro correctamente');
         } else {
             return $this->errorResponse('Sucedio un error al generar el registro, intenta más tarde');
         }

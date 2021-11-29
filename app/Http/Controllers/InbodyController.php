@@ -398,7 +398,6 @@ class InbodyController extends ApiController
 
     public function getInfoInbodies($idPersona)
     {
-        $nombre          = null;
         $idTipoSexo      = 13;
         $lastInBody      = InBody::LastInBody($idPersona);
         $persona         = Persona::find($idPersona);
@@ -428,23 +427,30 @@ class InbodyController extends ApiController
             $unNombre = $isUn->nombre ?? "No hay registro";
         }
 
-        $menuPersona = Menu::whereRaw("CURRENT_DATE() between  fecha_inicio and fecha_fin")->where('idPersona', $idPersona)->whereNull('fechaCancelacion')->latest()->first();
-        $menuEstate  = false;
+        $menuPersona = Menu::whereRaw("CURRENT_DATE() between  fecha_inicio and fecha_fin")
+            ->where('idPersona', $idPersona)
+            ->whereNull('fechaCancelacion')
+            ->latest()
+            ->first();
+
+        $menuEstatus = false;
         $idMenu      = 0;
         if ($menuPersona) {
-            $mensajeMenu = "Ya cuenta con una rutina asignada hasta el día {$menuPersona->fecha_fin}, para iniciar una nueva rutina, debera el cliente cancelar primero todo el menu, una vez finalizado ya podrá generar uno nuevo";
+
             $idMenu      = $menuPersona->id;
-            $menuEstate  = true;
+            $menuEstatus = true;
+        } else {
+            $menuEstatus = true;
+            $mensajeMenu = "Cliente sin rutina activa";
         }
 
         if (!$agendaInbody) {
-            $menuEstate  = true;
+            $menuEstatus = true;
             $mensajeMenu = "No existe una cita agendada";
         }
 
         return $this->successResponse(
             [
-                'nombre'          => $nombre,
                 'lastInBody'      => $lastInBody,
                 'idTipoSexo'      => $idTipoSexo,
                 'fechaNacimiento' => $fechaNacimiento,
@@ -453,7 +459,7 @@ class InbodyController extends ApiController
                 'menuPersona'     => $menuPersona,
                 'mensajeMenu'     => $mensajeMenu,
                 'idMenu'          => $idMenu,
-                'menuEstate'      => $menuEstate,
+                'menuEstatus'     => $menuEstatus,
             ]
         );
     }
