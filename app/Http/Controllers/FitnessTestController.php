@@ -9,6 +9,7 @@ use App\Models\BD_App\Cuestionario;
 use App\Models\BD_App\UsuarioPlan;
 use App\Models\Menu;
 use App\Models\PersonaInbody;
+use App\Models\portal_socios\PersonaRewardBitacora;
 use App\Models\Vo2Max\Abdominales;
 use App\Models\Vo2Max\CatFcr;
 use App\Models\Vo2Max\CatImc;
@@ -247,6 +248,18 @@ class FitnessTestController extends ApiController
         $menu->observaciones = 'REWARD';
         $menu->idPlan        = $usuarioPlan->ID_USUARIO_PLAN;
         $menu->save();
+
+        $bitacora = PersonaRewardBitacora::validaEstatusReward($idPersona);
+        if ($bitacora != null) {
+            if ($bitacora->idMenu1 == null) {
+                $bitacora->idMenu1 = $menu->id;
+            } elseif ($bitacora->idMenu2 == null) {
+                $bitacora->idMenu2 = $menu->id;
+            } else {
+                $bitacora->idMenu3 = $menu->id;
+            }
+            $bitacora->save();
+        }
 
         $cuestionario->ID_MENU  = $menu->id;
         $cuestionario->PESO     = $peso;
