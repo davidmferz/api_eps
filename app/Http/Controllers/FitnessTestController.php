@@ -162,12 +162,11 @@ class FitnessTestController extends ApiController
             ->where('ESTATUS', 'EN_PROCESO')
             ->first();
 
-        $cuestionario = Cuestionario::find($usuarioPlan->ID_CUESTIONARIO);
-
         if ($usuarioPlan == null) {
             return $this->errorResponse('Error al identificar el plan del usuario');
 
         }
+        $cuestionario = Cuestionario::find($usuarioPlan->ID_CUESTIONARIO);
 
         $rockportEncuesta = $request->rockportEncuesta ?? false;
         $flexiones        = intval($request->flexiones ?? 20);
