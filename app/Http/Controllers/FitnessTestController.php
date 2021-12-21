@@ -241,6 +241,7 @@ class FitnessTestController extends ApiController
 
         $menu = Menu::whereRaw('CURRENT_DATE() BETWEEN fecha_inicio AND fecha_fin')
             ->whereNull('fechaCancelacion')
+            ->where('idPersona', $idPersona)
             ->orderBy('id', 'DESC')
             ->first();
 
