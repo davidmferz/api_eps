@@ -1308,10 +1308,11 @@ class EP extends Model
     public static function buscaMeta($idPuesto)
     {
 
-        $puestos10Mil = [465, 551, 100085, 542, 100034];
-        $puestos12Mil = [533, 185, 100049, 100050];
-        $puestos15Mil = [84, 194, 806, 86, 134, 100053, 100101];
-        $puestos30Mil = [100095, 100029, 531, 541, 542];
+        $puestos10Mil  = [465, 542, 100034];
+        $puestos12Mil  = [533, 185, 100049, 100050];
+        $puestos15Mil  = [84, 100085, 551, 806, 100053];
+        $puestos20mill = [194, 134, 86, 100101];
+        $puestos30Mil  = [100095, 100029, 531, 541, 542];
 
         if (in_array(intval($idPuesto), $puestos10Mil)) {
             $met = 10000;
@@ -1321,6 +1322,9 @@ class EP extends Model
 
         } else if (in_array(intval($idPuesto), $puestos15Mil)) {
             $met = 15000;
+
+        } else if (in_array(intval($idPuesto), $puestos20mill)) {
+            $met = 20000;
 
         } else if (in_array(intval($idPuesto), $puestos30Mil)) {
             $met = 30000;
