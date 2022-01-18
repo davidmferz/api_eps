@@ -1311,7 +1311,7 @@ class EP extends Model
         $puestos10Mil  = [465, 542, 100034];
         $puestos12Mil  = [533, 185, 100049, 100050];
         $puestos15Mil  = [84, 100085, 551, 806, 100053];
-        $puestos20mill = [194, 134, 86, 100101];
+        $puestos20mill = [194, 134, 86, 100101, 100166];
         $puestos30Mil  = [100095, 100029, 531, 541, 542];
 
         if (in_array(intval($idPuesto), $puestos10Mil)) {
