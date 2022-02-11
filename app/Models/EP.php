@@ -22,6 +22,30 @@ class EP extends Model
     const UPDATED_AT = 'fechaActualizacion';
     const DELETED_AT = 'fechaEliminacion';
 
+    const ID_PUESTOS = [
+        100034,
+    533,
+    185,
+    100049,
+    100050,
+    84,
+    100085,
+    551,
+    806,
+    100053,
+    541,
+    542,
+    465,
+    194,
+    194,
+    134,
+    86,
+    100101,
+    100166,
+    100095,
+    100029,
+    531,
+    ];
     /**
      * [agenda description]
      *
@@ -30,8 +54,8 @@ class EP extends Model
      *
      * @return [type]               [description]
      */
-    public static function agenda($idEntrenador, $idUn)
-    {
+    public static function agenda($idEntrenador,
+        $idUn) {
         settype($idEntrenador, 'integer');
         settype($idUn, 'integer');
         $res = array();
@@ -831,72 +855,7 @@ class EP extends Model
         throw new \RuntimeException('Error al actualizar la base de datos.');
     }
 
-    /**
-     * ingresaInBody - Insertar en la bd datos de inbody.
-     *
-     * @return void
-     */
-    public static function ingresaInBody($datosIB)
-    {
-        if ($datosIB['RCC'] > 1.15) {
-            throw new \RuntimeException('RCC invalido');
-        }
-
-        if ($datosIB['PGC'] > 58) {
-            throw new \RuntimeException('PGC invalido');
-        }
-
-        if ($datosIB['IMC'] > 42.5) {
-            throw new \RuntimeException('IMC invalido');
-        }
-
-        if ($datosIB['peso'] > 200) {
-            throw new \RuntimeException('peso invalido');
-        }
-
-        if ($datosIB['MME'] > $datosIB['peso']) {
-            throw new \RuntimeException('MME invalido');
-        }
-
-        if ($datosIB['MGC'] > $datosIB['peso']) {
-            throw new \RuntimeException('MGC invalida');
-        }
-
-        if ($datosIB['minerales'] > $datosIB['peso']) {
-            throw new \RuntimeException('minerales invalidos');
-        }
-
-        if ($datosIB['proteina'] > $datosIB['peso']) {
-            throw new \RuntimeException('proteina invalida');
-        }
-
-        if ($datosIB['ACT'] > $datosIB['peso']) {
-            throw new \RuntimeException('ACT invalida');
-        }
-
-        if ($datosIB['estatura'] > 249.99) {
-            throw new \RuntimeException('Estatura invalida');
-        }
-
-        $sql = 'INSERT INTO personainbody (idPersona,RCC,PGC,IMC,MME,MCG,minerales,proteina,ACT,fechaRegistro,fechaActualizacion) ' .
-            'VALUES (' . $datosIB['idPersona'] . ',' . $datosIB['RCC'] . ',' .
-            $datosIB['PGC'] . ',' . $datosIB['IMC'] . ',' .
-            $datosIB['MME'] . ',' . $datosIB['MGC'] . ',' .
-            $datosIB['minerales'] . ',' . $datosIB['proteina'] . ',' .
-            $datosIB['ACT'] . ',now(),now()' .
-            ')';
-        $sql2 = 'INSERT INTO personaantropometricos (idPersona,estatura,peso) values (' . $datosIB['idPersona'] . ',' . $datosIB['estatura'] . ',' . $datosIB['peso'] . ')';
-        foreach (array($sql, $sql2) as $value_sql) {
-            $conn = DB::connection('crm');
-            $conn->select($value_sql);
-            $lastInsertId = $conn->getPdo()->lastInsertId();
-            if (!$lastInsertId) {
-                throw new \RuntimeException('No se pudo insertar datos en la BD. ' . $value_sql);
-            }
-
-        }
-    }
-
+    
     /**
      * [login description]
      *
@@ -906,7 +865,8 @@ class EP extends Model
      */
     public static function loginOkta($email)
     {
-        $soporte = UsuariosSoporte::where('correoSoporte', $email)->first();
+        $idPuestos = implode(',', self::ID_PUESTOS);
+        $soporte   = UsuariosSoporte::where('correoSoporte', $email)->first();
         if ($soporte != null) {
             $email = $soporte->correoEmpleado;
         }
@@ -919,7 +879,7 @@ class EP extends Model
                 e.idEmpleado, e.idTipoEstatusEmpleado, u.idUn, u.nombre AS unNombre,
                 e.imss as NumSeguroSocial,o.razonSocial,
                 p.RFC,p.CURP,
-                pu.idPuesto, pu.descripcion AS puestoNombre, if(pu.idPuesto in (192,100049, 194, 197, 217, 229, 417, 419, 444, 465, 466, 468, 470, 485, 499, 806,74, 75, 76, 82, 92, 100, 177, 410, 441, 447, 486, 509, 510, 567, 780, 100044, 100047),(
+                pu.idPuesto, pu.descripcion AS puestoNombre, if(pu.idPuesto in ({$idPuestos}),(
                     SELECT GROUP_CONCAT(CONCAT_WS(',',p2.idPersona,CONCAT_WS(' ',p2.nombre,p2.Paterno,p2.Materno), ep2.idPuesto, pu2.descripcion,e2.idEmpleado) SEPARATOR '|')
                     FROM crm.persona p2
                     JOIN crm.empleado e2 ON e2.idPersona = p2.idPersona
@@ -929,7 +889,7 @@ class EP extends Model
                     AND e2.idTipoEstatusEmpleado = 196
                     AND ep2.fechaEliminacion = 0
                     AND e2.fechaEliminacion = 0
-                    AND pu2.idPuesto IN (100049,82,83,84, 86, 111, 112, 132, 133, 134, 135, 136, 161, 175,  185, 189, 192, 194, 195, 197, 198, 210, 217, 226, 229, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 417, 418, 420, 421, 422, 444, 465, 468, 478, 479, 480, 481, 482, 485, 499, 506, 531, 533, 534, 535, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 598, 599, 600, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625, 626, 627, 628, 629, 630, 631, 632, 633, 634, 635, 636, 637, 638, 639, 640, 641, 642, 643, 644, 645, 646, 647, 648, 649, 650, 651, 652, 653, 654, 655, 656, 657, 658, 659, 660, 661, 662, 663, 664, 665, 666, 667, 750, 751, 752, 753, 754, 755, 770, 774,775, 779, 797, 798, 801, 802, 806, 817, 100101, 100014, 100018, 100027, 100029, 100034, 100031, 100034, 100042, 100045, 100056, 100050, 100051, 100052, 100053, 100055, 100085, 100095)
+                    AND pu2.idPuesto IN ({$idPuestos})
                     ),'') AS entrenadores, e.perfil_ep
                 FROM mail m
                 INNER JOIN persona p ON p.idPersona=m.idPersona
@@ -1310,10 +1270,10 @@ class EP extends Model
 
         $puestos10Mil  = [100034];
         $puestos12Mil  = [];
-        $puestos15Mil  = [533, 185, 100049, 100050,84, 100085, 551, 806, 100053 ,541,542,465,194];
+        $puestos15Mil  = [533, 185, 100049, 100050, 84, 100085, 551, 806, 100053, 541, 542, 465, 194];
         $puestos20mill = [194, 134, 86, 100101, 100166];
-        $puestos30Mil=[];
-        $puestos40Mil  = [100095, 100029, 531 ];
+        $puestos30Mil  = [];
+        $puestos40Mil  = [100095, 100029, 531];
 
         if (in_array(intval($idPuesto), $puestos10Mil)) {
             $met = 10000;
