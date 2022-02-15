@@ -1151,12 +1151,11 @@ class EP extends Model
 
         $idPersonasEncontradas = [];
 
-     
         foreach ($query as $key => $value) {
             $idPersonasEncontradas[] = $value['idPersona'];
 
             $mesesMenos = 3;
-            $met =            self::buscaMeta($value['idPuesto']);
+            $met        = self::buscaMeta($value['idPuesto']);
 
             while ($mesesMenos >= 0) {
 
@@ -1247,9 +1246,9 @@ class EP extends Model
         $puestos10Mil  = [100034];
         $puestos12Mil  = [];
         $puestos15Mil  = [533, 185, 100049, 100050, 84, 100085, 551, 806, 100053, 541, 542, 465, 194];
-        $puestos20mill = [194, 134, 86, 100101, 100166,100029];
+        $puestos20mill = [194, 134, 86, 100101, 100166, 100029];
         $puestos30Mil  = [];
-        $puestos40Mil  = [100095,  531];
+        $puestos40Mil  = [100095, 531];
 
         if (in_array(intval($idPuesto), $puestos10Mil)) {
             $met = 10000;
@@ -1952,17 +1951,8 @@ class EP extends Model
 
             foreach ($query as $fila) {
                 $bandera = true;
-                if (in_array(intval($fila->idPuesto), $puestos10Mil)) {
-                    $met = 10000;
-                } else if (in_array(intval($fila->idPuesto), $puestos12Mil)) {
-                    $met = 12000;
-                } else if (in_array(intval($fila->idPuesto), $puestos15Mil)) {
-                    $met = 15000;
-                } else if (in_array(intval($fila->idPuesto), $puestos30Mil)) {
-                    $met = 30000;
-                } else {
-                    $met = 10000;
-                }
+                $met     = self::buscaMeta($fila->idPuesto);
+
                 $r['meta'] = $met;
 
                 foreach ($calificaciones as $key => $calificacion) {
