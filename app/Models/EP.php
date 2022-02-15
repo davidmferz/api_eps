@@ -1151,35 +1151,12 @@ class EP extends Model
 
         $idPersonasEncontradas = [];
 
-        $pustNat = [86, 134, 194, 551, 806, 100085, 100101];
-        $pust    = [551, 100085];
-
-        $puestos10Mil = [465, 551, 100085];
-        $puestos12Mil = [533, 185, 100049, 100050];
-        $puestos15Mil = [194, 806, 86, 134, 100101];
-        $puestos30Mil = [100095, 100029, 531, 541, 542];
-
+     
         foreach ($query as $key => $value) {
             $idPersonasEncontradas[] = $value['idPersona'];
 
             $mesesMenos = 3;
-
-            if (in_array(intval($value['idPuesto']), $puestos10Mil)) {
-                $met = 10000;
-
-            } else if (in_array(intval($value['idPuesto']), $puestos12Mil)) {
-                $met = 12000;
-
-            } else if (in_array(intval($value['idPuesto']), $puestos15Mil)) {
-                $met = 15000;
-
-            } else if (in_array(intval($value['idPuesto']), $puestos30Mil)) {
-                $met = 30000;
-
-            } else {
-                $met = 10000;
-
-            }
+            $met =            self::buscaMeta($value['idPuesto']);
 
             while ($mesesMenos >= 0) {
 
