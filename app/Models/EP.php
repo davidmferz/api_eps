@@ -45,6 +45,7 @@ class EP extends Model
         100095,
         100029,
         531,
+        100051,
     ];
     /**
      * [agenda description]
@@ -1118,7 +1119,7 @@ class EP extends Model
         $puestos12Mil  = [];
         $puestos15Mil  = [533, 185, 100049, 100050, 84, 100085, 551, 100053, 541, 542, 465];
         $puestos20mill = [194, 134, 86, 100101, 100166, 100165, 806];
-        $puestos30Mil  = [];
+        $puestos30Mil  = [100051];
         $puestos40Mil  = [100095, 531, 100029];
 
         if (in_array(intval($idPuesto), $puestos10Mil)) {
