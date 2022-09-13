@@ -1839,6 +1839,7 @@ class EP extends Model
                         $r['nombre']       = utf8_encode($fila->nombre);
                         $r['idEmpleado']   = $fila->idEmpleado;
                         $r['idPuesto']     = $fila->idPuesto;
+                        $r['idUn']         = $fila->idUn;
                         $r['puesto']       = $fila->descripcion;
                         $r['club']         = $fila->club;
                         $r['calificacion'] = $cal;
@@ -1862,6 +1863,7 @@ class EP extends Model
                     $r['nombre']       = utf8_encode($fila->nombre);
                     $r['idEmpleado']   = $fila->idEmpleado;
                     $r['idPuesto']     = $fila->idPuesto;
+                    $r['idUn']         = $fila->idUn;
                     $r['puesto']       = $fila->descripcion;
                     $r['club']         = $fila->club;
                     $r['calificacion'] = $cal;
