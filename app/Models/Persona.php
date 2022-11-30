@@ -105,7 +105,7 @@ class Persona extends Model
                     IF(m.idMembresia IS NULL, 0, 1) AS tieneMembresia,
                     CONCAT_WS(' ', TRIM(p.nombre), TRIM(p.paterno), TRIM(p.materno)) nombreCompleto
                 FROM membresia m
-                INNER JOIN un u ON m.idUn=u.idUn
+                INNER JOIN un u ON m.idUn=u.idUn and u.migrado = 0
                 INNER JOIN socio s ON s.idunicomembresia=m.idUnicoMembresia
                     AND s.idTipoEstatusSocio=81
                     AND s.eliminado=0
@@ -164,6 +164,7 @@ class Persona extends Model
                     JOIN socios.usuarios_migracion AS u ON u.idUn=un.idUn
                         AND u.tipoUsuario='socio'
                         AND u.estatus='Activa'
+                        AND u.migrado=0
                         AND TRIM(CONCAT_WS(' ', TRIM(u.nombre), TRIM(u.paterno), TRIM(u.materno))) LIKE '%{$nombreMatch}%'
                     LIMIT  20;";
         $respuesta = DB::connection('crm')->select($sql);
