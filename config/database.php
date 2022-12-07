@@ -89,6 +89,21 @@ return [
             'strict'      => false,
             'engine'      => null,
         ],
+        'crm2'    => [
+            'driver'      => 'mysql',
+            'host'        => env('DB_HOST_CRM2'),
+            'port'        => env('DB_PORT_CRM2'),
+            'database'    => env('DB_DATABASE_CRM2'),
+            'username'    => env('DB_USERNAME_CRM2'),
+            'password'    => env('DB_PASSWORD_CRM2'),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset'     => 'utf8mb4',
+            'collation'   => 'utf8mb4_unicode_ci',
+            'prefix'      => '',
+            'strict'      => false,
+            'engine'      => null,
+        ],
+
     ],
 
     /*

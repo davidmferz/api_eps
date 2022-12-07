@@ -12,7 +12,7 @@ session_start();
 | user, PHP under CGI with Apache suEXEC, etc.).  Octal values should
 | always be used to set the mode correctly.
 |
-*/
+ */
 define('FILE_READ_MODE', 0644);
 define('FILE_WRITE_MODE', 0666);
 define('DIR_READ_MODE', 0755);
@@ -25,25 +25,23 @@ define('DIR_WRITE_MODE', 0777);
 |
 | These modes are used when working with fopen()/popen()
 |
-*/
+ */
 
-define('FOPEN_READ',                          'rb');
-define('FOPEN_READ_WRITE',                    'r+b');
-define('FOPEN_WRITE_CREATE_DESTRUCTIVE',      'wb'); // truncates existing file data, use with care
+define('FOPEN_READ', 'rb');
+define('FOPEN_READ_WRITE', 'r+b');
+define('FOPEN_WRITE_CREATE_DESTRUCTIVE', 'wb'); // truncates existing file data, use with care
 define('FOPEN_READ_WRITE_CREATE_DESTRUCTIVE', 'w+b'); // truncates existing file data, use with care
-define('FOPEN_WRITE_CREATE',                  'ab');
-define('FOPEN_READ_WRITE_CREATE',             'a+b');
-define('FOPEN_WRITE_CREATE_STRICT',           'xb');
-define('FOPEN_READ_WRITE_CREATE_STRICT',      'x+b');
+define('FOPEN_WRITE_CREATE', 'ab');
+define('FOPEN_READ_WRITE_CREATE', 'a+b');
+define('FOPEN_WRITE_CREATE_STRICT', 'xb');
+define('FOPEN_READ_WRITE_CREATE_STRICT', 'x+b');
 
-
-define('REGISTROS_POR_PAGINA',  25);
-define('REGISTROS_POR_PAGINA_50',  50);
-define('COLOR_TITULOS',         '#cc2222');
-define('COLOR_ENCABEZADOS',     'IndianRed');
-define('MAX_INTENTOS_LOGIN',    5);
-define('PREFIJO_CATALOGO',      'sw');
-
+define('REGISTROS_POR_PAGINA', 25);
+define('REGISTROS_POR_PAGINA_50', 50);
+define('COLOR_TITULOS', '#cc2222');
+define('COLOR_ENCABEZADOS', 'IndianRed');
+define('MAX_INTENTOS_LOGIN', 5);
+define('PREFIJO_CATALOGO', 'sw');
 
 // Empresas
 define('EMPRESA_UPSTER', 2);
@@ -98,7 +96,6 @@ define('LOG_UNIDADNEGOCIO', '15');
 define('LOG_USUARIO', '1');
 define('LOG_VENTA', '7');
 
-
 // Estatus de movimientos
 define('TIPO_MOVIMIENTO_MANTENIMIENTO', 47);
 define('TIPO_MOVIMIENTO_MEMBRESIA', 46);
@@ -106,49 +103,47 @@ define('TIPO_MOVIMIENTO_OTROSINGRESOS', 48);
 define('TIPO_MOVIMIENTO_INVITADOS', 51);
 //define('MOVIMIENTO_TIPO_TRASPASO', 420);
 
-
 // Estatus membresia
-define('ESTATUS_MEM_BENEFICIARIOS',  9);
+define('ESTATUS_MEM_BENEFICIARIOS', 9);
 define('ESTATUS_MEM_CESIONDERECHOS', 4);
-define('ESTATUS_MEMBRESIA_ACTIVA',   27);
+define('ESTATUS_MEMBRESIA_ACTIVA', 27);
 define('ESTATUS_MEMBRESIA_INACTIVA', 28);
-define('ESTATUS_MEMBRESIA_LIBRE',    26);
-define('ESTATUS_MEMBRESIA_PASIVA',   155);
+define('ESTATUS_MEMBRESIA_LIBRE', 26);
+define('ESTATUS_MEMBRESIA_PASIVA', 155);
 
 define('MEM_ATRIB_ALTERNOPERMANENTE', 22);
-define('MEM_ATRIB_AMPLIACION',     3);
-define('MEM_ATRIB_AUSENCIA',       2);
-define('MEM_ATRIB_BENEFICIARIO',   9);
-define('MEM_ATRIB_CAMBIOTITULAR',  11);
-define('MEM_ATRIB_CANC_ADEUDO',    16);
-define('MEM_ATRIB_CANCELACION',    5);
-define('MEM_ATRIB_CERTIFICADO',    8);
-define('MEM_ATRIB_CESION',         4);
-define('MEM_ATRIB_COMBO',          10);
-define('MEM_ATRIB_INVITADOS',      14);
-define('MEM_ATRIB_MULTIPLEPAGO',   17);
+define('MEM_ATRIB_AMPLIACION', 3);
+define('MEM_ATRIB_AUSENCIA', 2);
+define('MEM_ATRIB_BENEFICIARIO', 9);
+define('MEM_ATRIB_CAMBIOTITULAR', 11);
+define('MEM_ATRIB_CANC_ADEUDO', 16);
+define('MEM_ATRIB_CANCELACION', 5);
+define('MEM_ATRIB_CERTIFICADO', 8);
+define('MEM_ATRIB_CESION', 4);
+define('MEM_ATRIB_COMBO', 10);
+define('MEM_ATRIB_INVITADOS', 14);
+define('MEM_ATRIB_MULTIPLEPAGO', 17);
 define('MEM_ATRIB_PRECIOESPECIAL', 13);
-define('MEM_ATRIB_REACTIVACION',   1);
-define('MEM_ATRIB_SEL_AMPLIAR',    15);
-define('MEM_ATRIB_SOCIOMANIA',     7);
-define('MEM_ATRIB_TRANSEMPRESA',   12);
-define('MEM_ATRIB_TRANSFERENCIA',  6);
-define('MEM_BENFICIARIO',           3);
-
+define('MEM_ATRIB_REACTIVACION', 1);
+define('MEM_ATRIB_SEL_AMPLIAR', 15);
+define('MEM_ATRIB_SOCIOMANIA', 7);
+define('MEM_ATRIB_TRANSEMPRESA', 12);
+define('MEM_ATRIB_TRANSFERENCIA', 6);
+define('MEM_BENFICIARIO', 3);
 
 // Estatus socio
-define ('ESTATUS_SOCIO_ACTIVO', 81);
-define ('ESTATUS_SOCIO_AUSENCIA', 83);
-define ('ESTATUS_SOCIO_BAJA', 82);
-define ('ESTATUS_SOCIO_INACTIVO', 84);
-define ('ESTATUS_SOCIO_INVITADO', 87);
-define ('ESTATUS_SOCIO_PENDIENTEVALIDACION', 88);
-define ('ESTATUS_SOCIO_SUSPENDIDO', 86);
+define('ESTATUS_SOCIO_ACTIVO', 81);
+define('ESTATUS_SOCIO_AUSENCIA', 83);
+define('ESTATUS_SOCIO_BAJA', 82);
+define('ESTATUS_SOCIO_INACTIVO', 84);
+define('ESTATUS_SOCIO_INVITADO', 87);
+define('ESTATUS_SOCIO_PENDIENTEVALIDACION', 88);
+define('ESTATUS_SOCIO_SUSPENDIDO', 86);
 
 // Estatus empleado
-define ('ESTATUS_EMPLEADO_ACTIVO',     196);
-define ('ESTATUS_EMPLEADO_BAJA',       197);
-define ('ESTATUS_EMPLEADO_SUSPENDIDO', 198);
+define('ESTATUS_EMPLEADO_ACTIVO', 196);
+define('ESTATUS_EMPLEADO_BAJA', 197);
+define('ESTATUS_EMPLEADO_SUSPENDIDO', 198);
 
 // Estatus incripcion a evento
 define('ESTATUS_CLASE_ASIGNADO', 1);
@@ -171,7 +166,6 @@ define('EVENTO_CAPACIDAD_VESPERTINO', 5);
 define('EVENTO_CAPACIDAD_CARRERA', 27);
 define('DIAS_PARA_DESCUENTO', 3);
 
-
 //Tipo de evento
 define('EVENTO_CLASESPERSONALIZADAS', 3);
 define('EVENTO_PROGRAMASDEPORIVOS', 2);
@@ -182,31 +176,30 @@ define('EVENTO_INSCRIPCION_CANCELADA', 2);
 define('EVENTO_INSCRIPCION_SUSPENDIDA', 3);
 define('EVENTO_INSCRIPCION_IMPARTIDA', 4);
 
-
 // Tipos de socios
-define('ROL_CLIENTE_SOCIO',     0);
-define('ROL_CLIENTE_TITULAR',   1);
+define('ROL_CLIENTE_SOCIO', 0);
+define('ROL_CLIENTE_TITULAR', 1);
 define('ROL_CLIENTE_COTITULAR', 2);
 define('ROL_CLIENTE_HIJOMAYOR', 3);
 define('ROL_CLIENTE_HIJOMENOR', 4);
-define('ROL_CLIENTE_BEBE',      5);
-define('ROL_CLIENTE_NINGUNO',   9);
+define('ROL_CLIENTE_BEBE', 5);
+define('ROL_CLIENTE_NINGUNO', 9);
 define('ROL_CLIENTE_PADRE_MADRE', 10);
 define('ROL_CLIENTE_NIETO_SOBRINO', 11);
 define('ROL_CLIENTE_COTITULAR_GRUPAL', 12);
 define('ROL_CLIENTE_AGREGADO', 17);
 define('ROL_CLIENTE_2X1', 18);
-define('ROL_CLIENTE_PT',19);
+define('ROL_CLIENTE_PT', 19);
 
 // Tipos clientes
 define('TIPO_CLIENTESOCIO', 1);
 define('TIPO_CLIENTEEXTERNO', 2);
 define('TIPO_CLIENTEEMPLEADO', 3);
 
-define ('INVOLUCRADO_PROPIETARIO',  1);
-define ('INVOLUCRADO_VENDEDOR',     2);
-define ('INVOLUCRADO_BENEFICIARIO', 3);
-define ('TIPOESTAUSSOCIOBAJA',      82);
+define('INVOLUCRADO_PROPIETARIO', 1);
+define('INVOLUCRADO_VENDEDOR', 2);
+define('INVOLUCRADO_BENEFICIARIO', 3);
+define('TIPOESTAUSSOCIOBAJA', 82);
 
 // Precios
 define('PRECIO_PUBLICOGENERAL', 9);
@@ -227,10 +220,10 @@ define('MOVIMIENTO_TIPO_MEMBRESIA', 46);
 define('MOVIMIENTO_TIPO_MANTENIMIENTO', 47);
 define('MOVIMIENTO_TIPO_OTROS_INGRESOS', 48);
 define('MOVIMIENTO_TIPO_REINGRESO_SOCIO', 40);
-define('MOVIMIENTO_TIPO_CITA',663);
-define('MOVIMIENTO_TIPO_CREDENCIAL',664);
+define('MOVIMIENTO_TIPO_CITA', 663);
+define('MOVIMIENTO_TIPO_CREDENCIAL', 664);
 define('MOVIMIENTO_TIPO_TRASPASO', 420);
-define('MOVIMIENTO_TIPO_LOCKER',50);
+define('MOVIMIENTO_TIPO_LOCKER', 50);
 define('MOVIMIENTO_TIPO_EVENTO', 100);
 define('MOVIMIENTO_TIPO_CLASES_PERSONALIZADAS', 520);
 define('MOVIMIENTO_TIPO_AMPLIACION_MEMBRESIA', 488);
@@ -258,7 +251,7 @@ define('TIPO_AGREGADOS', 5);
 define('TIPO_LIMITE_INICIO_MTTO', 10);
 define('TIPO_DESC_VENTA_CA', 11);
 
-define('MEMBRSIA_INDIVIDUAL',1);
+define('MEMBRSIA_INDIVIDUAL', 1);
 
 //Tipo de eventos
 define('TIPO_EVENTO_DEPORTIVO', 1);
@@ -269,10 +262,10 @@ define('TIPO_EVENTO_PARTYKIDZ', 6);
 
 //Tipos de Documentos
 define('CONCEPTO_CAMBIOMEMBRESIA', 'Cambio_de_Membresía');
-define('CONCEPTO_CANCELACIONMEMBRESIA','Cancelacion_Membresía');
+define('CONCEPTO_CANCELACIONMEMBRESIA', 'Cancelacion_Membresía');
 define('CONCEPTO_INVITADOMEMBRESIA', 'Liberacion_Responsabilidad_Invitado');
 define('CONCEPTO_REACTIVACIONMEMBRESIA', 'Reactivacion_de_Membresía');
-define('CONCEPTO_TRANSFERENCIAMEMBRESIA','Transferencia_Clubes');
+define('CONCEPTO_TRANSFERENCIAMEMBRESIA', 'Transferencia_Clubes');
 define('CONCEPTO_TRASPASOMEMBRESIA', 'Traspaso_Membresía');
 define('TIPO_ACUERDO_USO_LCOKER', 8);
 define('TIPO_ANALISISFEELHEALTHY', 720);
@@ -281,7 +274,7 @@ define('TIPO_CAMBIOCUOTAMTTO', 713);
 define('TIPO_CAMBIOMEMBRESIA', 10);
 define('TIPO_CANCELACIONMEMBRESIA', 13);
 define('TIPO_CLUB_ALTERNO', 23);
-define('TIPO_CONFIRMACION_REQUISITOS_MEMBRESIA',739);
+define('TIPO_CONFIRMACION_REQUISITOS_MEMBRESIA', 739);
 define('TIPO_COTIZACIONMEMBRESIA', 7);
 define('TIPO_DOCUMENTO_ACEPTACION_INTERESADO', 736);
 define('TIPO_DOCUMENTO_ACUERDO_DAC', 700);
@@ -306,10 +299,10 @@ define('TIPO_DOCUMENTO_FIRMADO', 707);
 define('TIPO_DOCUMENTO_FOLLETO_IRL', 744);
 define('TIPO_DOCUMENTO_FOLLETO_MAPFRE', 722);
 define('TIPO_DOCUMENTO_FUNDADOR', 710);
-define('TIPO_DOCUMENTO_IRL',742);
+define('TIPO_DOCUMENTO_IRL', 742);
 define('TIPO_DOCUMENTO_LIBERACION_CLASE_PRUEBA', 737);
 define('TIPO_DOCUMENTO_LIBERACION_RESPONSABILIDAD', 711);
-define('TIPO_DOCUMENTO_LIBERACION_RESPONSABILIDAD_DOCUMENTOS_FALTANTES',740);
+define('TIPO_DOCUMENTO_LIBERACION_RESPONSABILIDAD_DOCUMENTOS_FALTANTES', 740);
 define('TIPO_DOCUMENTO_PENDIENTE', 706);
 define('TIPO_DOCUMENTO_RECIBOCREDENCIAL', 708);
 define('TIPO_DOCUMENTO_REGLAMENTO_INSTALACIONES', 2);
@@ -542,7 +535,7 @@ define('TBL_LOGMAILUSUARIOSINACTIVOS', 'logmailusuariosinactivos');
 define('TBL_LOGPROCESODIARIO', 'logprocesodiario');
 define('TBL_LOGPROCESODIARIOMONITOR', 'logprocesodiariomonitor');
 define('TBL_MAIL', 'mail');
-define('TBL_MAIL_CODIGO','mail_codigo');
+define('TBL_MAIL_CODIGO', 'mail_codigo');
 define('TBL_MANTENIMIENTO', 'mantenimiento');
 define('TBL_MANTENIMIENTOCLIENTE', 'mantenimientocliente');
 define('TBL_MANTENIMIENTOCONVERSION', 'mantenimientoconversion');
@@ -829,21 +822,19 @@ define('TBL_VIGENCIAREGISTRARAUTORIZRAAFORO', 'vigenciaregistrarautorizaraforo')
 define('TBL_ZONAHORARIA', 'zonahoraria');
 define('TBL_ZONAMUSCULAR', 'zonamuscular');
 
-
 define('MAGIC_WORD', '#D4nt3h3ll2017$');
 define('MAGIC_WORD_WG', '#3ll1s1um2017$');
 define('MAGIC_WORD_AFC', '#1m4g3dyn4m1cs$');
 
-
 //categorias de ip
-define('IP_CATEGORIA_PUBLICA',1);
+define('IP_CATEGORIA_PUBLICA', 1);
 
 //tipo de servicio para ip
-define('IP_TIPO_ACCESO',2);
+define('IP_TIPO_ACCESO', 2);
 define('IP_TIPO_ACCESO_INVITADO', 7);
 
 //clave para encriptar y desencriptar
-define('CLAVE','p4ss0rd$');
+define('CLAVE', 'p4ss0rd$');
 
 // Tipo Producto
 define('TIPO_PRODUCTO_MEMBRESIA', 1);
@@ -862,18 +853,17 @@ define('FAC_ANUAL', 4);
 define('ESTATUS_SOCIOMANIA_ACTIVA', 285);
 define('ESTATUS_SOCIOMANIA_APLICADO', 284);
 define('ESTATUS_SOCIOMANIA_CANCELADA', 286);
-define('TIPO_SOCIOMANIA_NUEVO','Nuevo');
-define('TIPO_SOCIOMANIA_APLICADO','Referido');
+define('TIPO_SOCIOMANIA_NUEVO', 'Nuevo');
+define('TIPO_SOCIOMANIA_APLICADO', 'Referido');
 define('DESCUENTO_SOCIOMANIA', 288);
 
-
 //Tipo comision
-define('TIPO_COMISION_CLASEPERSONALIZADA',6);
-define('TIPO_COMISION_GERENTE_VENTAS',2);
-define('TIPO_COMISION_GERENTENACIONAL',10);
-define('TIPO_COMISION_PROGRAMADEPORTIVO',9);
-define('TIPO_COMISION_VENTA_VENDEDOR',1);
-define('TIPO_COMISION_VENTASCORPORATIVAS',3);
+define('TIPO_COMISION_CLASEPERSONALIZADA', 6);
+define('TIPO_COMISION_GERENTE_VENTAS', 2);
+define('TIPO_COMISION_GERENTENACIONAL', 10);
+define('TIPO_COMISION_PROGRAMADEPORTIVO', 9);
+define('TIPO_COMISION_VENTA_VENDEDOR', 1);
+define('TIPO_COMISION_VENTASCORPORATIVAS', 3);
 define('TIPO_COMISION_CURSODEVERANO', 17);
 define('TIPO_ESTATUSCOMISION_SINFACTURAR', 6);
 define('TIPO_EVENTO_COMISIONEXTERNA', 10);
@@ -917,39 +907,37 @@ define('MTTO_EVEN_UNI_FORANEO_MEDIO', 208);
 define('MTTO_EVEN_UNI_FULL', 204);
 define('MTTO_EVEN_UNI_MEDIO', 207);
 
-
-
 //Estatus de Citas
-define('ESTATUS_CITA_ATENDIDA',3);
-define('ESTATUS_CITA_CANCELADA',2);
-define('ESTATUS_CITA_NOASISTIO',6);
-define('ESTATUS_CITA_NOINTERESADO',5);
-define('ESTATUS_CITA_PENDIENTE',1);
-define('ESTATUS_CITA_VENCIDA',4);
-define('ESTATUS_CITAATENDIDA','Atendida');
+define('ESTATUS_CITA_ATENDIDA', 3);
+define('ESTATUS_CITA_CANCELADA', 2);
+define('ESTATUS_CITA_NOASISTIO', 6);
+define('ESTATUS_CITA_NOINTERESADO', 5);
+define('ESTATUS_CITA_PENDIENTE', 1);
+define('ESTATUS_CITA_VENCIDA', 4);
+define('ESTATUS_CITAATENDIDA', 'Atendida');
 define('EVALUACION_DAC', 10);
-define('EVALUACION_ENCUESTA_INFORMATIVA', 23);//23
-define('EVALUACION_ENCUESTA_INICIAL', 30);//36
+define('EVALUACION_ENCUESTA_INFORMATIVA', 23); //23
+define('EVALUACION_ENCUESTA_INICIAL', 30); //36
 define('EVALUACION_ENCUESTA_POST', 31);
 define('EVALUACION_FEEL_HEALTHY', 22);
 define('EVALUACION_FITNESSTEST', 4);
 define('EVALUACION_NOPUBLICA', 0);
 define('EVALUACION_PUBLICA', 1);
-define('EVALUACION_SEGUIMIENTO_1', 28);//38
-define('EVALUACION_SEGUIMIENTO_2', 29);//29
+define('EVALUACION_SEGUIMIENTO_1', 28); //38
+define('EVALUACION_SEGUIMIENTO_2', 29); //29
 define('EVALUACION_VALORACION_NUTRICIONAL', 21);
 define('TIPO_CITA_NOPROGRAMADA', 0);
 
 //Tipo Domicilio
-define('DOMICILIO_CASA',42);
-define('DOMICILIO_EMPRESA',41);
-define('DOMICILIO_OFICINA',43);
+define('DOMICILIO_CASA', 42);
+define('DOMICILIO_EMPRESA', 41);
+define('DOMICILIO_OFICINA', 43);
 
 //Tipo credencial
-define('TIPO_EMPLEADO',1);
-define('TIPO_SOCIO',2);
-define('REPOSICION_CREDENCIAL_EMPLEADO',172);
-define('REPOSICION_CREDENCIAL_SOCIO',171);
+define('TIPO_EMPLEADO', 1);
+define('TIPO_SOCIO', 2);
+define('REPOSICION_CREDENCIAL_EMPLEADO', 172);
+define('REPOSICION_CREDENCIAL_SOCIO', 171);
 
 //Tipo estatus locker
 define('ESTATUS_LOCKER_ACTIVO', 1);
@@ -1026,9 +1014,9 @@ define('TIPO_ESTATUS_PASE_AUTORIZADO', 2);
 define('TIPO_ESTATUS_PASE_CANCELADO', 3);
 
 //Tipo pase involucrado
-define('TIPO_PASE_INVOLUCRADO_GENERO' , 1);
-define('TIPO_PASE_INVOLUCRADO_AUTORIZO' , 2);
-define('TIPO_PASE_INVOLUCRADO_CANCELO' , 3);
+define('TIPO_PASE_INVOLUCRADO_GENERO', 1);
+define('TIPO_PASE_INVOLUCRADO_AUTORIZO', 2);
+define('TIPO_PASE_INVOLUCRADO_CANCELO', 3);
 
 //Tipo pase
 define('TIPO_PASE_CORTESIA', 1);
@@ -1103,7 +1091,7 @@ define('TIPO_ESQUEMA_PAGO_EVENTO_CLASE', 7);
 // Tipo comprobante
 define('TIPO_COMPROBANTE_AMONESTACION', 8);
 define('TIPO_COMPROBANTE_BAJA', 9);
-define('TIPO_COMPROBANTE_DAC',11);
+define('TIPO_COMPROBANTE_DAC', 11);
 define('TIPO_COMPROBANTE_DOMICILIO', 2);
 define('TIPO_COMPROBANTE_EMPLEADO', 3);
 define('TIPO_COMPROBANTE_ESTUDIOS', 4);
@@ -1250,7 +1238,7 @@ define('PER_SUPERUSUARIO', 398);
 define('TIPO_MEMBRESIA_OPCION_LIMITEINICIOMTTO', 10);
 
 //Tipo de unidad de medida para ejercicios de rutina
-define('TIPO_UNIDADMEDIDA_MIN', '2');//cambiar en produccion
+define('TIPO_UNIDADMEDIDA_MIN', '2'); //cambiar en produccion
 
 //Tipo tarjetas
 define('TIPO_TARJETA_AMEX', 3);
@@ -1261,8 +1249,8 @@ define('EJECUTIVO_VTAS_CORPORATIVO', 97);
 define('EJECUTIVO_VENTAS', 96);
 define('EJECUTIVO_VENTAS_JR', 439);
 define('EJECUTIVO_VENTAS_SR', 771);
-define('VENDEDOR_SR',100065);
-define('VENDEDOR',100066);
+define('VENDEDOR_SR', 100065);
+define('VENDEDOR', 100066);
 define('GERENTE_GENERAL', 74);
 define('GERENTE_REGIONAL', 441);
 
@@ -1277,8 +1265,8 @@ define('ESCALA_MAX', 70);
 define('ESCALA_MIN', 30);
 
 //Tipo descuentos
-define('TIPO_DESCUENTO_PRIMERA_QUINCENA', 1)  ;
-define('TIPO_DESCUENTO_SEGUNDA_QUINCENA', 2)  ;
+define('TIPO_DESCUENTO_PRIMERA_QUINCENA', 1);
+define('TIPO_DESCUENTO_SEGUNDA_QUINCENA', 2);
 
 //Catalogo de meses
 define('CATALOGO_MESES', 47);
@@ -1375,11 +1363,11 @@ define('PREGUNTA_FEEL_HEALTHY_DAC', 654);
 
 //ENFERMEDAD
 define('ENFERMEDAD_DIABETES2', 1);
-define('DIABETES_MELLITUS_ID',315);
-define('OBESIDAD_I_ID',1028);
-define('OBESIDAD_II_ID',1028);
-define('HIPERTENSION_ID',389);
-define('PARENTESCO_PREGUNTA_ID',1036);
+define('DIABETES_MELLITUS_ID', 315);
+define('OBESIDAD_I_ID', 1028);
+define('OBESIDAD_II_ID', 1028);
+define('HIPERTENSION_ID', 389);
+define('PARENTESCO_PREGUNTA_ID', 1036);
 
 //Programa
 define('PROGRAMA_HAND_TO_HAND', 1);
@@ -1403,8 +1391,8 @@ define('ACONDICIONAMIENTO_FISICO', 10);
 define('EJERCICIOS_VARIOS', 6);
 
 //Preguntas de Peso y Estatura
-define('PESO', 253);//253 375
-define('ESTATURA', 547);//547 748
+define('PESO', 253); //253 375
+define('ESTATURA', 547); //547 748
 
 //Fidelidad
 define('FIDELIDAD_STARTER', 1);
@@ -1412,8 +1400,8 @@ define('FIDELIDAD_NEW_STARTER', 6);
 define('FIDELIDAD_NEW_STARTER2015', 7);
 
 //Eventos
-define('EVENTO_HAND_TO_HAND', 448);//456
-define('EVENTO_FEEL_HEALTHY', 449);//455
+define('EVENTO_HAND_TO_HAND', 448); //456
+define('EVENTO_FEEL_HEALTHY', 449); //455
 
 //Niveles de entrenamiento
 define('NIVEL_PRINCIPIANTE', 998);
@@ -1462,7 +1450,6 @@ define('API_PREPAGO', 'https://crm.sportsworld.com.mx/apiprepago/public/api/v1/p
 //}
 
 // include("/respaldos/rsw/variables_archivoGeneralConexionesExternas.php");
-
 
 /* End of file constants.php */
 /* Location: ./system/application/config/constants.php */

@@ -6,6 +6,30 @@ use App\Http\Traits\ApiResponse;
 
 class ApiController extends Controller
 {
+
+/**
+ * @OA\Info(title="API Sports World EPS", version="1.0")
+ *
+ *  @OA\Server(
+ *      url=L5_SWAGGER_CONST_HOST
+ *  )
+ * @OA\SecurityScheme(
+ *     type="apiKey",
+ *     in="header",
+ *     name="secret-key",
+ *     securityScheme="ApiKeyAuth"
+ *)
+ * @OA\Parameter(
+ *    name="secret-key",
+ *    description="Key ",
+ *    required = TRUE,
+ *    in="header",
+ *    @OA\Schema(
+ *      type="string",
+ *      default="abc"
+ *    )
+ * )
+ * */
     use ApiResponse;
     public static function notificacionError($mensaje)
     {
