@@ -164,7 +164,7 @@ class Persona extends Model
                     JOIN socios.usuarios_migracion AS u ON u.idUn=un.idUn
                         AND u.tipoUsuario='socio'
                         AND u.estatus='Activa'
-                        AND u.migrado=0
+                        AND un.migrado=0
                         AND TRIM(CONCAT_WS(' ', TRIM(u.nombre), TRIM(u.paterno), TRIM(u.materno))) LIKE '%{$nombreMatch}%'
                     LIMIT  20;";
         $respuesta = DB::connection('crm')->select($sql);
