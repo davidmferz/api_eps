@@ -199,6 +199,79 @@
                 ]
             }
         },
+        "/api/crm2/v1/clubs": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "operationId": "198eff06348ca4eca09ec632cc560ad8",
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/disciplines": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "operationId": "6a9da0e35ff3f80a1908d85b80469f4c",
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/profileApp/{mail}": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "operationId": "9f2ad28ae137b1cebdd67ee22ea4f6c6",
+                "parameters": [
+                    {
+                        "name": "mail",
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "default": "correo@sports"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
         "/api/crm2/v1/products/{idClub}/{idUsuario}": {
             "get": {
                 "tags": [
@@ -277,6 +350,44 @@
             }
         },
         "requestBodies": {
+            "AssignClassRequest": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "instructorId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "fechaClase": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "example": [
+                                        "01-01-2023",
+                                        "02-01-2023"
+                                    ]
+                                },
+                                "horaClase": {
+                                    "type": "string",
+                                    "example": ""
+                                },
+                                "asistentes": {
+                                    "type": "integer",
+                                    "example": ""
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
             "LoginRequest": {
                 "required": true,
                 "content": {
@@ -350,44 +461,6 @@
                                     "example": ""
                                 },
                                 "unidades": {
-                                    "type": "integer",
-                                    "example": ""
-                                }
-                            },
-                            "type": "object"
-                        }
-                    }
-                }
-            },
-            "AssignClassRequest": {
-                "required": true,
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "properties": {
-                                "id": {
-                                    "type": "integer",
-                                    "example": ""
-                                },
-                                "instructorId": {
-                                    "type": "integer",
-                                    "example": ""
-                                },
-                                "fechaClase": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    },
-                                    "example": [
-                                        "01-01-2023",
-                                        "02-01-2023"
-                                    ]
-                                },
-                                "horaClase": {
-                                    "type": "string",
-                                    "example": ""
-                                },
-                                "asistentes": {
                                     "type": "integer",
                                     "example": ""
                                 }

@@ -4,6 +4,7 @@ use App\Http\Controllers\CalendarCrm2Controller;
 use App\Http\Controllers\FitnessTestController;
 use App\Http\Controllers\InbodyController;
 use App\Http\Controllers\LoginCrm2Controller;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SellCrm2Controller;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,10 @@ Route::group(['prefix' => 'crm2/v1'], function () {
         Route::get('events/{idUsuario}', [CalendarCrm2Controller::class, 'events']);
         Route::get('unassignedClasses/{type}/{idUsuario}', [CalendarCrm2Controller::class, 'unassignedClasses']);
         Route::post('asingClass/trainer', [CalendarCrm2Controller::class, 'asingClass']);
+
+        Route::get('clubs', [ProfileController::class, 'clubs']);
+        Route::get('disciplines', [ProfileController::class, 'disciplines']);
+        Route::get('profileApp/{mail}', [ProfileController::class, 'profileApp']);
 
     });
 });
