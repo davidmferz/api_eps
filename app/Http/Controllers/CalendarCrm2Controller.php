@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AssignClassRequest;
+use App\Models\BD_App\Usuario;
 use App\Models\CRM2\MsAuth\EventoClases;
+use App\Models\Deportiva\InstalacionActividadProgramada;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\Request;
@@ -118,5 +120,21 @@ class CalendarCrm2Controller extends ApiController
             Log::debug($exception->getMessage(), true);
             return $this->successResponse([], 'ok', -2);
         }
+    }
+    /**
+     * @OA\Get(
+     *     path="/api/crm2/v1/groupClass/{mail}",
+     *     tags={"Trainers"},
+     *     security={{"ApiKeyAuth": {}}},
+     *     @OA\Parameter(name="mail",in="path",@OA\Schema(type="string",default="trainer@mail")),
+     *     @OA\Response(response=200,description="ok"),
+     *     @OA\Response(response=401, description="Autorización inválida"),
+     * )
+     */
+    public function groupClass(Request $request, $mail)
+    {
+        $user  = Usuario::where('EMAIL', $mail)->first();
+        $class = InstalacionActividadProgramada::currentClass($user->ID_USUARIO);
+        return $this->successResponse($class, 'ok', 1);
     }
 }

@@ -104,6 +104,37 @@
                 ]
             }
         },
+        "/api/crm2/v1/groupClass/{mail}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "647a158ff7ebd99878a9c8cdd3cee41c",
+                "parameters": [
+                    {
+                        "name": "mail",
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "default": "trainer@mail"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
         "/api/crm2/v1/auth": {
             "post": {
                 "tags": [
@@ -199,6 +230,37 @@
                 ]
             }
         },
+        "/api/crm2/v1/changeClubBase/{idClub}": {
+            "put": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "de839766407cd0ddf6ff24cac6a2136d",
+                "parameters": [
+                    {
+                        "name": "idClub",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": 75
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
         "/api/crm2/v1/clubs": {
             "get": {
                 "tags": [
@@ -257,6 +319,30 @@
                         }
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/updateProfile": {
+            "post": {
+                "tags": [
+                    "Profile"
+                ],
+                "operationId": "cbe3643db1c9a00cd6f78f4696d2e227",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/updateProfileRequest"
+                },
                 "responses": {
                     "200": {
                         "description": "ok"
@@ -431,6 +517,46 @@
                 }
             },
             "SellPackageRequest": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "clientId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "instructorId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "productoId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "clubId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "responsableId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "precioId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "unidades": {
+                                    "type": "integer",
+                                    "example": ""
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "updateProfileRequest": {
                 "required": true,
                 "content": {
                     "application/json": {

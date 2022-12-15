@@ -11,6 +11,7 @@ class UsuarioCoachCatDisciplina extends Model
     protected $table      = "NEGOCIO.USUARIO_COACH_CAT_DISCIPLINA";
     protected $primaryKey = ["ID_USUARIO_COACH", "ID_DISCIPLINA"];
     public $timestamps    = false;
+    public $incrementing  = false;
     public static function disciplinesTrainer($idUsuario)
     {
         $sql = "SELECT cd.ID_DISCIPLINA as idDiscipline,cd.NOMBRE as name

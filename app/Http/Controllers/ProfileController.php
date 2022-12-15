@@ -41,7 +41,7 @@ class ProfileController extends ApiController
      */
     public function disciplines()
     {
-        $disciplines = CatDisciplina::select('ID_DISCIPLINA as idDicipline', 'NOMBRE as name')->where('ESTATUS', 1)->get();
+        $disciplines = CatDisciplina::select('ID_DISCIPLINA as idDiscipline', 'NOMBRE as name')->where('ESTATUS', 1)->get();
 
         return $this->successResponse($disciplines, 'disciplines', 1);
     }
@@ -85,20 +85,20 @@ class ProfileController extends ApiController
 
     /**
      * @OA\Post(
-     *     path="/api/crm2/v1/reportByUsers",
-     *     tags={"Trainers"},
+     *     path="/api/crm2/v1/updateProfile",
+     *     tags={"Profile"},
      *     security={{"ApiKeyAuth": {}}},
      *     @OA\RequestBody(ref="#/components/requestBodies/updateProfileRequest"),
      *     @OA\Response(response=200,description="ok"),
      *     @OA\Response(response=401, description="Autorización inválida"),
      * )
      */
-    public function updateProfile(updateProfileRequest $request, $mail)
+    public function updateProfile(updateProfileRequest $request)
     {
-
-        $user = Usuario::where('EMAIL', $mail)->first();
+        $mail             = $request->input('email');
+        $user             = Usuario::where('EMAIL', $mail)->first();
+        $usuarioMigracion = UsuariosMigracion::where('mail', $mail)->first();
         if ($user == null) {
-            $usuarioMigracion = UsuariosMigracion::where('email', $mail)->first();
             if ($usuarioMigracion == null) {
                 return $this->successResponse(null, 'sin registro en la app', -1);
             } else {
@@ -114,8 +114,8 @@ class ProfileController extends ApiController
                 $usuarioMigracion->save();
             }
         }
-        $validCoach = UsuarioCoach::where('ID_USUARIO', $user->ID_USUARIO)->first();
-        if ($validCoach == null) {
+        $usuarioCoach = UsuarioCoach::where('ID_USUARIO', $user->ID_USUARIO)->first();
+        if ($usuarioCoach == null) {
             $usuarioCoach             = new UsuarioCoach();
             $usuarioCoach->ID_USUARIO = $user->ID_USUARIO;
         }
@@ -125,16 +125,56 @@ class ProfileController extends ApiController
         $usuarioCoach->ESTATUS         = 1;
         $usuarioCoach->ID_EMPLEADO     = $usuarioMigracion->idEmpleado;
         $usuarioCoach->save();
-        $clubs = UsuarioCoachCatClub::where('ID_USUARIO_COACH', $usuarioCoach->ID_USUARIO_COACH)->get()->pluck('ID_CLUB')->toArray();
+        self::addDeleteClubsTrainerApp($usuarioCoach->ID_USUARIO_COACH, $request->input('clubs'));
+        self::addDeleteDisciplineTrainerApp($usuarioCoach->ID_USUARIO_COACH, $request->input('disciplines'));
+        return self::profileApp($request, $mail);
+    }
 
-        foreach ($request->input('clubs') as $key => $value) {
-            if (in_array($value['idUn'], $clubs)) {
+    public function addDeleteClubsTrainerApp(Int $idUsuarioCoach, array $clubsInput): void
+    {
+        $clubs   = UsuarioCoachCatClub::where('ID_USUARIO_COACH', $idUsuarioCoach)->get()->pluck('ID_CLUB')->toArray();
+        $clubsBd = array_column($clubsInput, 'idUn');
 
-            } else {
+        foreach ($clubsBd as $value) {
+            if (!in_array($value, $clubs)) {
+                $usuarioClub                   = new UsuarioCoachCatClub();
+                $usuarioClub->ID_USUARIO_COACH = $idUsuarioCoach;
+                $usuarioClub->ID_CLUB          = $value;
+                $usuarioClub->save();
+            }
+        }
+        foreach ($clubs as $idClub) {
+            if (!in_array($idClub, $clubsBd)) {
+                UsuarioCoachCatClub::where('ID_CLUB', $idClub)
+                    ->where('ID_USUARIO_COACH', $idUsuarioCoach)
+                    ->delete();
 
             }
         }
-        $disciplines = UsuarioCoachCatDisciplina::where('ID_USUARIO_COACH', $usuarioCoach->ID_USUARIO_COACH)->get();
+    }
 
+    public function addDeleteDisciplineTrainerApp(Int $idUsuarioCoach, array $disciplinesInput): void
+    {
+        $disciplines = UsuarioCoachCatDisciplina::where('ID_USUARIO_COACH', $idUsuarioCoach)
+            ->get()
+            ->pluck('ID_DISCIPLINA')
+            ->toArray();
+        $disciplinesBd = array_column($disciplinesInput, 'idDiscipline');
+        foreach ($disciplinesBd as $value) {
+            if (!in_array($value, $disciplines)) {
+                $usuarioClub                   = new UsuarioCoachCatDisciplina();
+                $usuarioClub->ID_USUARIO_COACH = $idUsuarioCoach;
+                $usuarioClub->ID_DISCIPLINA    = $value;
+                $usuarioClub->save();
+            }
+        }
+        foreach ($disciplines as $idClub) {
+            if (!in_array($idClub, $disciplinesBd)) {
+                $clubUsuario = UsuarioCoachCatDisciplina::where('ID_DISCIPLINA', $idClub)
+                    ->where('ID_USUARIO_COACH', $idUsuarioCoach)
+                    ->delete();
+
+            }
+        }
     }
 }

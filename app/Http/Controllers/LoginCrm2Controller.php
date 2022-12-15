@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
 use App\Models\CRM2\MsAuth\AuthUser;
+use App\Models\Deportiva\EpsClubBase;
 use App\Models\Deportiva\EpsPuestosCrm2;
 use App\Models\UsuariosSoporte;
 use Carbon\Carbon;
@@ -77,7 +78,13 @@ class LoginCrm2Controller extends ApiController
                         $user     = AuthUser::getUser($userId);
                         $puestos  = EpsPuestosCrm2::all();
                         $trainers = AuthUser::getUsersPuestos($puestos, $ssp[0]->externalId);
-
+                        $clubBase = EpsClubBase::where('idUsuario', $userId)->first();
+                        if (count($ssp) == 1) {
+                            $clubBase            = new EpsClubBase();
+                            $clubBase->idUsuario = $userId;
+                            $clubBase->idClub    = $ssp[0]->id;
+                            $clubBase->save();
+                        }
                         foreach ($trainers as &$trainer) {
                             foreach ($puestos as $value) {
                                 if ($trainer->idPuesto == $value->idPuesto) {
@@ -91,6 +98,7 @@ class LoginCrm2Controller extends ApiController
                             'user'         => $user,
                             'ssp'          => $ssp,
                             'trainers'     => $trainers,
+                            'clubBase'     => $clubBase,
                             //'employeePositions' => $puestos,
                         ];
                         $bodyToken = [
@@ -244,4 +252,28 @@ class LoginCrm2Controller extends ApiController
 
     }
 
+    /**
+     * @OA\Put(
+     *     path="/api/crm2/v1/changeClubBase/{idClub}",
+     *     tags={"Trainers"},
+     *     security={{"ApiKeyAuth": {}}},
+     *     @OA\Parameter(name="idClub",in="path",@OA\Schema(type="integer",default=75)),
+     *     @OA\Response(response=200,description="ok"),
+     *     @OA\Response(response=401, description="Autorización inválida"),
+     * )
+     */
+    public function changeClubBase(Request $request, int $idClub)
+    {
+        $clubBaseUser = EpsClubBase::where('idUsuario', $request->input('userId'))->first();
+        if ($clubBaseUser == null) {
+            $clubBaseUser            = new EpsClubBase();
+            $clubBaseUser->idUsuario = $request->input('userId');
+            $clubBaseUser->idClub    = $idClub;
+            $clubBaseUser->save();
+        } else {
+            EpsClubBase::where('idUsuario', $request->input('userId'))->update(['idClub' => $idClub]);
+        }
+
+        return $this->successResponse(null, 'ok', 1);
+    }
 }

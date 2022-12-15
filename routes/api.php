@@ -26,6 +26,7 @@ Route::group(['prefix' => 'crm2/v1'], function () {
     Route::middleware(['AuthUserEPS'])->group(function () {
         Route::get('getTrainers/{idClub}', [LoginCrm2Controller::class, 'getTrainers']);
         Route::get('search', [LoginCrm2Controller::class, 'search']);
+        Route::put('changeClubBase/{idClub}', [LoginCrm2Controller::class, 'changeClubBase']);
 
         Route::get('products/{idClub}/{idUsuario}', [SellCrm2Controller::class, 'products']);
         Route::post('sellPackage', [SellCrm2Controller::class, 'sellPackage']);
@@ -36,9 +37,12 @@ Route::group(['prefix' => 'crm2/v1'], function () {
         Route::get('unassignedClasses/{type}/{idUsuario}', [CalendarCrm2Controller::class, 'unassignedClasses']);
         Route::post('asingClass/trainer', [CalendarCrm2Controller::class, 'asingClass']);
 
+        Route::get('groupClass/{mail}', [CalendarCrm2Controller::class, 'groupClass']);
+
         Route::get('clubs', [ProfileController::class, 'clubs']);
         Route::get('disciplines', [ProfileController::class, 'disciplines']);
         Route::get('profileApp/{mail}', [ProfileController::class, 'profileApp']);
+        Route::post('updateProfile', [ProfileController::class, 'updateProfile']);
 
     });
 });
@@ -65,7 +69,6 @@ Route::group(['prefix' => 'v1/'], function () {
     Route::match(['post', 'options'], 'queryPersonaMem', 'PersonaController@queryPersonaMem');
 
     //Route::match(['get', 'options'], 'pruebaMetodo', 'EPController@pruebaMetodo');
-    Route::match(['get', 'options'], 'perrito/{id}', 'EpsController@perrito');
     Route::match(['post', 'options'], 'login', 'EPController@login');
     Route::match(['post', 'options'], 'loginOkta', 'EPController@loginOkta');
     Route::match(['get', 'options'], 'agenda/{idEntrenador}/{idUn}', 'EPController@agenda');
