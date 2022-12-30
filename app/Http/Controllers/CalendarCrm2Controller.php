@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AssignClassRequest;
+use App\Models\BD_APP\CLASES\InstalacionActividadProgramada as CLASESInstalacionActividadProgramada;
 use App\Models\BD_App\Usuario;
 use App\Models\CRM2\MsAuth\EventoClases;
-use App\Models\Deportiva\InstalacionActividadProgramada;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\Request;
@@ -134,7 +134,7 @@ class CalendarCrm2Controller extends ApiController
     public function groupClass(Request $request, $mail)
     {
         $user  = Usuario::where('EMAIL', $mail)->first();
-        $class = InstalacionActividadProgramada::currentClass($user->ID_USUARIO);
+        $class = CLASESInstalacionActividadProgramada::currentClass($user->ID_USUARIO);
         return $this->successResponse($class, 'ok', 1);
     }
 }

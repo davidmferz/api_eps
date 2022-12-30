@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CalendarCrm2Controller;
+use App\Http\Controllers\ClasesController;
 use App\Http\Controllers\FitnessTestController;
 use App\Http\Controllers\InbodyController;
 use App\Http\Controllers\LoginCrm2Controller;
@@ -37,7 +38,9 @@ Route::group(['prefix' => 'crm2/v1'], function () {
         Route::get('unassignedClasses/{type}/{idUsuario}', [CalendarCrm2Controller::class, 'unassignedClasses']);
         Route::post('asingClass/trainer', [CalendarCrm2Controller::class, 'asingClass']);
 
-        Route::get('groupClass/{mail}', [CalendarCrm2Controller::class, 'groupClass']);
+        Route::get('groupClass/{mail}', [ClasesController::class, 'groupClass']);
+        Route::get('classSize/{idUn}', [ClasesController::class, 'classSize']);
+        Route::put('updateSizeClass/{idActividadInstalacion}/{newSize}', [ClasesController::class, 'updateSizeClass']);
 
         Route::get('clubs', [ProfileController::class, 'clubs']);
         Route::get('disciplines', [ProfileController::class, 'disciplines']);

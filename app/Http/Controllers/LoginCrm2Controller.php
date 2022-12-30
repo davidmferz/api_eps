@@ -40,8 +40,8 @@ class LoginCrm2Controller extends ApiController
             'Content-Type' => 'application/json',
         ];
         try {
-            $endPoint = "/api/auth/get-security-spaces";
-            $response = $client->request('POST', env('CRM2_API_URL') . $endPoint, [
+            $endPoint = env('CRM2_API_URL') . "/api/auth/get-security-spaces";
+            $response = $client->request('POST', $endPoint, [
                 'headers' => $header,
                 'body'    => json_encode($body),
             ]);
@@ -79,10 +79,10 @@ class LoginCrm2Controller extends ApiController
                         $puestos  = EpsPuestosCrm2::all();
                         $trainers = AuthUser::getUsersPuestos($puestos, $ssp[0]->externalId);
                         $clubBase = EpsClubBase::where('idUsuario', $userId)->first();
-                        if (count($ssp) == 1) {
+                        if (count($ssp) == 1 && $clubBase == null) {
                             $clubBase            = new EpsClubBase();
                             $clubBase->idUsuario = $userId;
-                            $clubBase->idClub    = $ssp[0]->id;
+                            $clubBase->idClub    = $ssp[0]->externalId;
                             $clubBase->save();
                         }
                         foreach ($trainers as &$trainer) {
@@ -92,7 +92,6 @@ class LoginCrm2Controller extends ApiController
                                 }
                             }
                         }
-
                         $result = [
                             'access_token' => $authBody->access_token,
                             'user'         => $user,
@@ -247,6 +246,7 @@ class LoginCrm2Controller extends ApiController
             return $this->successResponse([], 'ok', -2);
 
         } catch (\Exception $exception) {
+            Log::debug(print_r($exception->getMessage(), true));
             return $this->successResponse([], 'ok', -3);
         }
 

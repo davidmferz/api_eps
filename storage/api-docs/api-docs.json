@@ -109,7 +109,11 @@
                 "tags": [
                     "Trainers"
                 ],
+<<<<<<< HEAD
                 "operationId": "647a158ff7ebd99878a9c8cdd3cee41c",
+=======
+                "operationId": "9040cd4563d8535eb9059e2b5ff40b34",
+>>>>>>> develop
                 "parameters": [
                     {
                         "name": "mail",
@@ -135,6 +139,79 @@
                 ]
             }
         },
+<<<<<<< HEAD
+=======
+        "/api/crm2/v1/classSize/{idClub}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "0d7aab7823d0e7140ecfe8538f99b87d",
+                "parameters": [
+                    {
+                        "name": "idClub",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": "75"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/updateSizeClass/{idActividadInstalacion}/{newSize}": {
+            "put": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "504399ec5a38acb22e2dac778ef1d814",
+                "parameters": [
+                    {
+                        "name": "idActividadInstalacion",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": "75"
+                        }
+                    },
+                    {
+                        "name": "newSize",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": "10"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+>>>>>>> develop
         "/api/crm2/v1/auth": {
             "post": {
                 "tags": [
