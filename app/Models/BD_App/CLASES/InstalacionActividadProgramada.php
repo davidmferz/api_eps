@@ -31,7 +31,7 @@ class InstalacionActividadProgramada extends Model
                 JOIN CLASES.actividadDeportiva AS ad ON ad.idActividadDeportiva=ia.idActividadDeportiva
                 WHERE iap.idPersona={$idPersona}
 
-                AND   STR_TO_DATE(CONCAT(iap.fecha,' ',iap.horaInicio) ,'%Y-%m-%d %h:%i:%s') > NOW()
+            #    AND   STR_TO_DATE(CONCAT(iap.fecha,' ',iap.horaInicio) ,'%Y-%m-%d %h:%i:%s') > NOW()
                 order by STR_TO_DATE(CONCAT(iap.fecha,' ',iap.horaInicio) ,'%Y-%m-%d %h:%i:%s') ASC
                 ";
         $class = DB::connection('app')->select($sql);
@@ -51,43 +51,44 @@ class InstalacionActividadProgramada extends Model
                     'inscritos'                        => [],
                 ];
             }
-            $sql = "  SELECT a.idInstalacionActividadProgramada,u.ID_USUARIO as idPersona,u.NOMBRE as nombre,u.APELLIDO_PATERNO as paterno,u.APELLIDO_MATERNO as materno,a.confirmado
+            $sql = "  SELECT
+            a.idInstalacionActividadProgramada,
+            u.ID_USUARIO as idPersona,
+            u.NOMBRE as nombre,
+            u.APELLIDO_PATERNO as paterno,
+            u.APELLIDO_MATERNO as materno,
+            a.confirmado,
+            u.ID_MEMBRESIA,
+            u.ID_CLUB,
+            u.ID_INVITADO,
+            u.TIPO_INVITADO,
+            u.ID_EMPLEADO ,
+            cr.NOMBRE AS tipoUsuario,
+            cc.NOMBRE AS club
             FROM CLASES.actividadAsistencia AS a
             JOIN NEGOCIO.USUARIO AS u ON u.ID_USUARIO=a.idPersona
+            JOIN NEGOCIO.CAT_ROL AS cr ON cr.ID_ROL=u.ID_ROL
+                LEFT JOIN NEGOCIO.CAT_CLUB AS cc ON cc.ID_CLUB=u.ID_CLUB
             where a.idInstalacionActividadProgramada IN ({$idsIAP})
             ";
             $personAsistence = DB::connection('app')->select($sql);
-            $personsInfo     = [];
-            if (count($personAsistence) > 0) {
-                $idsPersona = implode(',', array_column($personAsistence, 'idPersona'));
-                $sql        = "SELECT u.ID_USUARIO,u.ID_MEMBRESIA,u.ID_CLUB,u.ID_INVITADO,u.TIPO_INVITADO,u.ID_EMPLEADO , cr.NOMBRE AS tipoUsuario,cc.NOMBRE AS club
-                FROM NEGOCIO.USUARIO AS u
-                JOIN NEGOCIO.CAT_ROL AS cr ON cr.ID_ROL=u.ID_ROL
-                LEFT JOIN NEGOCIO.CAT_CLUB AS cc ON cc.ID_CLUB=u.ID_CLUB
-                WHERE u.ID_USUARIO IN ({$idsPersona})
-                ";
-                $personsInfo = DB::connection('app')->select($sql);
-            }
+
             foreach ($personAsistence as $asistence) {
                 $person = [
-                    'idPersona'   => $asistence->idPersona,
-                    'nombre'      => $asistence->nombre,
-                    'paterno'     => $asistence->paterno,
-                    'materno'     => $asistence->materno,
-                    'confirmado'  => $asistence->materno,
-                    'registerApp' => false,
+                    'idPersona'    => $asistence->idPersona,
+                    'nombre'       => $asistence->nombre,
+                    'paterno'      => $asistence->paterno,
+                    'materno'      => $asistence->materno,
+                    'confirmado'   => $asistence->materno,
+                    'idMembresia'  => $asistence->ID_MEMBRESIA,
+                    'idInvitado'   => $asistence->ID_INVITADO,
+                    'tipoinvitado' => $asistence->TIPO_INVITADO,
+                    'idEmpleado'   => $asistence->ID_EMPLEADO,
+                    'tipoUsuario'  => $asistence->tipoUsuario,
+                    'club'         => $asistence->club,
+                    'registerApp'  => true,
                 ];
-                foreach ($personsInfo as $valueApp) {
-                    if ($valueApp->ID_USUARIO == $asistence->idPersona) {
-                        $person['registerApp']  = true;
-                        $person['idMembresia']  = $valueApp->ID_MEMBRESIA;
-                        $person['idInvitado']   = $valueApp->ID_INVITADO;
-                        $person['tipoinvitado'] = $valueApp->TIPO_INVITADO;
-                        $person['idEmpleado']   = $valueApp->ID_EMPLEADO;
-                        $person['tipoUsuario']  = $valueApp->tipoUsuario;
-                        $person['club']         = $valueApp->club;
-                    }
-                }
+
                 $classRegister[$asistence->idInstalacionActividadProgramada]['inscritos'][] = $person;
             }
             return array_values($classRegister);
