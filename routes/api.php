@@ -1,5 +1,10 @@
 <?php
 
+<<<<<<< Updated upstream
+=======
+use App\Http\Controllers\CalendarCrm2Controller;
+use App\Http\Controllers\ClasesController;
+>>>>>>> Stashed changes
 use App\Http\Controllers\FitnessTestController;
 use App\Http\Controllers\InbodyController;
 use Illuminate\Support\Facades\Artisan;
@@ -15,6 +20,39 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
  */
+<<<<<<< Updated upstream
+=======
+
+Route::group(['prefix' => 'crm2/v1'], function () {
+    Route::post('auth', [LoginCrm2Controller::class, 'auth']);
+
+    Route::middleware(['AuthUserEPS'])->group(function () {
+        Route::get('getTrainers/{idClub}', [LoginCrm2Controller::class, 'getTrainers']);
+        Route::get('search', [LoginCrm2Controller::class, 'search']);
+        Route::put('changeClubBase/{idClub}', [LoginCrm2Controller::class, 'changeClubBase']);
+
+        Route::get('products/{idClub}/{idUsuario}', [SellCrm2Controller::class, 'products']);
+        Route::post('sellPackage', [SellCrm2Controller::class, 'sellPackage']);
+        Route::post('reportByUsers', [SellCrm2Controller::class, 'reportByUsers']);
+
+        //CALENDARIO
+        Route::get('events/{idUsuario}', [CalendarCrm2Controller::class, 'events']);
+        Route::get('unassignedClasses/{type}/{idUsuario}', [CalendarCrm2Controller::class, 'unassignedClasses']);
+        Route::post('asingClass/trainer', [CalendarCrm2Controller::class, 'asingClass']);
+
+        Route::get('groupClass/{mail}', [ClasesController::class, 'groupClass']);
+        Route::get('classSize/{idUn}', [ClasesController::class, 'classSize']);
+        Route::put('updateSizeClass/{idActividadInstalacion}/{newSize}', [ClasesController::class, 'updateSizeClass']);
+
+        Route::get('clubs', [ProfileController::class, 'clubs']);
+        Route::get('disciplines', [ProfileController::class, 'disciplines']);
+        Route::get('profileApp/{mail}', [ProfileController::class, 'profileApp']);
+        Route::post('updateProfile', [ProfileController::class, 'updateProfile']);
+
+    });
+});
+
+>>>>>>> Stashed changes
 Route::get('notificacionError/{mensaje}', 'ApiController@notificacionError');
 
 Route::group(['prefix' => 'v1/'], function () {

@@ -1,0 +1,678 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API Sports World EPS",
+        "version": "1.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost/api_eps/public/"
+        }
+    ],
+    "paths": {
+        "/api/crm2/v1/events/{idUsuario}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "7270c4fed76441dcdd2f340434ee2e58",
+                "parameters": [
+                    {
+                        "name": "idUsuario",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": 75
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/unassignedClasses/{type}/{idUsuario}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "8af3c6fea0c75b9e47413308e3443a9a",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "default": "trainer"
+                        }
+                    },
+                    {
+                        "name": "idUsuario",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": 75
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/asingClass/trainer": {
+            "post": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "fe490c66d94d10d839fd5c33a21c8378",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/AssignClassRequest"
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/groupClass/{mail}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "9040cd4563d8535eb9059e2b5ff40b34",
+                "parameters": [
+                    {
+                        "name": "mail",
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "default": "trainer@mail"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/classSize/{idClub}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "0d7aab7823d0e7140ecfe8538f99b87d",
+                "parameters": [
+                    {
+                        "name": "idClub",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": "75"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/updateSizeClass/{idActividadInstalacion}/{newSize}": {
+            "put": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "504399ec5a38acb22e2dac778ef1d814",
+                "parameters": [
+                    {
+                        "name": "idActividadInstalacion",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": "75"
+                        }
+                    },
+                    {
+                        "name": "newSize",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": "10"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/auth": {
+            "post": {
+                "tags": [
+                    "USUARIO"
+                ],
+                "summary": "USUARIO",
+                "operationId": "6b4fb45af8cc630a9f62f98353da25f1",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/LoginRequest"
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/getTrainers/{idClub}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "51110cc27f7307613e98b31c4c092570",
+                "parameters": [
+                    {
+                        "name": "idClub",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": 75
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/search": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "d18a15ed224a36531e118372e0443748",
+                "parameters": [
+                    {
+                        "name": "tipo",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "SOCIO"
+                        }
+                    },
+                    {
+                        "name": "nombre",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "luis"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/changeClubBase/{idClub}": {
+            "put": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "de839766407cd0ddf6ff24cac6a2136d",
+                "parameters": [
+                    {
+                        "name": "idClub",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": 75
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/clubs": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "operationId": "198eff06348ca4eca09ec632cc560ad8",
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/disciplines": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "operationId": "6a9da0e35ff3f80a1908d85b80469f4c",
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/profileApp/{mail}": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "operationId": "9f2ad28ae137b1cebdd67ee22ea4f6c6",
+                "parameters": [
+                    {
+                        "name": "mail",
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "default": "correo@sports"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/updateProfile": {
+            "post": {
+                "tags": [
+                    "Profile"
+                ],
+                "operationId": "cbe3643db1c9a00cd6f78f4696d2e227",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/updateProfileRequest"
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/products/{idClub}/{idUsuario}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "0ad029e309ff16d6bfef4f45f4e0bd6f",
+                "parameters": [
+                    {
+                        "name": "idClub",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": 75
+                        }
+                    },
+                    {
+                        "name": "idUsuario",
+                        "in": "path",
+                        "schema": {
+                            "type": "integer",
+                            "default": 75
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/reportByUsers": {
+            "post": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "399181f1cdba1d0382fbf2ebd14e52a1",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/ReportsUsersRequest"
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "parameters": {
+            "secret-key": {
+                "name": "secret-key",
+                "in": "header",
+                "description": "Key ",
+                "required": true,
+                "schema": {
+                    "type": "string",
+                    "default": "abc"
+                }
+            }
+        },
+        "requestBodies": {
+            "AssignClassRequest": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "instructorId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "fechaClase": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "example": [
+                                        "01-01-2023",
+                                        "02-01-2023"
+                                    ]
+                                },
+                                "horaClase": {
+                                    "type": "string",
+                                    "example": ""
+                                },
+                                "asistentes": {
+                                    "type": "integer",
+                                    "example": ""
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "LoginRequest": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "username": {
+                                    "type": "string",
+                                    "example": ""
+                                },
+                                "password": {
+                                    "type": "string",
+                                    "example": ""
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "ReportsUsersRequest": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "users": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer"
+                                    },
+                                    "example": [
+                                        123,
+                                        234
+                                    ]
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "SellPackageRequest": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "clientId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "instructorId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "productoId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "clubId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "responsableId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "precioId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "unidades": {
+                                    "type": "integer",
+                                    "example": ""
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "updateProfileRequest": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "clientId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "instructorId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "productoId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "clubId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "responsableId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "precioId": {
+                                    "type": "integer",
+                                    "example": ""
+                                },
+                                "unidades": {
+                                    "type": "integer",
+                                    "example": ""
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "ApiKeyAuth": {
+                "type": "apiKey",
+                "name": "secret-key",
+                "in": "header"
+            }
+        }
+    }
+}
