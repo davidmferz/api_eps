@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BD_APP\CLASES\ActividadAsistencia;
 use App\Models\BD_APP\CLASES\InstalacionActividad;
 use App\Models\BD_APP\CLASES\InstalacionActividadProgramada;
 use App\Models\BD_App\Usuario;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ClasesController extends ApiController
@@ -24,6 +26,30 @@ class ClasesController extends ApiController
         $user  = Usuario::where('EMAIL', $mail)->first();
         $class = InstalacionActividadProgramada::currentClass($user->ID_USUARIO);
         return $this->successResponse($class, 'ok', 1);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/crm2/v1/confirmClass/{idEmployee}/{idBooking}",
+     *     tags={"Trainers"},
+     *     security={{"ApiKeyAuth": {}}},
+     *     @OA\Parameter(name="mail",in="path",@OA\Schema(type="string",default="trainer@mail")),
+     *     @OA\Response(response=200,description="ok"),
+     *     @OA\Response(response=401, description="Autorización inválida"),
+     * )
+     */
+    public function confirmClass($idEmployee, $idBooking)
+    {
+        $booking = ActividadAsistencia::find($idBooking);
+        if ($booking == null) {
+            return $this->errorResponse('reserva invalida');
+        }
+        $booking->idEmpleado        = $idEmployee;
+        $booking->confirmado        = 1;
+        $booking->fechaConfirmacion = Carbon::now()->format('Y-m-d');
+        $booking->save();
+
+        return $this->successResponse($booking, 'ok', 1);
     }
     /**
      * @OA\Get(

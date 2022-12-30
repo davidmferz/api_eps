@@ -39,6 +39,8 @@ Route::group(['prefix' => 'crm2/v1'], function () {
         Route::post('asingClass/trainer', [CalendarCrm2Controller::class, 'asingClass']);
 
         Route::get('groupClass/{mail}', [ClasesController::class, 'groupClass']);
+        Route::put('confirm/{idEmployee}/{idBooking}', [ClasesController::class, 'confirmClass']);
+
         Route::get('classSize/{idUn}', [ClasesController::class, 'classSize']);
         Route::put('updateSizeClass/{idActividadInstalacion}/{newSize}', [ClasesController::class, 'updateSizeClass']);
 

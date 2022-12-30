@@ -52,6 +52,7 @@ class InstalacionActividadProgramada extends Model
                 ];
             }
             $sql = "  SELECT
+            a.idActividadAsistencia,
             a.idInstalacionActividadProgramada,
             u.ID_USUARIO as idPersona,
             u.NOMBRE as nombre,
@@ -75,18 +76,19 @@ class InstalacionActividadProgramada extends Model
 
             foreach ($personAsistence as $asistence) {
                 $person = [
-                    'idPersona'    => $asistence->idPersona,
-                    'nombre'       => $asistence->nombre,
-                    'paterno'      => $asistence->paterno,
-                    'materno'      => $asistence->materno,
-                    'confirmado'   => $asistence->materno,
-                    'idMembresia'  => $asistence->ID_MEMBRESIA,
-                    'idInvitado'   => $asistence->ID_INVITADO,
-                    'tipoinvitado' => $asistence->TIPO_INVITADO,
-                    'idEmpleado'   => $asistence->ID_EMPLEADO,
-                    'tipoUsuario'  => $asistence->tipoUsuario,
-                    'club'         => $asistence->club,
-                    'registerApp'  => true,
+                    'idActividadAsistencia' => $asistence->idActividadAsistencia,
+                    'idPersona'             => $asistence->idPersona,
+                    'nombre'                => $asistence->nombre,
+                    'paterno'               => $asistence->paterno,
+                    'materno'               => $asistence->materno,
+                    'confirmado'            => $asistence->confirmado == 1 ? true : false,
+                    'idMembresia'           => $asistence->ID_MEMBRESIA,
+                    'idInvitado'            => $asistence->ID_INVITADO,
+                    'tipoinvitado'          => $asistence->TIPO_INVITADO,
+                    'idEmpleado'            => $asistence->ID_EMPLEADO,
+                    'tipoUsuario'           => $asistence->tipoUsuario,
+                    'club'                  => $asistence->club,
+                    'registerApp'           => true,
                 ];
 
                 $classRegister[$asistence->idInstalacionActividadProgramada]['inscritos'][] = $person;

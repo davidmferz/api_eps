@@ -11,5 +11,7 @@ class ActividadAsistencia extends Model
     protected $connection = 'app';
     protected $table      = 'CLASES.actividadAsistencia';
     protected $primaryKey = 'idActividadAsistencia';
-
+    protected $hidden     = [
+        'created_at', 'updated_at', 'deleted_at',
+    ];
 }
