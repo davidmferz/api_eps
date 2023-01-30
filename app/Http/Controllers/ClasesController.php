@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BD_APP\CLASES\ActividadAsistencia;
-use App\Models\BD_APP\CLASES\InstalacionActividad;
-use App\Models\BD_APP\CLASES\InstalacionActividadProgramada;
+use App\Models\BD_App\CLASES\ActividadAsistencia;
+use App\Models\BD_App\CLASES\InstalacionActividad;
+use App\Models\BD_App\CLASES\InstalacionActividadProgramada;
 use App\Models\BD_App\Usuario;
 use Carbon\Carbon;
 use Illuminate\Http\Request;

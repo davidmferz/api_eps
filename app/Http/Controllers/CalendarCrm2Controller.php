@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AssignClassRequest;
-use App\Models\BD_APP\CLASES\InstalacionActividadProgramada as CLASESInstalacionActividadProgramada;
+use App\Models\BD_App\CLASES\InstalacionActividadProgramada as CLASESInstalacionActividadProgramada;
 use App\Models\BD_App\Usuario;
 use App\Models\CRM2\MsAuth\EventoClases;
 use GuzzleHttp\Client;

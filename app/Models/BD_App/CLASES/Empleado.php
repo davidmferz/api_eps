@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\BD_APP\CLASES;
+namespace App\Models\BD_App\CLASES;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,5 +12,4 @@ class Empleado extends Model
     protected $table      = 'CLASES.empleado';
     protected $primaryKey = 'idEmpleado';
 
-    
 }
