@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Route;
  */
 
 Route::group(['prefix' => 'crm2/v1'], function () {
+    Route::get('clubs', [ProfileController::class, 'clubs']);
+
     Route::post('auth', [LoginCrm2Controller::class, 'auth']);
 
     Route::middleware(['AuthUserEPS'])->group(function () {
@@ -44,7 +46,6 @@ Route::group(['prefix' => 'crm2/v1'], function () {
         Route::get('classSize/{idUn}', [ClasesController::class, 'classSize']);
         Route::put('updateSizeClass/{idActividadInstalacion}/{newSize}', [ClasesController::class, 'updateSizeClass']);
 
-        Route::get('clubs', [ProfileController::class, 'clubs']);
         Route::get('disciplines', [ProfileController::class, 'disciplines']);
         Route::get('profileApp/{mail}', [ProfileController::class, 'profileApp']);
         Route::post('updateProfile', [ProfileController::class, 'updateProfile']);
