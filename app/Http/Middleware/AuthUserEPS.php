@@ -46,6 +46,7 @@ class AuthUserEPS
                 } else {
                     Cache::put($token, json_encode($estatusRefresh), 3600);
                     $request->request->add(['userId' => $estatusRefresh['userId']]);
+
                     $request->request->add(['access_token' => $estatusRefresh['access_token']]);
                     return $next($request);
                 }

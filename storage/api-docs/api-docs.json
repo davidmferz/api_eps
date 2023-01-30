@@ -109,11 +109,7 @@
                 "tags": [
                     "Trainers"
                 ],
-<<<<<<< HEAD
                 "operationId": "647a158ff7ebd99878a9c8cdd3cee41c",
-=======
-                "operationId": "9040cd4563d8535eb9059e2b5ff40b34",
->>>>>>> develop
                 "parameters": [
                     {
                         "name": "mail",
@@ -139,8 +135,68 @@
                 ]
             }
         },
-<<<<<<< HEAD
-=======
+        "/api/crm2/v1/groupClass2/{mail}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "daa5af954ecfb6e8840103d46f3d3e5e",
+                "parameters": [
+                    {
+                        "name": "mail",
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "default": "trainer@mail"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/crm2/v1/confirmClass/{idEmployee}/{idBooking}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "operationId": "4d5e375347f142bd870cc3c8c887b78c",
+                "parameters": [
+                    {
+                        "name": "mail",
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "default": "trainer@mail"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Autorización inválida"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
         "/api/crm2/v1/classSize/{idClub}": {
             "get": {
                 "tags": [
@@ -211,7 +267,6 @@
                 ]
             }
         },
->>>>>>> develop
         "/api/crm2/v1/auth": {
             "post": {
                 "tags": [

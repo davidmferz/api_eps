@@ -13,12 +13,13 @@ class AuthUser extends Model
     protected $primaryKey = 'user_id';
     public $timestamps    = false;
 
-    public static function ssp($userId)
+    public static function ssp($idEmpleado)
     {
         $sql = "SELECT ssp.name,ssp.space_id as id ,ssp.external_id as externalId
         from msauth.user_security_space_group AS uss
+        JOIN msauth.auth_user AS au ON au.user_id=uss.user_id
         JOIN msauth.security_space  ssp ON  ssp.space_id=uss.space_id
-        WHERE uss.user_id={$userId}";
+        WHERE au.numero_empleado={$idEmpleado}";
         $query = DB::connection('crm2')->select($sql);
         if (count($query) > 0) {
             return $query;
@@ -32,7 +33,7 @@ class AuthUser extends Model
          FROM msauth.auth_user AS au
         JOIN msauth.auth_user_puestos AS ap ON ap.id_user=au.user_id
         JOIN msauth.auth_puestos AS p ON p.id_puesto=ap.id_puesto
-        WHERE au.user_id={$userId} ";
+        WHERE au.numero_empleado={$userId} ";
         $query = DB::connection('crm2')->select($sql);
         if (count($query) > 0) {
             return $query[0];

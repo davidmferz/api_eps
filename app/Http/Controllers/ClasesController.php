@@ -13,7 +13,7 @@ class ClasesController extends ApiController
 {
     /**
      * @OA\Get(
-     *     path="/api/crm2/v1/groupClass/{mail}",
+     *     path="/api/crm2/v1/groupClass2/{mail}",
      *     tags={"Trainers"},
      *     security={{"ApiKeyAuth": {}}},
      *     @OA\Parameter(name="mail",in="path",@OA\Schema(type="string",default="trainer@mail")),

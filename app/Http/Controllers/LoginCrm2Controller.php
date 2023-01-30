@@ -32,6 +32,7 @@ class LoginCrm2Controller extends ApiController
         $username = $resquest->input('username');
         $password = $resquest->input('password');
         $client   = new Client();
+        $idPuesto = 0;
         $body     = [
             'userName' => $username,
             'password' => $password,
@@ -64,25 +65,38 @@ class LoginCrm2Controller extends ApiController
 
                         $bodyAuth = $responseAuthClub->getBody();
 
-                        $authBody = json_decode($bodyAuth->getContents());
-                        $soporte  = UsuariosSoporte::where('userId', $authBody->user_id)->first();
-                        $userId   = $authBody->user_id;
+                        $authBody   = json_decode($bodyAuth->getContents());
+                        $user       = AuthUser::find($authBody->user_id);
+                        $soporte    = UsuariosSoporte::where('idEmpleado', $user->numero_empleado)->first();
+                        $idEmpleado = $user->numero_empleado;
                         if ($soporte != null) {
-                            $userId = $soporte->userIdEmpleado;
-                            $ssp    = AuthUser::ssp($userId);
+                            $idEmpleado = $soporte->idEmpleadoSuplantar;
+                            $ssp        = AuthUser::ssp($idEmpleado);
                             if (count($ssp) <= 0) {
                                 return $this->errorResponse('Usuario sin clubs configurados');
 
                             }
                         }
-                        $user     = AuthUser::getUser($userId);
-                        $puestos  = EpsPuestosCrm2::all();
+                        $user = AuthUser::getUser($idEmpleado);
+
+                        $puestos     = EpsPuestosCrm2::all();
+                        $excepciones = [];
+                        foreach ($puestos as $key => $value) {
+                            if ($value->tipoEmpleado == 'idEmpleado') {
+                                $excepciones[] = [
+                                    'idEmpleado' => $value->idPuesto,
+                                    'meta'       => $value->meta,
+                                ];
+                                unset($puestos[$key]);
+
+                            }
+                        }
                         $trainers = AuthUser::getUsersPuestos($puestos, $ssp[0]->externalId);
-                        $clubBase = EpsClubBase::where('idUsuario', $userId)->first();
+                        $clubBase = EpsClubBase::where('idEmpleado', $idEmpleado)->first();
                         if (count($ssp) == 1 && $clubBase == null) {
-                            $clubBase            = new EpsClubBase();
-                            $clubBase->idUsuario = $userId;
-                            $clubBase->idClub    = $ssp[0]->externalId;
+                            $clubBase             = new EpsClubBase();
+                            $clubBase->idEmpleado = $idEmpleado;
+                            $clubBase->idClub     = $ssp[0]->externalId;
                             $clubBase->save();
                         }
                         foreach ($trainers as &$trainer) {
@@ -91,14 +105,22 @@ class LoginCrm2Controller extends ApiController
                                     $trainer->typeTrainer = $value;
                                 }
                             }
+                            foreach ($excepciones as $exc) {
+                                if ($exc['idEmpleado'] == $trainer->numeroEmpleado) {
+                                    $trainer->typeTrainer->meta = $exc['meta'];
+                                }
+                            }
+
                         }
-                        $result = [
+                        $user->rol = $this->setRol($idEmpleado, $user->idPuesto);
+                        $result    = [
                             'access_token' => $authBody->access_token,
                             'user'         => $user,
                             'ssp'          => $ssp,
                             'trainers'     => $trainers,
                             'clubBase'     => $clubBase,
-                            //'employeePositions' => $puestos,
+                            'idEmpleado'   => $idEmpleado,
+
                         ];
                         $bodyToken = [
                             'userId'            => $authBody->user_id,
@@ -111,21 +133,43 @@ class LoginCrm2Controller extends ApiController
                         Cache::put($authBody->access_token, json_encode($bodyToken), 3600);
                         return $this->successResponse($result, 'ok', 1);
                     } else {
-                        return $this->errorResponse('Ocurrio un error inesperado');
+                        return $this->errorResponse('Ocurrio un error inesperado 3');
                     }
                 } else {
                     return $this->successResponse(null, 'sin club registrados', -1);
                 }
             } else {
-                return $this->errorResponse('Ocurrio un error inesperado');
+                return $this->errorResponse('Ocurrio un error inesperado 2');
             }
         } catch (ClientException $e) {
             Log::debug(print_r([$e->getMessage(), $e->getResponse()->getStatusCode()], true));
-            return $this->errorResponse('Ocurrio un error inesperado');
+            return $this->errorResponse('Ocurrio un error inesperado 1');
 
         } catch (\Exception $exception) {
-            return $this->errorResponse('Ocurrio un error inesperado');
+            Log::debug(print_r($exception->getMessage(), true));
+            return $this->errorResponse('Ocurrio un error inesperado 0');
         }
+    }
+
+    public static function setRol($idEmpleado, $idPuesto)
+    {
+        if (in_array($idEmpleado, ['15430'])) {
+            return 'root';
+        }
+        if (in_array($idPuesto, [4, 39, 50, 131, 142, 151])) {
+            return 'coordinador';
+        }
+        if (in_array($idPuesto, [62, 67, 69, 77, 81, 99, 104, 141])) {
+            return 'trainer';
+        }
+
+        if (in_array($idPuesto, [57, 87, 105])) {
+            return 'groupFitness';
+        }
+        if (in_array($idPuesto, [62, 67, 69, 77, 81, 99, 104, 141])) {
+            return 'empleado';
+        }
+
     }
 
     public static function refresToken($token)
@@ -264,14 +308,14 @@ class LoginCrm2Controller extends ApiController
      */
     public function changeClubBase(Request $request, int $idClub)
     {
-        $clubBaseUser = EpsClubBase::where('idUsuario', $request->input('userId'))->first();
+        $clubBaseUser = EpsClubBase::where('idEmpleado', $request->input('idEmpleado'))->first();
         if ($clubBaseUser == null) {
-            $clubBaseUser            = new EpsClubBase();
-            $clubBaseUser->idUsuario = $request->input('userId');
-            $clubBaseUser->idClub    = $idClub;
+            $clubBaseUser             = new EpsClubBase();
+            $clubBaseUser->idEmpleado = $request->input('idEmpleado');
+            $clubBaseUser->idClub     = $idClub;
             $clubBaseUser->save();
         } else {
-            EpsClubBase::where('idUsuario', $request->input('userId'))->update(['idClub' => $idClub]);
+            EpsClubBase::where('idEmpleado', $request->input('idEmpleado'))->update(['idClub' => $idClub]);
         }
 
         return $this->successResponse(null, 'ok', 1);
