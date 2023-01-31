@@ -20,6 +20,7 @@ class AuthUser extends Model
         JOIN msauth.auth_user AS au ON au.user_id=uss.user_id
         JOIN msauth.security_space  ssp ON  ssp.space_id=uss.space_id
         WHERE au.numero_empleado={$idEmpleado}";
+        dd($sql);
         $query = DB::connection('crm2')->select($sql);
         if (count($query) > 0) {
             return $query;

@@ -46,10 +46,11 @@ class LoginCrm2Controller extends ApiController
                 'headers' => $header,
                 'body'    => json_encode($body),
             ]);
+
             if ($response->getBody()) {
                 $bodyResponse     = $response->getBody();
                 $clubsHabilitados = json_decode($bodyResponse->getContents());
-                if (count($clubsHabilitados->ssp) > 1) {
+                if (count($clubsHabilitados->ssp) >0) {
                     $ssp  = $clubsHabilitados->ssp;
                     $body = [
                         'userName' => $username,

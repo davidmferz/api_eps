@@ -38,7 +38,7 @@ class ReportsUsersRequest extends FormRequest
     {
         return [
 
-            'users' => 'required|array|min:1',
+            'users' => 'nullable|array|min:1',
 
         ];
     }
