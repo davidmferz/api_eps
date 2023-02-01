@@ -40,116 +40,108 @@ class LoginCrm2Controller extends ApiController
         $header = [
             'Content-Type' => 'application/json',
         ];
-        try {
-            $endPoint = env('CRM2_API_URL') . "/api/auth/get-security-spaces";
-            $response = $client->request('POST', $endPoint, [
-                'headers' => $header,
-                'body'    => json_encode($body),
-            ]);
+        $endPoint = env('CRM2_API_URL') . "/api/auth/get-security-spaces";
+        $response = $client->request('POST', $endPoint, [
+            'headers' => $header,
+            'body'    => json_encode($body),
+        ]);
 
-            if ($response->getBody()) {
-                $bodyResponse     = $response->getBody();
-                $clubsHabilitados = json_decode($bodyResponse->getContents());
-                if (count($clubsHabilitados->ssp) >0) {
-                    $ssp  = $clubsHabilitados->ssp;
-                    $body = [
-                        'userName' => $username,
-                        'password' => $password,
-                        'ssp'      => $clubsHabilitados->ssp[0],
-                    ];
-                    $endPoint         = "/api/auth/client-token";
-                    $responseAuthClub = $client->request('POST', env('CRM2_API_URL') . $endPoint, [
-                        'headers' => $header,
-                        'body'    => json_encode($body),
-                    ]);
-                    if ($responseAuthClub->getBody()) {
+        if ($response->getBody()) {
+            $bodyResponse     = $response->getBody();
+            $clubsHabilitados = json_decode($bodyResponse->getContents());
+            if (count($clubsHabilitados->ssp) > 0) {
+                $ssp  = $clubsHabilitados->ssp;
+                $body = [
+                    'userName' => $username,
+                    'password' => $password,
+                    'ssp'      => $clubsHabilitados->ssp[0],
+                ];
+                $endPoint         = "/api/auth/client-token";
+                $responseAuthClub = $client->request('POST', env('CRM2_API_URL') . $endPoint, [
+                    'headers' => $header,
+                    'body'    => json_encode($body),
+                ]);
+                if ($responseAuthClub->getBody()) {
 
-                        $bodyAuth = $responseAuthClub->getBody();
+                    $bodyAuth = $responseAuthClub->getBody();
 
-                        $authBody   = json_decode($bodyAuth->getContents());
-                        $user       = AuthUser::find($authBody->user_id);
-                        $soporte    = UsuariosSoporte::where('idEmpleado', $user->numero_empleado)->first();
-                        $idEmpleado = $user->numero_empleado;
-                        if ($soporte != null) {
-                            $idEmpleado = $soporte->idEmpleadoSuplantar;
-                            $ssp        = AuthUser::ssp($idEmpleado);
-                            if (count($ssp) <= 0) {
-                                return $this->errorResponse('Usuario sin clubs configurados');
-
-                            }
-                        }
-                        $user = AuthUser::getUser($idEmpleado);
-
-                        $puestos     = EpsPuestosCrm2::all();
-                        $excepciones = [];
-                        foreach ($puestos as $key => $value) {
-                            if ($value->tipoEmpleado == 'idEmpleado') {
-                                $excepciones[] = [
-                                    'idEmpleado' => $value->idPuesto,
-                                    'meta'       => $value->meta,
-                                ];
-                                unset($puestos[$key]);
-
-                            }
-                        }
-                        $trainers = AuthUser::getUsersPuestos($puestos, $ssp[0]->externalId);
-                        $clubBase = EpsClubBase::where('idEmpleado', $idEmpleado)->first();
-                        if (count($ssp) == 1 && $clubBase == null) {
-                            $clubBase             = new EpsClubBase();
-                            $clubBase->idEmpleado = $idEmpleado;
-                            $clubBase->idClub     = $ssp[0]->externalId;
-                            $clubBase->save();
-                        }
-                        foreach ($trainers as &$trainer) {
-                            foreach ($puestos as $value) {
-                                if ($trainer->idPuesto == $value->idPuesto) {
-                                    $trainer->typeTrainer = $value;
-                                }
-                            }
-                            foreach ($excepciones as $exc) {
-                                if ($exc['idEmpleado'] == $trainer->numeroEmpleado) {
-                                    $trainer->typeTrainer->meta = $exc['meta'];
-                                }
-                            }
+                    $authBody   = json_decode($bodyAuth->getContents());
+                    $user       = AuthUser::find($authBody->user_id);
+                    $soporte    = UsuariosSoporte::where('idEmpleado', $user->numero_empleado)->first();
+                    $idEmpleado = $user->numero_empleado;
+                    if ($soporte != null) {
+                        $idEmpleado = $soporte->idEmpleadoSuplantar;
+                        $ssp        = AuthUser::ssp($idEmpleado);
+                        if (count($ssp) <= 0) {
+                            return $this->errorResponse('Usuario sin clubs configurados');
 
                         }
-                        $user->rol = $this->setRol($idEmpleado, $user->idPuesto);
-                        $result    = [
-                            'access_token' => $authBody->access_token,
-                            'user'         => $user,
-                            'ssp'          => $ssp,
-                            'trainers'     => $trainers,
-                            'clubBase'     => $clubBase,
-                            'idEmpleado'   => $idEmpleado,
-
-                        ];
-                        $bodyToken = [
-                            'userId'            => $authBody->user_id,
-                            'refresh_signature' => Carbon::now()->addSeconds(999),
-                            'access_token'      => $authBody->access_token,
-                            'refresh_token'     => $authBody->refresh_token,
-                            'domain'            => $authBody->domain,
-                            'sspId'             => $ssp[0]->id,
-                        ];
-                        Cache::put($authBody->access_token, json_encode($bodyToken), 3600);
-                        return $this->successResponse($result, 'ok', 1);
-                    } else {
-                        return $this->errorResponse('Ocurrio un error inesperado 3');
                     }
+                    $user = AuthUser::getUser($idEmpleado);
+
+                    $puestos     = EpsPuestosCrm2::all();
+                    $excepciones = [];
+                    foreach ($puestos as $key => $value) {
+                        if ($value->tipoEmpleado == 'idEmpleado') {
+                            $excepciones[] = [
+                                'idEmpleado' => $value->idPuesto,
+                                'meta'       => $value->meta,
+                            ];
+                            unset($puestos[$key]);
+
+                        }
+                    }
+                    $trainers = AuthUser::getUsersPuestos($puestos, $ssp[0]->externalId);
+                    $clubBase = EpsClubBase::where('idEmpleado', $idEmpleado)->first();
+                    if (count($ssp) == 1 && $clubBase == null) {
+                        $clubBase             = new EpsClubBase();
+                        $clubBase->idEmpleado = $idEmpleado;
+                        $clubBase->idClub     = $ssp[0]->externalId;
+                        $clubBase->save();
+                    }
+                    foreach ($trainers as &$trainer) {
+                        foreach ($puestos as $value) {
+                            if ($trainer->idPuesto == $value->idPuesto) {
+                                $trainer->typeTrainer = $value;
+                            }
+                        }
+                        foreach ($excepciones as $exc) {
+                            if ($exc['idEmpleado'] == $trainer->numeroEmpleado) {
+                                $trainer->typeTrainer->meta = $exc['meta'];
+                            }
+                        }
+
+                    }
+                    $user->rol = $this->setRol($idEmpleado, $user->idPuesto);
+                    $result    = [
+                        'access_token' => $authBody->access_token,
+                        'user'         => $user,
+                        'ssp'          => $ssp,
+                        'trainers'     => $trainers,
+                        'clubBase'     => $clubBase,
+                        'idEmpleado'   => $idEmpleado,
+
+                    ];
+                    $bodyToken = [
+                        'userId'            => $authBody->user_id,
+                        'refresh_signature' => Carbon::now()->addSeconds(999),
+                        'access_token'      => $authBody->access_token,
+                        'refresh_token'     => $authBody->refresh_token,
+                        'domain'            => $authBody->domain,
+                        'sspId'             => $ssp[0]->id,
+                    ];
+                    Cache::put($authBody->access_token, json_encode($bodyToken), 3600);
+                    return $this->successResponse($result, 'ok', 1);
                 } else {
-                    return $this->successResponse(null, 'sin club registrados', -1);
+                    return $this->errorResponse('Ocurrio un error inesperado 3');
                 }
             } else {
-                return $this->errorResponse('Ocurrio un error inesperado 2');
+                return $this->successResponse(null, 'sin club registrados', -1);
             }
-        } catch (ClientException $e) {
-            Log::debug(print_r([$e->getMessage(), $e->getResponse()->getStatusCode()], true));
-            return $this->errorResponse('Ocurrio un error inesperado 1');
-
-        } catch (\Exception $exception) {
-            Log::debug(print_r($exception->getMessage(), true));
-            return $this->errorResponse('Ocurrio un error inesperado 0');
+        } else {
+            return $this->errorResponse('Ocurrio un error inesperado 2');
         }
+
     }
 
     public static function setRol($idEmpleado, $idPuesto)
