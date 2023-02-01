@@ -21,35 +21,38 @@ use Illuminate\Support\Facades\Route;
 |
  */
 
-Route::group(['prefix' => 'crm2/v1'], function () {
-    Route::get('clubs', [ProfileController::class, 'clubs']);
+Route::group(['middleware' => ['corsCloud']], function () {
+    //Rutas a las que se permitirá acceso
+    Route::group(['prefix' => 'crm2/v1'], function () {
+        Route::get('clubs', [ProfileController::class, 'clubs']);
 
-    Route::post('auth', [LoginCrm2Controller::class, 'auth']);
+        Route::post('auth', [LoginCrm2Controller::class, 'auth']);
 
-    Route::middleware(['AuthUserEPS'])->group(function () {
-        Route::get('getTrainers/{idClub}', [LoginCrm2Controller::class, 'getTrainers']);
-        Route::get('search', [LoginCrm2Controller::class, 'search']);
-        Route::put('changeClubBase/{idClub}', [LoginCrm2Controller::class, 'changeClubBase']);
+        Route::middleware(['AuthUserEPS'])->group(function () {
+            Route::get('getTrainers/{idClub}', [LoginCrm2Controller::class, 'getTrainers']);
+            Route::get('search', [LoginCrm2Controller::class, 'search']);
+            Route::put('changeClubBase/{idClub}', [LoginCrm2Controller::class, 'changeClubBase']);
 
-        Route::get('products/{idClub}/{idUsuario}', [SellCrm2Controller::class, 'products']);
-        Route::post('sellPackage', [SellCrm2Controller::class, 'sellPackage']);
-        Route::post('reportByUsers', [SellCrm2Controller::class, 'reportByUsers']);
+            Route::get('products/{idClub}/{idUsuario}', [SellCrm2Controller::class, 'products']);
+            Route::post('sellPackage', [SellCrm2Controller::class, 'sellPackage']);
+            Route::post('reportByUsers', [SellCrm2Controller::class, 'reportByUsers']);
 
-        //CALENDARIO
-        Route::get('events/{idUsuario}', [CalendarCrm2Controller::class, 'events']);
-        Route::get('unassignedClasses/{type}/{idUsuario}', [CalendarCrm2Controller::class, 'unassignedClasses']);
-        Route::post('asingClass/trainer', [CalendarCrm2Controller::class, 'asingClass']);
+            //CALENDARIO
+            Route::get('events/{idUsuario}', [CalendarCrm2Controller::class, 'events']);
+            Route::get('unassignedClasses/{type}/{idUsuario}', [CalendarCrm2Controller::class, 'unassignedClasses']);
+            Route::post('asingClass/trainer', [CalendarCrm2Controller::class, 'asingClass']);
 
-        Route::get('groupClass/{mail}', [ClasesController::class, 'groupClass']);
-        Route::put('confirm/{idEmployee}/{idBooking}', [ClasesController::class, 'confirmClass']);
+            Route::get('groupClass/{mail}', [ClasesController::class, 'groupClass']);
+            Route::put('confirm/{idEmployee}/{idBooking}', [ClasesController::class, 'confirmClass']);
 
-        Route::get('classSize/{idUn}', [ClasesController::class, 'classSize']);
-        Route::put('updateSizeClass/{idActividadInstalacion}/{newSize}', [ClasesController::class, 'updateSizeClass']);
+            Route::get('classSize/{idUn}', [ClasesController::class, 'classSize']);
+            Route::put('updateSizeClass/{idActividadInstalacion}/{newSize}', [ClasesController::class, 'updateSizeClass']);
 
-        Route::get('disciplines', [ProfileController::class, 'disciplines']);
-        Route::get('profileApp/{mail}', [ProfileController::class, 'profileApp']);
-        Route::post('updateProfile', [ProfileController::class, 'updateProfile']);
+            Route::get('disciplines', [ProfileController::class, 'disciplines']);
+            Route::get('profileApp/{mail}', [ProfileController::class, 'profileApp']);
+            Route::post('updateProfile', [ProfileController::class, 'updateProfile']);
 
+        });
     });
 });
 
