@@ -67,9 +67,9 @@ class EventoClases extends Model
                     JOIN msmantenimiento.ventas_items AS vi ON vi.cotizacion_productos_item_id=cpi.id
                     JOIN msmantenimiento.ventas AS v ON v.id=vi.venta_id
                     JOIN msmantenimiento.cotizacion_productos AS cp ON cp.id=cpi.cotizacion_productos_id
-                    JOIN msmantenimiento.productos AS p ON p.id=pri.producto_id
+                    JOIN msmantenimiento.productos AS p ON p.id=pri.producto_id AND p.clasificacion_id NOT IN (69)
                     WHERE cpi.responsable_id IN ({$idsStr})
-                    AND v.fecha_creacion > DATE_SUB(CURRENT_DATE(),INTERVAL 1 YEAR)
+                    AND v.fecha_creacion > DATE_SUB(CURRENT_DATE(),INTERVAL 4 MONTH)
                     GROUP BY cpi.responsable_id, DATE_FORMAT( v.fecha_creacion, '%Y-%m')
                     ORDER BY DATE_FORMAT( v.fecha_creacion, '%Y-%m')  DESC ";
         $query = DB::connection('crm2')->select($sql);
