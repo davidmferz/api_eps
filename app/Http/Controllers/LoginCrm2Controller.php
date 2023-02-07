@@ -203,6 +203,7 @@ class LoginCrm2Controller extends ApiController
                     'refresh_token'     => $authBody->refresh_token,
                     'domain'            => $authBody->domain,
                     'sspId'             => $token->sspId,
+                    'idEmpleado'        => $authBody->idEmpleado,
                 ];
                 Cache::put($token->access_token, json_encode($bodyToken), 3600);
 
