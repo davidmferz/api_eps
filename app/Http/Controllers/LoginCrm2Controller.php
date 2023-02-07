@@ -124,6 +124,7 @@ class LoginCrm2Controller extends ApiController
                     ];
                     $bodyToken = [
                         'userId'            => $authBody->user_id,
+                        'idEmpleado'        => $idEmpleado,
                         'refresh_signature' => Carbon::now()->addSeconds(999),
                         'access_token'      => $authBody->access_token,
                         'refresh_token'     => $authBody->refresh_token,
@@ -149,7 +150,7 @@ class LoginCrm2Controller extends ApiController
         if (in_array($idEmpleado, ['15430'])) {
             return 'root';
         }
-        if (in_array($idPuesto, [4, 39, 50, 131, 142, 151])) {
+        if (in_array($idPuesto, [4, 39, 50, 131, 142, 151, 163])) {
             return 'coordinador';
         }
         if (in_array($idPuesto, [62, 67, 69, 77, 81, 99, 95, 104, 141])) {
@@ -301,6 +302,7 @@ class LoginCrm2Controller extends ApiController
      */
     public function changeClubBase(Request $request, int $idClub)
     {
+        dd($request->all());
         $clubBaseUser = EpsClubBase::where('idEmpleado', $request->input('idEmpleado'))->first();
         if ($clubBaseUser == null) {
             $clubBaseUser             = new EpsClubBase();
