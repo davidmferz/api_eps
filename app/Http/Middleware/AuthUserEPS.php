@@ -63,7 +63,10 @@ class AuthUserEPS
         Cache::put($token, json_encode($data), 6200);
         $request->request->add(['userId' => $data->userId]);
         $request->request->add(['access_token' => $data->access_token]);
-        $request->request->add(['idEmpleado' => $data->idEmpleado]);
+        if (isset($data->idEmpleado)) {
+
+            $request->request->add(['idEmpleado' => $data->idEmpleado]);
+        }
         return $next($request);
 
     }
