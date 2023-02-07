@@ -308,7 +308,6 @@ class LoginCrm2Controller extends ApiController
      */
     public function changeClubBase(Request $request, int $idClub)
     {
-        dd($request->all());
         $clubBaseUser = EpsClubBase::where('idEmpleado', $request->input('idEmpleado'))->first();
         if ($clubBaseUser == null) {
             $clubBaseUser             = new EpsClubBase();
