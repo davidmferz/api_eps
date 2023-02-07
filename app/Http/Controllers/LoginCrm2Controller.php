@@ -127,6 +127,7 @@ class LoginCrm2Controller extends ApiController
                         $bodyToken = [
                             'userId'            => $authBody->user_id,
                             'refresh_signature' => Carbon::now()->addSeconds(999),
+                            'idEmpleado'        => $idEmpleado,
                             'access_token'      => $authBody->access_token,
                             'refresh_token'     => $authBody->refresh_token,
                             'domain'            => $authBody->domain,
