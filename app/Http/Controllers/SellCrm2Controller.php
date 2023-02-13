@@ -123,7 +123,7 @@ class SellCrm2Controller extends ApiController
             if (!isset($usersReports[$value->userId])) {
                 $usersReports[$value->userId] = [
                     'userId'       => $value->userId,
-                    'avg'          => $value->ventaMes,
+                    'avg'          => 0,
                     'ultimosMeses' => [
                         [
                             'mes'      => $value->mes,
@@ -138,8 +138,15 @@ class SellCrm2Controller extends ApiController
                         'ventaMes' => $value->ventaMes,
                     ];
                 }
-                $usersReports[$value->userId]['avg'] = ($usersReports[$value->userId]['avg'] + $value->ventaMes) / 2;
             }
+        }
+        foreach ($usersReports as &$user) {
+            $avg = 0;
+            foreach ($user['ultimosMeses'] as $mes) {
+                $avg += $mes['ventaMes'];
+            }
+            $avg         = $avg / 3;
+            $user['avg'] = $avg;
         }
         return $this->successResponse(array_values($usersReports), 'report', 1);
     }

@@ -61,7 +61,7 @@ class EventoClases extends Model
         $sql    = "SELECT
                     cpi.responsable_id as userId,
                     DATE_FORMAT( v.fecha_creacion, '%Y-%m') as mes,
-                    SUM(cpi.precio_venta) as ventaMes
+                    (SUM(cpi.precio_venta) / (1+(cpi.iva/100))) as ventaMes
                     FROM msmantenimiento.productos_instancias AS pri
                     JOIN msmantenimiento.cotizacion_productos_items AS cpi ON cpi.id=pri.cotizacion_producto_item_id
                     JOIN msmantenimiento.ventas_items AS vi ON vi.cotizacion_productos_item_id=cpi.id

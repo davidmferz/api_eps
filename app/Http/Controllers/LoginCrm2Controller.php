@@ -93,7 +93,6 @@ class LoginCrm2Controller extends ApiController
 
                             }
                         }
-                        $trainers = AuthUser::getUsersPuestos($puestos, $ssp[0]->externalId);
                         $clubBase = EpsClubBase::where('idEmpleado', $idEmpleado)->first();
                         if (count($ssp) == 1 && $clubBase == null) {
                             $clubBase             = new EpsClubBase();
@@ -101,6 +100,8 @@ class LoginCrm2Controller extends ApiController
                             $clubBase->idClub     = $ssp[0]->externalId;
                             $clubBase->save();
                         }
+                        $trainers = AuthUser::getUsersPuestos($puestos, $clubBase->idClub);
+
                         foreach ($trainers as &$trainer) {
                             foreach ($puestos as $value) {
                                 if ($trainer->idPuesto == $value->idPuesto) {
@@ -321,5 +322,10 @@ class LoginCrm2Controller extends ApiController
         }
 
         return $this->successResponse(null, 'ok', 1);
+    }
+    public function validSession(Request $request)
+    {
+        return $this->successResponse(null, 'ok', 1);
+
     }
 }
