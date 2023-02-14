@@ -59,19 +59,43 @@ class EventoClases extends Model
     {
         $idsStr = implode(',', $users);
         $sql    = "SELECT
-                    cpi.responsable_id as userId,
-                    DATE_FORMAT( v.fecha_creacion, '%Y-%m') as mes,
-                    (SUM(cpi.precio_venta) / (1+(cpi.iva/100))) as ventaMes
-                    FROM msmantenimiento.productos_instancias AS pri
-                    JOIN msmantenimiento.cotizacion_productos_items AS cpi ON cpi.id=pri.cotizacion_producto_item_id
-                    JOIN msmantenimiento.ventas_items AS vi ON vi.cotizacion_productos_item_id=cpi.id
-                    JOIN msmantenimiento.ventas AS v ON v.id=vi.venta_id
-                    JOIN msmantenimiento.cotizacion_productos AS cp ON cp.id=cpi.cotizacion_productos_id
-                    JOIN msmantenimiento.productos AS p ON p.id=pri.producto_id AND p.clasificacion_id NOT IN (69)
-                    WHERE cpi.responsable_id IN ({$idsStr})
-                    AND v.fecha_creacion > DATE_SUB(CURRENT_DATE(),INTERVAL 4 MONTH)
-                    GROUP BY cpi.responsable_id, DATE_FORMAT( v.fecha_creacion, '%Y-%m')
-                    ORDER BY DATE_FORMAT( v.fecha_creacion, '%Y-%m')  DESC ";
+                        cpi.responsable_id as userId,
+                        DATE_FORMAT(v.fecha_facturacion, '%Y-%m') as mes,
+                        ROUND(SUM(cc.importe) / (1 +(cpi.iva / 100)), 2) AS ventaMes
+                    FROM
+                        msmantenimiento.productos_instancias AS pri
+                        JOIN msmantenimiento.cotizacion_productos_items AS cpi ON cpi.id = pri.cotizacion_producto_item_id
+                        JOIN msmantenimiento.ventas_items AS vi ON vi.cotizacion_productos_item_id = cpi.id
+                        JOIN msmantenimiento.ventas AS v ON v.id = vi.venta_id
+                        JOIN msmantenimiento.cargos_clientes AS cc ON cc.venta_id = v.id
+                        JOIN msmantenimiento.cotizacion_productos AS cp ON cp.id = cpi.cotizacion_productos_id
+                        JOIN msmantenimiento.productos AS p ON p.id = pri.producto_id
+                        and p.clasificacion_id in (
+                            select
+                                c2.id
+                            from
+                                msmantenimiento.clasificacion_categorias c2
+                            where
+                                c2.id = 18
+                                or c2.parent_id = 18
+                                or c2.parent_id in (
+                                    select
+                                        c3.id
+                                    from
+                                        msmantenimiento.clasificacion_categorias c3
+                                    where
+                                        c3.parent_id = 18
+                                )
+                        )
+                    WHERE
+                        cpi.responsable_id IN ({$idsStr})
+                        AND v.fecha_facturacion > DATE_SUB(CURRENT_DATE(), INTERVAL 4 MONTH)
+                    GROUP BY
+                        cpi.responsable_id,
+                        DATE_FORMAT(v.fecha_facturacion, '%Y-%m')
+
+                    ORDER BY
+                        DATE_FORMAT(v.fecha_facturacion, '%Y-%m') DESC;";
         $query = DB::connection('crm2')->select($sql);
         if (count($query) > 0) {
             return $query;
