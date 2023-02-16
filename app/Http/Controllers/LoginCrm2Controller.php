@@ -94,7 +94,8 @@ class LoginCrm2Controller extends ApiController
                             }
                         }
                         $clubBase = EpsClubBase::where('idEmpleado', $idEmpleado)->first();
-                        if (count($ssp) == 1 && $clubBase == null) {
+
+                        if (count($ssp) > 1 && $clubBase == null) {
                             $clubBase             = new EpsClubBase();
                             $clubBase->idEmpleado = $idEmpleado;
                             $clubBase->idClub     = $ssp[0]->externalId;
@@ -149,6 +150,7 @@ class LoginCrm2Controller extends ApiController
             return $this->errorResponse('Usuario o contraseña inválido');
 
         } catch (\Exception $exception) {
+            Log::debug($exception->getMessage());
             return $this->errorResponse('Ocurrio un error inesperado');
         }
     }
@@ -171,6 +173,10 @@ class LoginCrm2Controller extends ApiController
         if (in_array($idPuesto, [62, 67, 69, 77, 81, 99, 104, 141])) {
             return 'empleado';
         }
+        if (in_array($idPuesto, [31])) {
+            return 'callCenter';
+        }
+        return 'NA';
 
     }
 
