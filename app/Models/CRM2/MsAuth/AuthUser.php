@@ -15,11 +15,35 @@ class AuthUser extends Model
 
     public static function ssp($idEmpleado)
     {
-        $sql = "SELECT ssp.name,ssp.space_id as id ,ssp.external_id as externalId
-        from msauth.user_security_space_group AS uss
-        JOIN msauth.auth_user AS au ON au.user_id=uss.user_id
-        JOIN msauth.security_space  ssp ON  ssp.space_id=uss.space_id
-        WHERE au.numero_empleado={$idEmpleado}";
+        $sql = "SELECT
+                        DISTINCT name,
+                        id,
+                        externalId
+                FROM
+                        (
+                                SELECT
+                                        ssp.name,
+                                        ssp.space_id as id,
+                                        ssp.external_id as externalId
+                                from
+                                        msauth.user_security_space_group AS uss
+                                        JOIN msauth.auth_user AS au ON au.user_id = uss.user_id
+                                        JOIN msauth.security_space ssp ON ssp.space_id = uss.space_id
+                                WHERE
+                                        au.numero_empleado = {$idEmpleado}
+                                UNION
+                                SELECT
+                                        ssp.name,
+                                        ssp.space_id as id,
+                                        ssp.external_id as externalId
+                                FROM
+                                        msauth.auth_user AS a
+                                        join msauth.user_group ug ON ug.user_id = a.user_id
+                                        JOIN msauth.user_security_space_group AS uss ON uss.group_id = ug.group_id
+                                        JOIN msauth.security_space ssp ON ssp.space_id = uss.space_id
+                                WHERE
+                                        a.numero_empleado = {$idEmpleado}
+                        ) AS a";
         $query = DB::connection('crm2')->select($sql);
         if (count($query) > 0) {
             return $query;
