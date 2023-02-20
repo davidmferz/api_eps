@@ -30,7 +30,6 @@ class LoginCrm2Controller extends ApiController
     public function auth(LoginRequest $resquest)
     {
         try {
-
             $username = $resquest->input('username');
             $password = $resquest->input('password');
             $client   = new Client();
@@ -101,8 +100,7 @@ class LoginCrm2Controller extends ApiController
                         }
                     }
                     $clubBase = EpsClubBase::where('idEmpleado', $idEmpleado)->first();
-
-                    if (count($ssp) > 1 && $clubBase == null) {
+                    if (count($ssp) >= 1 && $clubBase == null) {
                         $clubBase             = new EpsClubBase();
                         $clubBase->idEmpleado = $idEmpleado;
                         $clubBase->idClub     = $ssp[0]->externalId;
@@ -168,7 +166,7 @@ class LoginCrm2Controller extends ApiController
         if (in_array($idPuesto, [4, 39, 50, 131, 142, 151, 72, 163])) {
             return 'coordinador';
         }
-        if (in_array($idPuesto, [62, 66, 67, 69, 77, 81, 99, 95, 104, 141])) {
+        if (in_array($idPuesto, [62, 66, 67, 69, 77, 81, 99, 95, 104, 141, 101])) {
             return 'trainer';
         }
 
