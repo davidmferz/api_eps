@@ -28,8 +28,10 @@ Route::group(['prefix' => 'crm2/v1'], function () {
     Route::post('auth', [LoginCrm2Controller::class, 'auth']);
 
     Route::middleware(['AuthUserEPS'])->group(function () {
+        Route::get('clubsCallCenter', [LoginCrm2Controller::class, 'clubsCallCenter']);
 
         Route::get('validSession', [LoginCrm2Controller::class, 'validSession']);
+
         Route::get('getTrainers/{idClub}', [LoginCrm2Controller::class, 'getTrainers']);
         Route::get('search', [LoginCrm2Controller::class, 'search']);
         Route::put('changeClubBase/{idClub}', [LoginCrm2Controller::class, 'changeClubBase']);

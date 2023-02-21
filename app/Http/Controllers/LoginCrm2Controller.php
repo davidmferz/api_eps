@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
 use App\Models\CRM2\MsAuth\AuthUser;
+use App\Models\CRM2\msclub\Club;
 use App\Models\Deportiva\EpsClubBase;
 use App\Models\Deportiva\EpsPuestosCrm2;
 use App\Models\UsuariosSoporte;
@@ -16,6 +17,22 @@ use Illuminate\Support\Facades\Log;
 
 class LoginCrm2Controller extends ApiController
 {
+
+    public function clubsCallCenter()
+    {
+        $clubs       = Club::where('activo', 1)->orderBy('nombre', 'ASC')->get();
+        $clubsFormat = [];
+        foreach ($clubs as $key => $club) {
+            $clubsFormat[] = [
+                'idUn' => $club->club_id,
+                'name' => $club->nombre,
+            ];
+
+        }
+        return $this->successResponse($clubsFormat, 'ok', 1);
+
+    }
+
     /**
      * @OA\Post(
      *     path="/api/crm2/v1/auth",
@@ -174,7 +191,7 @@ class LoginCrm2Controller extends ApiController
             return 'groupFitness';
         }
 
-        if (in_array($idPuesto, [31, 32, 160,42])) {
+        if (in_array($idPuesto, [31, 32, 160, 42])) {
             return 'callCenter';
         }
         return 'NA';
