@@ -174,7 +174,7 @@ class LoginCrm2Controller extends ApiController
             return 'groupFitness';
         }
 
-        if (in_array($idPuesto, [31, 32, 160])) {
+        if (in_array($idPuesto, [31, 32, 160,42])) {
             return 'callCenter';
         }
         return 'NA';
