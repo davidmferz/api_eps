@@ -67,7 +67,7 @@ class EventoClases extends Model
                             JOIN msauth.auth_user AS au ON au.numero_empleado = v.numEmpleado
                     WHERE
                             au.user_id IN ({$idsStr})
-                            AND v.fecha > DATE_SUB(CURRENT_DATE(), INTERVAL 4 MONTH)
+                            AND v.fecha > DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH)
                     GROUP BY
                             au.user_id,
                             v.periodo";
