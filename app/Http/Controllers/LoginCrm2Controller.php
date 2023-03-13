@@ -177,7 +177,7 @@ class LoginCrm2Controller extends ApiController
 
     public static function setRol($idEmpleado, $idPuesto)
     {
-        if (in_array($idEmpleado, ['15430'])) {
+        if (in_array($idEmpleado, ['15430']) || in_array($idPuesto, [155, 156])) {
             return 'root';
         }
         if (in_array($idPuesto, [4, 39, 50, 131, 142, 151, 72, 163, 2])) {
@@ -191,7 +191,7 @@ class LoginCrm2Controller extends ApiController
             return 'groupFitness';
         }
 
-        if (in_array($idPuesto, [31, 32, 160, 42,155,156])) {
+        if (in_array($idPuesto, [31, 32, 160, 42])) {
             return 'callCenter';
         }
         return 'NA';
