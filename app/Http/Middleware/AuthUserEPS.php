@@ -6,6 +6,7 @@ use App\Http\Controllers\LoginCrm2Controller;
 use Carbon\Carbon;
 use Closure;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 
 class AuthUserEPS
@@ -21,15 +22,6 @@ class AuthUserEPS
     {
         $token = $request->headers->get('secret-key');
 
-        try {
-
-        } catch (\Exception $exception) {
-            $respuesta = [
-                'code'    => 401,
-                'message' => 'Autorización inválida',
-            ];
-            return Response::json($respuesta, 401);
-        }
         if (Cache::has($token)) {
 
             $data       = json_decode(Cache::get($token));
@@ -37,10 +29,11 @@ class AuthUserEPS
             $validToken = Carbon::parse($data->refresh_signature);
             if ($now->isAfter($validToken)) {
                 $estatusRefresh = LoginCrm2Controller::refresToken($data);
+                Log::debug(print_r($estatusRefresh, true));
                 if (!$estatusRefresh) {
                     $respuesta = [
                         'code'    => 401,
-                        'message' => 'Autorización inválida',
+                        'message' => 'Autorización inválida paso 1',
                     ];
                     return Response::json($respuesta, 401);
                 } else {
@@ -54,7 +47,7 @@ class AuthUserEPS
         } else {
             $respuesta = [
                 'code'    => 401,
-                'message' => 'Autorización inválida',
+                'message' => 'Autorización inválida paso 2',
             ];
             return Response::json($respuesta, 401);
         }
