@@ -76,7 +76,7 @@ class AuthUser extends Model
         JOIN msauth.user_security_space_group AS uss ON uss.user_id=au.user_id
         JOIN msauth.security_space  ssp ON  ssp.space_id=uss.space_id
         WHERE ap.id_puesto IN ({$idsPuestos})
-        AND ssp.external_id={$idClub}";
+        AND ssp.external_id={$idClub} AND au.status='ACTIVE'";
 
         $query = DB::connection('crm2')->select($sql);
         if (count($query) > 0) {
