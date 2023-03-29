@@ -213,7 +213,6 @@ class LoginCrm2Controller extends ApiController
         $client = new Client();
         try {
             $endPoint = env('CRM2_API_URL') . "/api/auth/refresh-token";
-            Log::debug($endPoint);
             $response = $client->request('POST', $endPoint, [
                 'headers' => $header,
                 'body'    => json_encode($body),
@@ -231,6 +230,7 @@ class LoginCrm2Controller extends ApiController
                     'sspId'             => $token->sspId,
                     'idEmpleado'        => $authBody->idEmpleado,
                 ];
+                Log::debug(json_encode($bodyToken));
                 Cache::put($token->access_token, json_encode($bodyToken), 3600);
 
                 return $bodyToken;
