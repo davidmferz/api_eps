@@ -228,13 +228,14 @@ class LoginCrm2Controller extends ApiController
                     'refresh_token'     => $authBody->refresh_token,
                     'domain'            => $authBody->domain,
                     'sspId'             => $token->sspId,
-                    'idEmpleado'        => $authBody->idEmpleado,
+                    'idEmpleado'        => $token->idEmpleado,
                 ];
-                Log::debug(json_encode($bodyToken));
+
                 Cache::put($token->access_token, json_encode($bodyToken), 3600);
 
                 return $bodyToken;
             } else {
+                Log::debug('no tiene body');
                 return false;
             }
 
@@ -243,6 +244,7 @@ class LoginCrm2Controller extends ApiController
             return false;
 
         } catch (\Exception $exception) {
+            Log::debug($exception->getMessage());
             return false;
         }
     }

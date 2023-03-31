@@ -23,11 +23,14 @@ class AuthUserEPS
         $token = $request->headers->get('secret-key');
 
         if (Cache::has($token)) {
+            Log::debug('tiene has(token)');
 
             $data       = json_decode(Cache::get($token));
             $now        = Carbon::now();
             $validToken = Carbon::parse($data->refresh_signature);
             if ($now->isAfter($validToken)) {
+                Log::debug('paso el tiempo');
+
                 $estatusRefresh = LoginCrm2Controller::refresToken($data);
                 Log::debug(print_r($estatusRefresh, true));
                 if (!$estatusRefresh) {
