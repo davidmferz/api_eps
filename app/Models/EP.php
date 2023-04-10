@@ -64,9 +64,9 @@ class EP extends Model
             return $res;
         }
         $wUn = '';
-        if ($idUn > 0) {
-            $wUn = ' AND eu.idUn =' . $idUn;
-        }
+        // if ($idUn > 0) {
+            // $wUn = ' AND eu.idUn =' . $idUn;
+        // }
         $wEntrenador = '';
         if ($idEntrenador > 0) {
             $wEntrenador = ' AND einv.idPersona = ' . $idEntrenador;
@@ -104,7 +104,7 @@ class EP extends Model
             INNER JOIN movimiento m ON m.idMovimiento = em.idMovimiento
             left JOIN crm.facturaMovimiento AS fm ON fm.idMovimiento=m.idMovimiento
             left JOIN crm.factura AS f ON f.idFactura=fm.idFactura
-            INNER JOIN empleado ep ON einv.idPersona = ep.idPersona
+            INNER JOIN empleadoagenda ep ON einv.idPersona = ep.idPersona
             WHERE m.idTipoEstatusMovimiento IN (66, 70)
             ORDER BY nombreCliente
             ";
