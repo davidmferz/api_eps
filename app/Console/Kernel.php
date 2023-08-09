@@ -29,6 +29,12 @@ class Kernel extends ConsoleKernel
             ->hourly();
         $schedule->command('syncDep')
             ->hourly();
+        $schedule->command('sync:persona')->everyTenMinutes();
+        $schedule->command('sync:uninstalacion')->everyThirtyMinutes();
+        $schedule->command('sync:invitado')->everyThirtyMinutes();
+        $schedule->command('sync:membresia')->everyThirtyMinutes();
+        $schedule->command('sync:socio')->everyThirtyMinutes();
+        $schedule->command('sync:empleado')->hourly();
     }
 
     /**
