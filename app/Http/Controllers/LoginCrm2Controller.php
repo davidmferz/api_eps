@@ -180,11 +180,22 @@ class LoginCrm2Controller extends ApiController
         if (in_array($idEmpleado, ['15430']) || in_array($idPuesto, [155, 156])) {
             return 'root';
         }
-        if (in_array($idPuesto, [4, 39, 50, 131, 142, 151, 72, 163, 2])) {
+        if (in_array($idPuesto, [160])) {
+            return 'adminApp';
+        }
+        if (in_array($idPuesto, [2, 163])) {
+            return 'gerencia';
+        }
+
+        if (in_array($idPuesto, [4, 39, 50, 131, 142, 151, 72])) {
             return 'coordinador';
         }
         if (in_array($idPuesto, [62, 66, 67, 69, 77, 81, 99, 95, 104, 141, 101, 103])) {
             return 'trainer';
+        }
+
+        if (in_array($idPuesto, [5])) {
+            return 'groupFitnessGerencia';
         }
 
         if (in_array($idPuesto, [57, 87, 105])) {

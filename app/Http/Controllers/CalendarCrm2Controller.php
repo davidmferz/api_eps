@@ -47,11 +47,11 @@ class CalendarCrm2Controller extends ApiController
             }
 
         } catch (ClientException $e) {
-            Log::debug(print_r([$e->getMessage(), $e->getResponse()->getStatusCode()], true));
+            Log::debug($e->getMessage());
             return $this->successResponse([], 'ok', -1);
 
         } catch (\Exception $exception) {
-            Log::debug($exception->getMessage(), true);
+            Log::debug($exception->getMessage());
             return $this->successResponse([], 'ok', -2);
         }
     }
