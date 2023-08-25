@@ -177,6 +177,7 @@ class LoginCrm2Controller extends ApiController
 
     public static function setRol($idEmpleado, $idPuesto)
     {
+        Log::debug($idPuesto);
         if (in_array($idEmpleado, ['15430']) || in_array($idPuesto, [155, 156])) {
             return 'root';
         }
