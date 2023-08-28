@@ -136,7 +136,6 @@ class LoginCrm2Controller extends ApiController
                                 $trainer->typeTrainer->meta = $exc['meta'];
                             }
                         }
-
                     }
                     $user->rol = $this->setRol($idEmpleado, $user->idPuesto);
                     $result    = [
@@ -177,14 +176,18 @@ class LoginCrm2Controller extends ApiController
 
     public static function setRol($idEmpleado, $idPuesto)
     {
-        Log::debug($idPuesto);
+
+        if(in_array($idEmpleado,[11892,7677,11172,12964,15885,5888])){
+            return 'userCrm1';
+        }
+
         if (in_array($idEmpleado, ['15430']) || in_array($idPuesto, [155, 156])) {
             return 'root';
         }
         if (in_array($idPuesto, [160])) {
             return 'adminApp';
         }
-        if (in_array($idPuesto, [2, 163])) {
+        if (in_array($idPuesto, [2, 5,163])) {
             return 'gerencia';
         }
 
@@ -195,9 +198,9 @@ class LoginCrm2Controller extends ApiController
             return 'trainer';
         }
 
-        if (in_array($idPuesto, [5])) {
-            return 'groupFitnessGerencia';
-        }
+        // if (in_array($idPuesto, [5])) {
+        //     return 'groupFitnessGerencia';
+        // }
 
         if (in_array($idPuesto, [57, 87, 105])) {
             return 'groupFitness';
