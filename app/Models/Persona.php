@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class Persona extends Model
 {
     use SoftDeletes;
-    protected $connection = 'crm';
+    protected $connection = 'aws';
     protected $table      = 'crm.persona';
     protected $primaryKey = 'idPersona';
 
